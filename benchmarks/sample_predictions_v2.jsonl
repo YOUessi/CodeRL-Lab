@@ -1,0 +1,4 @@
+{"task_id":"legacy_add","sample_id":0,"completion":"def add(a, b):\n    return a + b"}
+{"task_id":"legacy_add","sample_id":1,"completion":"def add(a, b):\n    return a - b"}
+{"task_id":"stdio_add","sample_id":0,"completion":"a, b = map(int, input().split())\nprint(a + b)"}
+{"task_id":"stdio_add","sample_id":1,"completion":"a, b = map(int, input().split())\nprint(a - b)"}
