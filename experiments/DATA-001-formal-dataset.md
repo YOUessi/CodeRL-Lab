@@ -109,6 +109,43 @@ SHA256(seed + task_id)
 - APPS 假数据单元测试；
 - 50 题真实 APPS 转换脚本。
 
+## 真实数据接入日志
+
+### 2026-10-06：Datasets 5.1 不再支持 APPS 旧脚本
+
+第一次在 Tang 执行 APPS 50 题转换时，环境中的 Datasets 5.1.0 报错：
+
+```text
+RuntimeError: Dataset scripts are no longer supported, but found apps.py
+```
+
+这说明 `codeparrot/apps` 当前仍是旧式数据集脚本仓库，而新版本 Datasets 已不再执行该脚本。
+
+随后通过 Hugging Face Hub 检查仓库真实文件：
+
+```text
+revision:
+21e74ddf8de1a21436da12e3e653065c5213e9d1
+
+apps.py       4,945 bytes
+train.jsonl   107,101,272 bytes
+test.jsonl    1,292,436,853 bytes
+```
+
+旧 `apps.py` 的作用只是读取 JSONL，并把原始记录中的 `id` 映射成 `problem_id`。
+
+因此决定：
+
+- 不降级整套训练环境；
+- 不继续依赖已废弃的数据集脚本执行；
+- 固定 APPS revision；
+- 直接通过 Hugging Face Hub 下载 `train.jsonl` / `test.jsonl`；
+- 自己逐行解析原始 JSON；
+- 同时兼容原始 `id` 和旧脚本映射后的 `problem_id`；
+- 每条转换任务记录 `source_revision`。
+
+这样数据来源反而更透明、可复现。
+
 ## 下一步验证
 
 1. GitHub CI；
