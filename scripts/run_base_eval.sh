@@ -5,7 +5,7 @@ MODEL="${MODEL:-Qwen/Qwen3-0.6B-Base}"
 TASKS="${TASKS:-benchmarks/sample_tasks.jsonl}"
 PREDICTIONS="${PREDICTIONS:-artifacts/exp001/predictions.jsonl}"
 GENERATION_META="${GENERATION_META:-artifacts/exp001/generation_meta.json}"
-OUTPUT="${OUTPUT:-results/exp001-base}"
+OUTPUT="${OUTPUT:-artifacts/exp001/evaluation}"
 DOCKER_IMAGE="${DOCKER_IMAGE:-python:3.11-slim}"
 
 if ! docker image inspect "$DOCKER_IMAGE" >/dev/null 2>&1; then

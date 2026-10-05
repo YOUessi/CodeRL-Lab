@@ -73,11 +73,13 @@ def evaluate_predictions(
 
         public_report = executor.run(
             completion,
+            task_mode=task.task_mode,
             entry_point=task.entry_point,
             cases=task.public_tests,
         )
         hidden_report = executor.run(
             completion,
+            task_mode=task.task_mode,
             entry_point=task.entry_point,
             cases=task.hidden_tests,
         )
@@ -92,6 +94,7 @@ def evaluate_predictions(
         detailed.append(
             {
                 "task_id": task_id,
+                "task_mode": task.task_mode,
                 "sample_id": int(row["sample_id"]),
                 "training_reward": {
                     "syntax": training_reward.syntax,

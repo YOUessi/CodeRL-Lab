@@ -1,10 +1,12 @@
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .venv/
+.venv-*/
 venv/
 
 # IDE / OS
@@ -38,5 +40,5 @@ rollouts/
 .env.*
 !.env.example
 
-# Keep refined experiment outputs under results/
+# results/ 只存精炼后显式提交的结果。
 results/**/raw/

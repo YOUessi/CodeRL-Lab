@@ -1,0 +1,2 @@
+{"task_id":"legacy_add","prompt":"实现函数 add(a, b)，返回两个整数之和。","entry_point":"add","starter_code":"def add(a, b):\n    pass\n","public_tests":[{"name":"public","args":[1,2],"expected":3}],"hidden_tests":[{"name":"hidden","args":[-2,5],"expected":3}],"metadata":{"fixture":"dual_mode"}}
+{"task_id":"stdio_add","prompt":"读取一行中的两个整数，输出它们的和。","task_mode":"stdin_stdout","starter_code":"","public_tests":[{"name":"public","stdin":"1 2\n","expected_stdout":"3\n"}],"hidden_tests":[{"name":"hidden","stdin":"-2 5\n","expected_stdout":"3\n"}],"metadata":{"fixture":"dual_mode"}}

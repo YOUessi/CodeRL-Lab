@@ -9,18 +9,39 @@ import time
 from pathlib import Path
 
 from .evaluation import load_tasks
+from .schema import TaskMode
 
 
 _CODE_FENCE = re.compile(r"```(?:python)?\s*(.*?)```", re.IGNORECASE | re.DOTALL)
 
 
-def build_prompt(prompt: str, starter_code: str) -> str:
-    return (
-        "请完成下面的 Python 编程任务。\n"
-        "只返回完整的 Python 代码，不要使用 Markdown 代码块，不要解释。\n\n"
-        f"任务：\n{prompt}\n\n"
-        f"起始代码：\n{starter_code}\n"
-    )
+def build_prompt(
+    prompt: str,
+    starter_code: str,
+    task_mode: TaskMode = "function",
+) -> str:
+    if task_mode == "function":
+        instruction = (
+            "请完成下面的 Python 编程任务。\n"
+            "只返回包含目标函数的完整 Python 代码，不要使用 Markdown 代码块，不要解释。"
+        )
+    else:
+        instruction = (
+            "请完成下面的 Python 编程任务。\n"
+            "返回可直接运行的完整 Python 程序：从标准输入读取数据，并把答案写到标准输出。\n"
+            "只返回 Python 代码，不要使用 Markdown 代码块，不要解释。"
+        )
+
+    starter = f"\n\n起始代码：\n{starter_code}" if starter_code else ""
+    return f"{instruction}\n\n任务：\n{prompt}{starter}\n"
+
+
+def _is_parseable(code: str) -> bool:
+    try:
+        ast.parse(code)
+        return True
+    except SyntaxError:
+        return False
 
 
 def _contains_entry_point(code: str, entry_point: str) -> bool:
@@ -35,25 +56,48 @@ def _contains_entry_point(code: str, entry_point: str) -> bool:
     )
 
 
-def extract_python_code(text: str, entry_point: str) -> str:
-    """Normalize model output into executable Python without changing semantics."""
+def extract_python_code(
+    text: str,
+    entry_point: str | None = None,
+) -> str:
+    """用固定规则把模型输出归一化为可执行 Python。
+
+    函数模式优先寻找目标函数；标准输入输出模式则寻找最大的可解析
+    Python 代码片段。这里不尝试“修复”模型语义，只清除明显包裹文本。
+    """
     text = text.strip()
     match = _CODE_FENCE.search(text)
     if match:
         candidate = match.group(1).strip()
-    else:
+    elif entry_point:
         marker = f"def {entry_point}"
         index = text.find(marker)
         candidate = text[index:].strip() if index >= 0 else text
+    else:
+        candidate = text
 
-    if _contains_entry_point(candidate, entry_point):
+    if entry_point and _contains_entry_point(candidate, entry_point):
+        return candidate
+    if not entry_point and _is_parseable(candidate):
         return candidate
 
     lines = candidate.splitlines()
-    for end in range(len(lines) - 1, 0, -1):
-        shortened = "\n".join(lines[:end]).strip()
-        if _contains_entry_point(shortened, entry_point):
-            return shortened
+
+    if entry_point:
+        for end in range(len(lines) - 1, 0, -1):
+            shortened = "\n".join(lines[:end]).strip()
+            if _contains_entry_point(shortened, entry_point):
+                return shortened
+        return candidate
+
+    # 标准输入输出模式：允许模型在代码前后夹带自然语言。
+    # 按“最早起点 + 最长后缀”的确定性顺序寻找可解析片段。
+    for start in range(len(lines)):
+        for end in range(len(lines), start, -1):
+            shortened = "\n".join(lines[start:end]).strip()
+            if shortened and _is_parseable(shortened):
+                return shortened
+
     return candidate
 
 
@@ -110,7 +154,11 @@ def generate_predictions(
 
     with output_path.open("w", encoding="utf-8") as handle:
         for task_index, task in enumerate(tasks.values()):
-            prompt = build_prompt(task.prompt, task.starter_code)
+            prompt = build_prompt(
+                task.prompt,
+                task.starter_code,
+                task_mode=task.task_mode,
+            )
             encoded = tokenizer(prompt, return_tensors="pt")
             encoded = {k: v.to(model.device) for k, v in encoded.items()}
             prompt_length = encoded["input_ids"].shape[1]
