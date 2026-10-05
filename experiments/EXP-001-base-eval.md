@@ -2,8 +2,8 @@
 
 ## 状态
 
-**代码阶段：已建立第一版。**  
-**GPU 实验：尚未执行。**
+**代码阶段：第一版已建立，正在真实环境验证。**  
+**GPU 模型实验：尚未执行。**
 
 ## 研究目的
 
@@ -27,36 +27,43 @@
 
 配置文件：`configs/base_eval.yaml`
 
-第一轮冒烟模型：
+第一轮冒烟模型：`Qwen/Qwen3-0.6B-Base`
 
-`Qwen/Qwen3-0.6B-Base`
+采样：每题 16 个候选，温度 0.8，top-p 0.95，最大新增长度 512，基础随机种子 42。
 
-采样：
+评测：Pass@1、Pass@4、Pass@8、Pass@16。
 
-- 每题 16 个候选；
-- 温度 0.8；
-- top-p 0.95；
-- 最大新增长度 512；
-- 基础随机种子 42。
+## Tang 实测环境
 
-评测：
+2026-10-06 首次环境核验：
 
-- Pass@1；
-- Pass@4；
-- Pass@8；
-- Pass@16。
+- 设备：Tang；
+- GPU：NVIDIA GeForce RTX 4090 Laptop GPU；
+- 显存：16376 MiB（约 16 GB）；
+- NVIDIA Driver：580.178.04；
+- Python：3.10.12；
+- Docker：29.1.3；
+- 项目目录：`~/projects/CodeRL-Lab`。
+
+重要修正：后续显存预算必须按 **16 GB Laptop 4090** 设计，不按桌面 4090 24 GB 假设。
 
 ## 两阶段执行
 
 ### A. CPU 可信夹具测试
-
-目的不是测模型，而是验证代码。
 
 ```bash
 pip install -e ".[dev]"
 pytest -q
 bash scripts/run_smoke_eval.sh
 ```
+
+2026-10-06 实测：
+
+- 17 个单元测试全部通过；
+- 可信样例共 3 个任务，每题 2 个候选；
+- 每题恰好 1 个候选通过全部隐藏测试；
+- Pass@1 = 0.5；
+- Pass@2 = 1.0。
 
 ### B. Tang RTX 4090 基础模型实验
 
@@ -67,14 +74,45 @@ bash scripts/run_base_eval.sh
 
 模型生成代码必须走 Docker 执行器。
 
+## 实现验证日志
+
+### 问题 1：Docker 镜像下载被错误计入单测试超时
+
+首次 Docker 冒烟时，Tang 尚未缓存 `python:3.11-slim`。原实现让 `docker run` 自动拉镜像，但每个测试只有 5 秒执行超时，导致镜像下载和代码执行共享同一超时预算。
+
+修复：
+
+- 执行器不再隐式下载镜像；
+- 缺少镜像时立即给出明确错误；
+- `run_base_eval.sh` 在评测前显式准备镜像。
+
+首次下载镜像摘要：
+
+`sha256:6f31d6e9ba2b0a787a3f81c37b004155b87b9efa1b771182bd550c1615745be5`
+
+### 问题 2：Rootless Docker 无权遍历临时目录
+
+镜像准备完成后，容器能启动，但全部候选都报：
+
+`python: can't open file '/work/runner.py': [Errno 13] Permission denied`
+
+原因：Python `TemporaryDirectory` 默认权限为 0700，而 Tang 当前 Docker 环境下容器用户映射不能遍历宿主临时目录。
+
+修复：
+
+- 临时工作目录显式设为 0755；
+- `runner.py` 和 `solution.py` 设为只读 0444；
+- Docker bind mount 仍为只读；
+- 容器仍保持无网络、只读根文件系统、丢弃 capabilities 和进程/内存限制。
+
+该修复待下一次 Tang Docker 冒烟验证。
+
 ## 必须记录
 
-运行后补充：
+正式模型运行后继续补充：
 
 - Git Commit SHA；
-- Python / CUDA / PyTorch / Transformers 版本；
-- GPU 型号和显存；
-- Docker 版本；
+- CUDA / PyTorch / Transformers 版本；
 - 模型下载版本/修订；
 - 总运行时长；
 - 峰值显存；
@@ -92,12 +130,10 @@ bash scripts/run_base_eval.sh
 
 ## 下一步门槛
 
-只有以下条件全部满足，EXP-001 才能关闭：
-
 - [ ] GitHub CI 单元测试通过；
-- [ ] Tang 环境验证通过；
+- [x] Tang 基础环境核验；
 - [ ] Docker 安全执行可用；
 - [ ] 0.6B 基础模型可完成多样本生成；
 - [ ] Pass@k 结果可复现；
-- [ ] 结果和环境信息写回本文件；
+- [x] 首轮环境与失败信息写回本文件；
 - [ ] 正式数据集方案确定。
