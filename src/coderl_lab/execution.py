@@ -158,10 +158,17 @@ class PythonExecutor:
 
         with tempfile.TemporaryDirectory(prefix="coderl_lab_") as tmp:
             workdir = Path(tmp)
+            # TemporaryDirectory is mode 0700 by default. Rootless Docker may
+            # map container root to an unprivileged host UID, so make the
+            # read-only bind mount traversable without making it writable.
+            workdir.chmod(0o755)
+
             solution_path = workdir / "solution.py"
             runner_path = workdir / "runner.py"
             solution_path.write_text(code, encoding="utf-8")
             runner_path.write_text(_RUNNER, encoding="utf-8")
+            solution_path.chmod(0o444)
+            runner_path.chmod(0o444)
 
             results = tuple(
                 self._run_case(
