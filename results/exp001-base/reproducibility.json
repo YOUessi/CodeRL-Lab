@@ -1,0 +1,15 @@
+{
+  "experiment_id": "EXP-001",
+  "git_commit": "504a3ae0a4ce0a6861bd61f7b520d0c4d3074878",
+  "model": "Qwen/Qwen3-0.6B-Base",
+  "model_revision": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
+  "base_seed": 42,
+  "samples_per_task": 16,
+  "num_tasks": 3,
+  "run_1_sha256": "63d635c14aeaf42b8fc451064db6818cf1b720244c95645b2b300c59ff4a3d28",
+  "run_2_sha256": "63d635c14aeaf42b8fc451064db6818cf1b720244c95645b2b300c59ff4a3d28",
+  "byte_identical": true,
+  "run_1_generation_elapsed_seconds": 71.73559646900685,
+  "run_2_generation_elapsed_seconds": 73.39059580799949,
+  "note": "The exact predictions JSONL was reproduced byte-for-byte under the same commit, model, parameters, and seeds."
+}
