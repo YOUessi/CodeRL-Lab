@@ -123,3 +123,15 @@ def test_rejects_missing_reference_solution() -> None:
     with pytest.raises(AppsAdapterError) as exc:
         convert_apps_row(row, split="train")
     assert exc.value.reason == "missing_reference_solutions"
+
+
+def test_accepts_raw_jsonl_id_field_and_records_revision() -> None:
+    row = function_row()
+    row["id"] = row.pop("problem_id")
+    result = convert_apps_row(
+        row,
+        split="train",
+        source_revision="revision-test",
+    )
+    assert result["task_id"] == "apps/train/7"
+    assert result["metadata"]["source_revision"] == "revision-test"
