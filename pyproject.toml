@@ -23,6 +23,7 @@ model = [
   "datasets",
   "trl",
   "peft",
+  "Pillow>=10.0",
 ]
 
 [tool.setuptools.packages.find]
