@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Models / checkpoints / caches
+models/
+checkpoints/
+.cache/
+huggingface/
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# Training systems
+wandb/
+runs/
+outputs/
+tensorboard/
+
+# Large rollout / raw execution artifacts
+artifacts/
+rollouts/
+*.log
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Keep refined experiment outputs under results/
+results/**/raw/
