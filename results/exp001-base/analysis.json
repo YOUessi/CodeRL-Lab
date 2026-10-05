@@ -1,0 +1,17 @@
+{
+  "experiment_id": "EXP-001",
+  "num_predictions": 48,
+  "syntax_failures": 19,
+  "public_all_pass": 20,
+  "hidden_all_pass": 20,
+  "public_all_pass_but_hidden_fail": 1,
+  "average_training_reward": 0.46875,
+  "average_public_pass_rate": 0.4583333333333333,
+  "average_hidden_pass_rate": 0.4583333333333333,
+  "interpretation": [
+    "19/48 outputs could not be normalized into syntactically valid target-function code.",
+    "20/48 candidates passed every hidden test.",
+    "One candidate passed all public tests but failed at least one hidden test.",
+    "The three-task smoke set is intentionally too small for scientific conclusions."
+  ]
+}

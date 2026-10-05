@@ -1,0 +1,32 @@
+{
+  "experiment_id": "EXP-001",
+  "scope": "pipeline smoke baseline; not a research benchmark result",
+  "git_commit": "504a3ae0a4ce0a6861bd61f7b520d0c4d3074878",
+  "model": "Qwen/Qwen3-0.6B-Base",
+  "model_revision": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
+  "num_tasks": 3,
+  "num_predictions": 48,
+  "pass_at_k": {
+    "pass@1": 0.4166666666666667,
+    "pass@4": 0.8296703296703297,
+    "pass@8": 0.9655011655011655,
+    "pass@16": 1.0
+  },
+  "per_task": {
+    "count_even": {
+      "samples": 16,
+      "correct": 6,
+      "empirical_success_rate": 0.375
+    },
+    "is_palindrome": {
+      "samples": 16,
+      "correct": 3,
+      "empirical_success_rate": 0.1875
+    },
+    "sum_squares": {
+      "samples": 16,
+      "correct": 11,
+      "empirical_success_rate": 0.6875
+    }
+  }
+}

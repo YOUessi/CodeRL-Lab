@@ -1,0 +1,27 @@
+experiment:
+  id: EXP-001
+  name: base-model-pass-at-k
+  seed: 42
+
+model:
+  name_or_path: Qwen/Qwen3-0.6B-Base
+  dtype: bfloat16
+  device: cuda
+
+generation:
+  num_samples_per_task: 16
+  max_new_tokens: 512
+  temperature: 0.8
+  top_p: 0.95
+
+evaluation:
+  pass_at_k: [1, 4, 8, 16]
+  executor: docker
+  timeout_seconds: 3.0
+  memory_limit: 512m
+  use_hidden_tests_for_training_reward: false
+
+notes:
+  - "0.6B 只用于全链路冒烟和基线，不据此做能力边界结论。"
+  - "隐藏测试只用于最终评测，不进入训练奖励。"
+  - "实际模型生成代码必须使用容器执行器。"
