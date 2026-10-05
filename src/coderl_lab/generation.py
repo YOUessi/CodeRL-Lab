@@ -56,6 +56,13 @@ def extract_python_code(text: str, entry_point: str) -> str:
     return candidate
 
 
+def _seed_everything(torch_module, seed: int) -> None:
+    random.seed(seed)
+    torch_module.manual_seed(seed)
+    if torch_module.cuda.is_available():
+        torch_module.cuda.manual_seed_all(seed)
+
+
 def generate_predictions(
     *,
     tasks_path: Path,
@@ -79,10 +86,7 @@ def generate_predictions(
     if num_samples <= 0:
         raise ValueError("num_samples must be positive")
 
-    random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+    _seed_everything(torch, seed)
 
     tasks = load_tasks(tasks_path)
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -96,15 +100,15 @@ def generate_predictions(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as handle:
-        for task in tasks.values():
+        for task_index, task in enumerate(tasks.values()):
             prompt = build_prompt(task.prompt, task.starter_code)
             encoded = tokenizer(prompt, return_tensors="pt")
             encoded = {k: v.to(model.device) for k, v in encoded.items()}
             prompt_length = encoded["input_ids"].shape[1]
 
             for sample_id in range(num_samples):
-                generator = torch.Generator(device=model.device)
-                generator.manual_seed(seed + sample_id)
+                sample_seed = seed + task_index * 100_000 + sample_id
+                _seed_everything(torch, sample_seed)
 
                 with torch.inference_mode():
                     output = model.generate(
@@ -115,7 +119,6 @@ def generate_predictions(
                         top_p=top_p,
                         num_return_sequences=1,
                         pad_token_id=tokenizer.eos_token_id,
-                        generator=generator,
                     )
 
                 generated_tokens = output[0, prompt_length:]
@@ -137,7 +140,7 @@ def generate_predictions(
                             "raw_completion": raw_completion,
                             "generation": {
                                 "model": model_name,
-                                "seed": seed + sample_id,
+                                "seed": sample_seed,
                                 "temperature": temperature,
                                 "top_p": top_p,
                                 "max_new_tokens": max_new_tokens,
