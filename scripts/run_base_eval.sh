@@ -4,6 +4,7 @@ set -euo pipefail
 MODEL="${MODEL:-Qwen/Qwen3-0.6B-Base}"
 TASKS="${TASKS:-benchmarks/sample_tasks.jsonl}"
 PREDICTIONS="${PREDICTIONS:-artifacts/exp001/predictions.jsonl}"
+GENERATION_META="${GENERATION_META:-artifacts/exp001/generation_meta.json}"
 OUTPUT="${OUTPUT:-results/exp001-base}"
 DOCKER_IMAGE="${DOCKER_IMAGE:-python:3.11-slim}"
 
@@ -15,6 +16,7 @@ fi
 python -m coderl_lab.generation \
   --tasks "$TASKS" \
   --output "$PREDICTIONS" \
+  --metadata-output "$GENERATION_META" \
   --model "$MODEL" \
   --num-samples 16 \
   --max-new-tokens 512 \
