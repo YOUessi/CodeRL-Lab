@@ -16,11 +16,14 @@ dependencies = [
 dev = [
   "pytest>=8.0",
 ]
+data = [
+  "datasets>=3.0",
+]
 model = [
   "torch",
   "transformers",
   "accelerate",
-  "datasets",
+  "datasets>=3.0",
   "trl",
   "peft",
   "Pillow>=10.0",
