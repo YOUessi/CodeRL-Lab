@@ -1,0 +1,6 @@
+{"task_id":"sum_squares","sample_id":0,"completion":"def sum_squares(nums):\n    return sum(x * x for x in nums)"}
+{"task_id":"sum_squares","sample_id":1,"completion":"def sum_squares(nums):\n    return sum(nums)"}
+{"task_id":"count_even","sample_id":0,"completion":"def count_even(nums):\n    return sum(1 for x in nums if x % 2 == 0)"}
+{"task_id":"count_even","sample_id":1,"completion":"def count_even(nums):\n    return sum(1 for x in nums if x % 2 == 1)"}
+{"task_id":"is_palindrome","sample_id":0,"completion":"def is_palindrome(text):\n    s = text.lower()\n    return s == s[::-1]"}
+{"task_id":"is_palindrome","sample_id":1,"completion":"def is_palindrome(text):\n    return False"}
