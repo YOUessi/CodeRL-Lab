@@ -10,10 +10,15 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
 
-from .schema import TestCase
+from .schema import (
+    AnyTestCase,
+    FunctionTestCase,
+    StdIOTestCase,
+    TaskMode,
+)
 
 
-_RUNNER = r"""
+_FUNCTION_RUNNER = r"""
 import importlib.util
 import json
 import sys
@@ -83,14 +88,28 @@ def check_syntax(code: str) -> bool:
         return False
 
 
+def normalize_stdout(text: str) -> str:
+    """竞赛式输出的第一版确定性规范化规则。"""
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    lines = [line.rstrip() for line in normalized.split("\n")]
+    while lines and lines[0] == "":
+        lines.pop(0)
+    while lines and lines[-1] == "":
+        lines.pop()
+    return "\n".join(lines)
+
+
+def _expected_value(case: AnyTestCase) -> object | None:
+    if isinstance(case, FunctionTestCase):
+        return case.expected
+    return case.expected_stdout
+
+
 class PythonExecutor:
-    """Execute function-level candidates.
+    """执行函数调用或标准输入输出 Python 候选。
 
-    Docker mode is the default for model-generated code. Local mode exists only
-    for trusted smoke-test fixtures and must be explicitly enabled.
-
-    Docker images are never pulled implicitly here. Runtime setup must prepare
-    the image first so a network pull cannot consume a per-test timeout budget.
+    模型生成代码默认使用 Docker。local 模式仅用于仓库内可信夹具，
+    且必须显式开启 allow_unsafe_local。
     """
 
     def __init__(
@@ -137,10 +156,14 @@ class PythonExecutor:
     def run(
         self,
         code: str,
-        entry_point: str,
-        cases: Iterable[TestCase],
+        *,
+        entry_point: str | None,
+        cases: Iterable[AnyTestCase],
+        task_mode: TaskMode = "function",
     ) -> ExecutionReport:
         case_list = tuple(cases)
+        self._validate_cases(task_mode, entry_point, case_list)
+
         if not check_syntax(code):
             return ExecutionReport(
                 syntax_ok=False,
@@ -149,7 +172,7 @@ class PythonExecutor:
                         name=case.name,
                         passed=False,
                         actual=None,
-                        expected=case.expected,
+                        expected=_expected_value(case),
                         error="SyntaxError",
                     )
                     for case in case_list
@@ -158,34 +181,90 @@ class PythonExecutor:
 
         with tempfile.TemporaryDirectory(prefix="coderl_lab_") as tmp:
             workdir = Path(tmp)
-            # TemporaryDirectory is mode 0700 by default. Rootless Docker may
-            # map container root to an unprivileged host UID, so make the
-            # read-only bind mount traversable without making it writable.
+            # Rootless Docker 需要能够遍历宿主临时目录；保持目录不可写并
+            # 通过只读 bind mount 限制候选代码。
             workdir.chmod(0o755)
 
             solution_path = workdir / "solution.py"
-            runner_path = workdir / "runner.py"
             solution_path.write_text(code, encoding="utf-8")
-            runner_path.write_text(_RUNNER, encoding="utf-8")
             solution_path.chmod(0o444)
-            runner_path.chmod(0o444)
 
-            results = tuple(
-                self._run_case(
-                    workdir=workdir,
-                    entry_point=entry_point,
-                    case=case,
+            if task_mode == "function":
+                runner_path = workdir / "runner.py"
+                runner_path.write_text(_FUNCTION_RUNNER, encoding="utf-8")
+                runner_path.chmod(0o444)
+                results = tuple(
+                    self._run_function_case(
+                        workdir=workdir,
+                        entry_point=entry_point or "",
+                        case=case,
+                    )
+                    for case in case_list
+                    if isinstance(case, FunctionTestCase)
                 )
-                for case in case_list
-            )
+            else:
+                results = tuple(
+                    self._run_stdio_case(
+                        workdir=workdir,
+                        case=case,
+                    )
+                    for case in case_list
+                    if isinstance(case, StdIOTestCase)
+                )
+
         return ExecutionReport(syntax_ok=True, cases=results)
 
-    def _run_case(
+    @staticmethod
+    def _validate_cases(
+        task_mode: TaskMode,
+        entry_point: str | None,
+        cases: tuple[AnyTestCase, ...],
+    ) -> None:
+        if task_mode == "function":
+            if not entry_point:
+                raise ValueError("function execution requires entry_point")
+            if not all(isinstance(case, FunctionTestCase) for case in cases):
+                raise TypeError("function task received a non-function test case")
+        elif task_mode == "stdin_stdout":
+            if not all(isinstance(case, StdIOTestCase) for case in cases):
+                raise TypeError(
+                    "stdin_stdout task received a non-stdin/stdout test case"
+                )
+        else:
+            raise ValueError("unsupported task_mode")
+
+    def _docker_prefix(self, workdir: Path) -> list[str]:
+        return [
+            "docker",
+            "run",
+            "--rm",
+            "--network",
+            "none",
+            "--memory",
+            self.memory_limit,
+            "--cpus",
+            "1",
+            "--pids-limit",
+            "64",
+            "--read-only",
+            "--cap-drop",
+            "ALL",
+            "--security-opt",
+            "no-new-privileges",
+            "-i",
+            "-v",
+            f"{workdir}:/work:ro",
+            "-w",
+            "/work",
+            self.docker_image,
+        ]
+
+    def _run_function_case(
         self,
         *,
         workdir: Path,
         entry_point: str,
-        case: TestCase,
+        case: FunctionTestCase,
     ) -> CaseResult:
         payload = json.dumps(
             {
@@ -198,29 +277,7 @@ class PythonExecutor:
         )
 
         if self.mode == "docker":
-            command = [
-                "docker",
-                "run",
-                "--rm",
-                "--network",
-                "none",
-                "--memory",
-                self.memory_limit,
-                "--cpus",
-                "1",
-                "--pids-limit",
-                "64",
-                "--read-only",
-                "--cap-drop",
-                "ALL",
-                "--security-opt",
-                "no-new-privileges",
-                "-i",
-                "-v",
-                f"{workdir}:/work:ro",
-                "-w",
-                "/work",
-                self.docker_image,
+            command = self._docker_prefix(workdir) + [
                 "python",
                 "runner.py",
                 "solution.py",
@@ -232,6 +289,14 @@ class PythonExecutor:
                 str(workdir / "solution.py"),
             ]
 
+        return self._execute_function_process(command, payload, case)
+
+    def _execute_function_process(
+        self,
+        command: list[str],
+        payload: str,
+        case: FunctionTestCase,
+    ) -> CaseResult:
         try:
             proc = subprocess.run(
                 command,
@@ -278,6 +343,66 @@ class PythonExecutor:
             actual=data.get("actual"),
             expected=data.get("expected"),
             error=data.get("error"),
+            timed_out=False,
+        )
+
+    def _run_stdio_case(
+        self,
+        *,
+        workdir: Path,
+        case: StdIOTestCase,
+    ) -> CaseResult:
+        if self.mode == "docker":
+            command = self._docker_prefix(workdir) + [
+                "python",
+                "solution.py",
+            ]
+        else:
+            command = [
+                sys.executable,
+                str(workdir / "solution.py"),
+            ]
+
+        try:
+            proc = subprocess.run(
+                command,
+                input=case.stdin,
+                text=True,
+                capture_output=True,
+                timeout=self.timeout_seconds,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            return CaseResult(
+                name=case.name,
+                passed=False,
+                actual=None,
+                expected=case.expected_stdout,
+                error="execution timed out",
+                timed_out=True,
+            )
+
+        actual = normalize_stdout(proc.stdout)
+        expected = normalize_stdout(case.expected_stdout)
+
+        if proc.returncode != 0:
+            return CaseResult(
+                name=case.name,
+                passed=False,
+                actual=actual,
+                expected=expected,
+                error=(
+                    proc.stderr.strip()
+                    or f"candidate exited with {proc.returncode}"
+                ),
+            )
+
+        return CaseResult(
+            name=case.name,
+            passed=actual == expected,
+            actual=actual,
+            expected=expected,
+            error=None,
             timed_out=False,
         )
 
