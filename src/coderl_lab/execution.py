@@ -88,6 +88,9 @@ class PythonExecutor:
 
     Docker mode is the default for model-generated code. Local mode exists only
     for trusted smoke-test fixtures and must be explicitly enabled.
+
+    Docker images are never pulled implicitly here. Runtime setup must prepare
+    the image first so a network pull cannot consume a per-test timeout budget.
     """
 
     def __init__(
@@ -106,10 +109,30 @@ class PythonExecutor:
                 "local execution is unsafe for untrusted model output; "
                 "pass allow_unsafe_local=True only for trusted fixtures"
             )
+
         self.mode = mode
         self.timeout_seconds = timeout_seconds
         self.docker_image = docker_image
         self.memory_limit = memory_limit
+
+        if self.mode == "docker":
+            self._validate_docker_runtime()
+
+    def _validate_docker_runtime(self) -> None:
+        if shutil.which("docker") is None:
+            raise RuntimeError("docker executable not found")
+
+        inspect = subprocess.run(
+            ["docker", "image", "inspect", self.docker_image],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if inspect.returncode != 0:
+            raise RuntimeError(
+                f"Docker image '{self.docker_image}' is not available locally. "
+                f"Pull it before evaluation: docker pull {self.docker_image}"
+            )
 
     def run(
         self,
@@ -168,14 +191,6 @@ class PythonExecutor:
         )
 
         if self.mode == "docker":
-            if shutil.which("docker") is None:
-                return CaseResult(
-                    name=case.name,
-                    passed=False,
-                    actual=None,
-                    expected=case.expected,
-                    error="docker executable not found",
-                )
             command = [
                 "docker",
                 "run",
