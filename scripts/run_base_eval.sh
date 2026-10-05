@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MODEL="${MODEL:-Qwen/Qwen3-0.6B-Base}"
+TASKS="${TASKS:-benchmarks/sample_tasks.jsonl}"
+PREDICTIONS="${PREDICTIONS:-artifacts/exp001/predictions.jsonl}"
+OUTPUT="${OUTPUT:-results/exp001-base}"
+
+python -m coderl_lab.generation \
+  --tasks "$TASKS" \
+  --output "$PREDICTIONS" \
+  --model "$MODEL" \
+  --num-samples 16 \
+  --max-new-tokens 512 \
+  --temperature 0.8 \
+  --top-p 0.95 \
+  --seed 42
+
+python -m coderl_lab.evaluation \
+  --tasks "$TASKS" \
+  --predictions "$PREDICTIONS" \
+  --output "$OUTPUT" \
+  --executor docker \
+  --timeout 3 \
+  --memory 512m \
+  --k 1 4 8 16
