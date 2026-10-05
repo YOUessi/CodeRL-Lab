@@ -5,6 +5,7 @@ import ast
 import json
 import random
 import re
+import time
 from pathlib import Path
 
 from .evaluation import load_tasks
@@ -73,9 +74,11 @@ def generate_predictions(
     temperature: float,
     top_p: float,
     seed: int,
-) -> None:
+    metadata_output: Path | None = None,
+) -> dict:
     try:
         import torch
+        import transformers
         from transformers import AutoModelForCausalLM, AutoTokenizer
     except ImportError as exc:
         raise RuntimeError(
@@ -87,6 +90,7 @@ def generate_predictions(
         raise ValueError("num_samples must be positive")
 
     _seed_everything(torch, seed)
+    started = time.perf_counter()
 
     tasks = load_tasks(tasks_path)
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -98,7 +102,12 @@ def generate_predictions(
     )
     model.eval()
 
+    if torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    generated_count = 0
+
     with output_path.open("w", encoding="utf-8") as handle:
         for task_index, task in enumerate(tasks.values()):
             prompt = build_prompt(task.prompt, task.starter_code)
@@ -151,12 +160,52 @@ def generate_predictions(
                     + "\n"
                 )
                 handle.flush()
+                generated_count += 1
+
+    elapsed = time.perf_counter() - started
+    metadata = {
+        "model": model_name,
+        "model_revision": getattr(model.config, "_commit_hash", None),
+        "tasks": len(tasks),
+        "samples_per_task": num_samples,
+        "generated_count": generated_count,
+        "max_new_tokens": max_new_tokens,
+        "temperature": temperature,
+        "top_p": top_p,
+        "base_seed": seed,
+        "elapsed_seconds": elapsed,
+        "torch_version": torch.__version__,
+        "torch_cuda_version": torch.version.cuda,
+        "transformers_version": transformers.__version__,
+        "cuda_available": torch.cuda.is_available(),
+    }
+
+    if torch.cuda.is_available():
+        metadata.update(
+            {
+                "gpu_name": torch.cuda.get_device_name(0),
+                "cuda_memory_allocated_bytes": torch.cuda.memory_allocated(),
+                "cuda_peak_memory_allocated_bytes": torch.cuda.max_memory_allocated(),
+                "cuda_peak_memory_reserved_bytes": torch.cuda.max_memory_reserved(),
+            }
+        )
+
+    if metadata_output is not None:
+        metadata_output.parent.mkdir(parents=True, exist_ok=True)
+        metadata_output.write_text(
+            json.dumps(metadata, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+    print(json.dumps(metadata, ensure_ascii=False, indent=2))
+    return metadata
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate CodeRL-Lab candidates")
     parser.add_argument("--tasks", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--metadata-output", type=Path)
     parser.add_argument("--model", default="Qwen/Qwen3-0.6B-Base")
     parser.add_argument("--num-samples", type=int, default=16)
     parser.add_argument("--max-new-tokens", type=int, default=512)
@@ -171,6 +220,7 @@ def main() -> None:
     generate_predictions(
         tasks_path=args.tasks,
         output_path=args.output,
+        metadata_output=args.metadata_output,
         model_name=args.model,
         num_samples=args.num_samples,
         max_new_tokens=args.max_new_tokens,
