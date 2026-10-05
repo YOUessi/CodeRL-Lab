@@ -88,6 +88,7 @@ class CodeTask:
     starter_code: str
     public_tests: tuple[AnyTestCase, ...]
     hidden_tests: tuple[AnyTestCase, ...]
+    reference_solutions: tuple[str, ...] = field(default_factory=tuple)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -129,6 +130,12 @@ class CodeTask:
         if not hidden:
             raise ValueError("each task needs at least one hidden test")
 
+        reference_solutions_raw = data.get("reference_solutions", [])
+        if not isinstance(reference_solutions_raw, list):
+            raise TypeError("reference_solutions must be a list")
+        if not all(isinstance(x, str) for x in reference_solutions_raw):
+            raise TypeError("every reference solution must be a string")
+
         return cls(
             task_id=str(data["task_id"]),
             prompt=str(data["prompt"]),
@@ -137,5 +144,6 @@ class CodeTask:
             starter_code=str(data.get("starter_code", "")),
             public_tests=public,
             hidden_tests=hidden,
+            reference_solutions=tuple(reference_solutions_raw),
             metadata=dict(data.get("metadata", {})),
         )
