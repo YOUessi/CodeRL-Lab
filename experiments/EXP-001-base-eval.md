@@ -3,7 +3,7 @@
 ## 状态
 
 **代码阶段：第一版已建立，正在真实环境验证。**  
-**GPU 模型实验：尚未执行。**
+**GPU 模型实验：正在准备运行环境。**
 
 ## 研究目的
 
@@ -43,6 +43,8 @@
 - NVIDIA Driver：580.178.04；
 - Python：3.10.12；
 - Docker：29.1.3；
+- 系统 PyTorch：2.10.0+cu128；
+- PyTorch CUDA：12.8；
 - 项目目录：`~/projects/CodeRL-Lab`。
 
 重要修正：后续显存预算必须按 **16 GB Laptop 4090** 设计，不按桌面 4090 24 GB 假设。
@@ -67,7 +69,11 @@ bash scripts/run_smoke_eval.sh
 
 ### B. Tang RTX 4090 基础模型实验
 
+GPU 虚拟环境采用 `--system-site-packages` 复用 Tang 已安装的 CUDA PyTorch，避免重复下载另一套大型 PyTorch/CUDA 运行时。
+
 ```bash
+python3 -m venv --system-site-packages .venv-gpu
+source .venv-gpu/bin/activate
 pip install -e ".[dev,model]"
 bash scripts/run_base_eval.sh
 ```
@@ -105,7 +111,27 @@ bash scripts/run_base_eval.sh
 - Docker bind mount 仍为只读；
 - 容器仍保持无网络、只读根文件系统、丢弃 capabilities 和进程/内存限制。
 
-该修复待下一次 Tang Docker 冒烟验证。
+修复后 Docker 冒烟重新得到与本地执行完全一致的结果：
+
+- Pass@1 = 0.5；
+- Pass@2 = 1.0；
+- 三个任务均为 2 个候选中 1 个完全通过隐藏测试。
+
+### 问题 3：系统旧版 Pillow 与新 Transformers 冲突
+
+为复用系统 PyTorch，GPU 虚拟环境使用了 `--system-site-packages`。第一次安装模型依赖后，Transformers 在导入图像工具模块时访问系统旧版 Pillow，报错：
+
+`AttributeError: module 'PIL.Image' has no attribute 'Resampling'`
+
+随后 PEFT 因 Transformers 导入链失败而无法导入。
+
+修复策略：
+
+- 在 `model` 可选依赖中显式加入 `Pillow>=10.0`；
+- 让虚拟环境内的新 Pillow 覆盖系统旧版 Pillow；
+- 继续保留系统 CUDA PyTorch，避免重复安装大体积 GPU 运行时。
+
+该修复待 Tang 重新安装依赖验证。
 
 ## 必须记录
 
@@ -132,7 +158,7 @@ bash scripts/run_base_eval.sh
 
 - [ ] GitHub CI 单元测试通过；
 - [x] Tang 基础环境核验；
-- [ ] Docker 安全执行可用；
+- [x] Docker 隔离执行可用；
 - [ ] 0.6B 基础模型可完成多样本生成；
 - [ ] Pass@k 结果可复现；
 - [x] 首轮环境与失败信息写回本文件；
