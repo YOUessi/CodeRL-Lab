@@ -5,6 +5,12 @@ MODEL="${MODEL:-Qwen/Qwen3-0.6B-Base}"
 TASKS="${TASKS:-benchmarks/sample_tasks.jsonl}"
 PREDICTIONS="${PREDICTIONS:-artifacts/exp001/predictions.jsonl}"
 OUTPUT="${OUTPUT:-results/exp001-base}"
+DOCKER_IMAGE="${DOCKER_IMAGE:-python:3.11-slim}"
+
+if ! docker image inspect "$DOCKER_IMAGE" >/dev/null 2>&1; then
+  echo "Preparing Docker execution image: $DOCKER_IMAGE"
+  docker pull "$DOCKER_IMAGE"
+fi
 
 python -m coderl_lab.generation \
   --tasks "$TASKS" \
