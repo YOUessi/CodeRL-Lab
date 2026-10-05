@@ -7,9 +7,13 @@ import random
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from coderl_lab.schema import CodeTask
+
+
+DEFAULT_APPS_REPOSITORY = "codeparrot/apps"
+DEFAULT_APPS_REVISION = "21e74ddf8de1a21436da12e3e653065c5213e9d1"
 
 
 class AppsAdapterError(ValueError):
@@ -105,11 +109,12 @@ def convert_apps_row(
     row: dict[str, Any],
     *,
     split: str,
+    source_revision: str = DEFAULT_APPS_REVISION,
     config: AppsAdapterConfig = AppsAdapterConfig(),
 ) -> dict[str, Any]:
     """把一条 APPS 原始记录转换为 CodeRL-Lab JSON 任务。"""
 
-    problem_id = row.get("problem_id")
+    problem_id = row.get("problem_id", row.get("id"))
     question = row.get("question")
     if problem_id is None:
         raise AppsAdapterError("missing_problem_id")
@@ -198,7 +203,8 @@ def convert_apps_row(
         "reference_solutions": solutions,
         "metadata": {
             "source": "APPS",
-            "source_dataset": "codeparrot/apps",
+            "source_dataset": DEFAULT_APPS_REPOSITORY,
+            "source_revision": source_revision,
             "source_split": split,
             "source_problem_id": str(problem_id),
             "difficulty": row.get("difficulty"),
@@ -218,25 +224,67 @@ def convert_apps_row(
     return task
 
 
-def convert_apps_dataset(
+def _iter_apps_jsonl(path: Path) -> Iterator[dict[str, Any]]:
+    with path.open("r", encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle, 1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise RuntimeError(
+                    f"invalid APPS JSONL at line {line_number}"
+                ) from exc
+            if not isinstance(row, dict):
+                raise RuntimeError(
+                    f"APPS line {line_number} is not a JSON object"
+                )
+            yield row
+
+
+def _download_apps_jsonl(
     *,
+    repository: str,
+    revision: str,
     split: str,
-    output_path: Path,
-    report_path: Path,
-    dataset_name: str = "codeparrot/apps",
-    limit: int | None = None,
-    difficulty: str | None = None,
-    config: AppsAdapterConfig = AppsAdapterConfig(),
-) -> dict[str, Any]:
+) -> Path:
+    if split not in {"train", "test"}:
+        raise ValueError("APPS split must be 'train' or 'test'")
+
     try:
-        from datasets import load_dataset
+        from huggingface_hub import hf_hub_download
     except ImportError as exc:
         raise RuntimeError(
             "dataset dependencies are missing; install with "
             "pip install -e '.[data]'"
         ) from exc
 
-    dataset = load_dataset(dataset_name, split=split)
+    path = hf_hub_download(
+        repo_id=repository,
+        filename=f"{split}.jsonl",
+        repo_type="dataset",
+        revision=revision,
+    )
+    return Path(path)
+
+
+def convert_apps_dataset(
+    *,
+    split: str,
+    output_path: Path,
+    report_path: Path,
+    repository: str = DEFAULT_APPS_REPOSITORY,
+    revision: str = DEFAULT_APPS_REVISION,
+    limit: int | None = None,
+    difficulty: str | None = None,
+    config: AppsAdapterConfig = AppsAdapterConfig(),
+) -> dict[str, Any]:
+    raw_path = _download_apps_jsonl(
+        repository=repository,
+        revision=revision,
+        split=split,
+    )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -244,11 +292,12 @@ def convert_apps_dataset(
     skipped: Counter[str] = Counter()
     modes: Counter[str] = Counter()
     difficulties: Counter[str] = Counter()
+    test_counts: Counter[str] = Counter()
     seen = 0
     converted = 0
 
     with output_path.open("w", encoding="utf-8") as handle:
-        for row in dataset:
+        for row in _iter_apps_jsonl(raw_path):
             seen += 1
 
             row_difficulty = row.get("difficulty")
@@ -258,8 +307,9 @@ def convert_apps_dataset(
 
             try:
                 task = convert_apps_row(
-                    dict(row),
+                    row,
                     split=split,
+                    source_revision=revision,
                     config=config,
                 )
             except AppsAdapterError as exc:
@@ -270,12 +320,23 @@ def convert_apps_dataset(
             converted += 1
             modes[task["task_mode"]] += 1
             difficulties[str(task["metadata"].get("difficulty"))] += 1
+            count = int(task["metadata"]["original_test_count"])
+            if count < 6:
+                bucket = "4-5"
+            elif count < 10:
+                bucket = "6-9"
+            elif count < 20:
+                bucket = "10-19"
+            else:
+                bucket = "20+"
+            test_counts[bucket] += 1
 
             if limit is not None and converted >= limit:
                 break
 
     report = {
-        "source_dataset": dataset_name,
+        "source_dataset": repository,
+        "source_revision": revision,
         "source_split": split,
         "seed": config.seed,
         "min_tests": config.min_tests,
@@ -287,6 +348,7 @@ def convert_apps_dataset(
         "skip_reasons": dict(sorted(skipped.items())),
         "task_modes": dict(sorted(modes.items())),
         "difficulties": dict(sorted(difficulties.items())),
+        "original_test_count_buckets": dict(sorted(test_counts.items())),
     }
 
     report_path.write_text(
@@ -299,7 +361,8 @@ def convert_apps_dataset(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Convert APPS to CodeRL-Lab")
-    parser.add_argument("--dataset", default="codeparrot/apps")
+    parser.add_argument("--repository", default=DEFAULT_APPS_REPOSITORY)
+    parser.add_argument("--revision", default=DEFAULT_APPS_REVISION)
     parser.add_argument("--split", default="train")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
@@ -313,7 +376,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     convert_apps_dataset(
-        dataset_name=args.dataset,
+        repository=args.repository,
+        revision=args.revision,
         split=args.split,
         output_path=args.output,
         report_path=args.report,
