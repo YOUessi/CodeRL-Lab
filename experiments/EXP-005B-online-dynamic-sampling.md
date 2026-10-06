@@ -381,3 +381,83 @@ validation 仍无显著提升
 - EXP-004：过程级可验证奖励 / 信用分配；
 - 或更强模型 1.7B 复现实验，检查 0.6B 是否成为能力瓶颈；
 - 再之后才考虑 005B-v2 的 batch 内 drop+refill。
+
+
+## 4-step GPU 冒烟结果
+
+代码提交：
+
+`32c208985668ee2b63517dd941fbf5ea90002af2`
+
+设置：
+
+- 32 个任务；
+- 4 optimizer steps；
+- 每步 2 个 prompt groups；
+- 每组 4 completions；
+- 实际 rollout groups：8；
+- 实际 RL completions：32。
+
+结果：
+
+| 指标 | 数值 |
+|---|---:|
+| train runtime | 11.50 s |
+| reward mean | 0.4375 |
+| mean frac_reward_zero_std | 50.0% |
+| zero-grad steps | 1 / 4 |
+| zero-grad fraction | 25.0% |
+| peak allocated | 2,032,813,056 bytes |
+| peak reserved | 3,118,465,024 bytes |
+
+在线状态：
+
+```text
+num_tasks = 32
+status_counts:
+  unknown = 26
+  mixed   = 2
+  flat    = 4
+
+groups_observed = 8
+mixed_groups_observed = 4
+flat_groups_observed = 4
+observed_mixed_fraction = 0.5
+
+selection_events = 10
+prefetched_unobserved_group_selections = 2
+exploit_selections = 3
+explore_selections = 7
+unique_selected_tasks = 7
+unique_observed_tasks = 6
+```
+
+状态转移：
+
+```text
+unknown -> mixed : 3
+unknown -> flat  : 3
+mixed   -> mixed : 1
+mixed   -> flat  : 1
+```
+
+这验证了三点：
+
+1. sampler 会根据刚产生的 reward 实时改变任务状态；
+2. mixed task 后续可以转成 flat，并退出 exploit pool；
+3. TRL sampler 存在预取，因此“选择事件数”不能当作真实 rollout budget，项目现在单独记录 `actual_rollout_groups` / `actual_rollout_completions`。
+
+### Smoke 结论
+
+005B-v1 的核心机制已经闭环：
+
+```text
+sampler 选任务
+→ 生成 4 completions
+→ 公共测试 reward
+→ mixed/flat 在线更新
+→ 下一轮 sampler 使用新状态
+→ GRPO 更新
+```
+
+可以进入完整 187-step 匹配预算实验。
