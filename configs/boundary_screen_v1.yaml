@@ -1,0 +1,36 @@
+experiment:
+  id: EXP-005A
+  name: sft-policy-offline-boundary-screen
+
+model:
+  name_or_path: Qwen/Qwen3-0.6B-Base
+  revision: da87bfb608c14b7cf20ba1ce41287e8de496c0cd
+
+policy:
+  adapter: artifacts/exp002/sft-qwen3-0.6b-lora
+  expected_sha256: 7fcb2b0ca7608be980fb4cbae5158241886ac67f3cc2f5b855cf34531c5982f7
+
+data:
+  tasks: data/generated/mbpp-v1/train_tasks.jsonl
+
+generation:
+  num_samples_per_task: 4
+  max_new_tokens: 256
+  temperature: 0.8
+  top_p: 0.95
+  seed: 42
+
+reward:
+  source: public_tests_only
+  executor: docker
+  timeout_seconds: 5
+  memory_limit: 512m
+  max_workers: 4
+
+selection:
+  rule: reward_spread_gt_zero
+  selected_category: mixed
+
+budget_accounting:
+  screening_completions: 1496
+  note: "Screening cost is reported separately and is not hidden inside the matched RL budget."
