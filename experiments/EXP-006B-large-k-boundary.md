@@ -3,7 +3,7 @@
 ## 状态
 
 **设计：完成。**  
-**16-sample GPU smoke：待运行。**  
+**16-sample GPU smoke：已通过。**  
 **90题 × 16 正式采样：待运行。**
 
 ## 研究动机
@@ -136,3 +136,35 @@ validation 前 2 题：
 MBPP 是公开老基准，EXP-006B 只能研究**同一基础模型后训练前后的相对支持变化**。
 
 最终无污染能力边界结论仍需要 LiveCodeBench / 更近期任务。
+
+
+## 16-sample GPU smoke 结果
+
+代码提交：
+
+`6ecc3ad42dd72dc7135ca054368857d24f999e28`
+
+validation 前 2 题，三条 policy 各 16 samples。
+
+### 显存
+
+| Policy | peak allocated | peak reserved |
+|---|---:|---:|
+| Base | 4,662,031,360 | **5,937,037,312** |
+| SFT | 4,046,539,776 | 4,221,566,976 |
+| GRPO | 4,003,616,768 | 4,190,109,696 |
+
+16-return generation 在 Tang 16GB 上稳定，无需分块。
+
+### Smoke 功能验证
+
+- sample_id 0..15 正常；
+- Base/SFT/GRPO 都完成 32 个候选；
+- Pass@1/4/8/16 正常计算；
+- 支持集分析器正常输出保留/新增/恢复任务；
+- Docker 隐藏测试正常；
+- 无 OOM。
+
+2 题 smoke 的数值不用于科研结论，只作为工程门槛。
+
+因此 EXP-006B 进入完整 90题 × 16 候选实验。
