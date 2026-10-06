@@ -1,5 +1,6 @@
 from coderl_lab.sampling.boundary import (
     classify_reward_group,
+    select_random_control_ids,
     strip_hidden_for_training,
 )
 
@@ -52,3 +53,12 @@ def test_boundary_training_row_strips_hidden_tests() -> None:
     assert "public_tests" in row
     assert "hidden_tests" not in row
     assert row["metadata"]["boundary_selected"] is True
+
+
+def test_random_control_selection_is_deterministic_and_unique() -> None:
+    ids = [f"task-{i}" for i in range(20)]
+    a = select_random_control_ids(ids, 7, seed=42)
+    b = select_random_control_ids(ids, 7, seed=42)
+    assert a == b
+    assert len(a) == 7
+    assert len(set(a)) == 7
