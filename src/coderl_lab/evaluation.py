@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -54,58 +55,84 @@ def load_predictions(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _evaluate_one(
+    *,
+    tasks: dict[str, CodeTask],
+    row: dict[str, Any],
+    executor: PythonExecutor,
+) -> dict[str, Any]:
+    task_id = str(row["task_id"])
+    if task_id not in tasks:
+        raise KeyError(f"prediction refers to unknown task_id: {task_id}")
+    task = tasks[task_id]
+    completion = str(row["completion"])
+
+    public_report = executor.run(
+        completion,
+        entry_point=task.entry_point,
+        cases=task.public_tests,
+        setup_code=task.setup_code,
+    )
+    hidden_report = executor.run(
+        completion,
+        entry_point=task.entry_point,
+        cases=task.hidden_tests,
+        setup_code=task.setup_code,
+    )
+
+    training_reward = compute_training_reward(
+        syntax_ok=public_report.syntax_ok,
+        public_pass_rate=public_report.pass_rate,
+    )
+    hidden_correct = hidden_report.syntax_ok and hidden_report.pass_rate == 1.0
+
+    return {
+        "task_id": task_id,
+        "sample_id": int(row["sample_id"]),
+        "training_reward": {
+            "syntax": training_reward.syntax,
+            "public_pass_rate": training_reward.public_pass_rate,
+            "all_public_pass_bonus": training_reward.all_public_pass_bonus,
+            "total": training_reward.total,
+        },
+        "public": report_to_dict(public_report),
+        "hidden": report_to_dict(hidden_report),
+        "hidden_all_pass": hidden_correct,
+    }
+
+
 def evaluate_predictions(
     *,
     tasks: dict[str, CodeTask],
     predictions: list[dict[str, Any]],
     executor: PythonExecutor,
     ks: tuple[int, ...],
+    max_workers: int = 1,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    detailed: list[dict[str, Any]] = []
+    if max_workers <= 0:
+        raise ValueError("max_workers must be positive")
+
+    if max_workers == 1:
+        detailed = [
+            _evaluate_one(tasks=tasks, row=row, executor=executor)
+            for row in predictions
+        ]
+    else:
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            detailed = list(
+                pool.map(
+                    lambda row: _evaluate_one(
+                        tasks=tasks,
+                        row=row,
+                        executor=executor,
+                    ),
+                    predictions,
+                )
+            )
+
     hidden_counts: dict[str, list[bool]] = defaultdict(list)
-
-    for row in predictions:
-        task_id = str(row["task_id"])
-        if task_id not in tasks:
-            raise KeyError(f"prediction refers to unknown task_id: {task_id}")
-        task = tasks[task_id]
-        completion = str(row["completion"])
-
-        public_report = executor.run(
-            completion,
-            entry_point=task.entry_point,
-            cases=task.public_tests,
-            setup_code=task.setup_code,
-        )
-        hidden_report = executor.run(
-            completion,
-            entry_point=task.entry_point,
-            cases=task.hidden_tests,
-            setup_code=task.setup_code,
-        )
-
-        training_reward = compute_training_reward(
-            syntax_ok=public_report.syntax_ok,
-            public_pass_rate=public_report.pass_rate,
-        )
-        hidden_correct = hidden_report.syntax_ok and hidden_report.pass_rate == 1.0
-        hidden_counts[task_id].append(hidden_correct)
-
-        detailed.append(
-            {
-                "task_id": task_id,
-                "sample_id": int(row["sample_id"]),
-                "training_reward": {
-                    "syntax": training_reward.syntax,
-                    "public_pass_rate": training_reward.public_pass_rate,
-                    "all_public_pass_bonus": training_reward.all_public_pass_bonus,
-                    "total": training_reward.total,
-                },
-                "public": report_to_dict(public_report),
-                "hidden": report_to_dict(hidden_report),
-                "hidden_all_pass": hidden_correct,
-            }
-        )
+    for row in detailed:
+        hidden_counts[row["task_id"]].append(bool(row["hidden_all_pass"]))
 
     pass_at_k: dict[str, float] = {}
     task_counts = [
@@ -159,6 +186,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timeout", type=float, default=3.0)
     parser.add_argument("--memory", default="512m")
     parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=1,
+        help="Parallel candidate evaluations. Default 1 preserves legacy behavior.",
+    )
+    parser.add_argument(
         "--allow-unsafe-local",
         action="store_true",
         help="Only for trusted fixtures. Never use for model-generated code.",
@@ -182,6 +215,7 @@ def main() -> None:
         predictions=predictions,
         executor=executor,
         ks=tuple(args.k),
+        max_workers=args.max_workers,
     )
     write_outputs(args.output, details, summary)
     print(json.dumps(summary, ensure_ascii=False, indent=2))
