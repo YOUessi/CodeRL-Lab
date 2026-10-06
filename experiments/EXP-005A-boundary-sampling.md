@@ -105,6 +105,30 @@ r1, r2, r3, r4
 
 不能把 005A 直接宣传成端到端更省算力。
 
+## 同大小随机子集控制
+
+为了排除“边界子集更小、所以同样 187 步会重复更多题”这一混杂因素，005A 增加第二个控制臂：
+
+### 随机子集重复 GRPO
+
+筛选得到 mixed task 数量为 M 后：
+
+- 从全部 374 个 train task 中用 seed=42 随机抽取 M 个；
+- 同样移除 hidden tests；
+- 同样训练 187 optimizer steps；
+- 同样 1496 个 RL completions；
+- 同样从 EXP-002 SFT adapter 初始化。
+
+于是正式对照变成：
+
+```text
+A. EXP-003：374题全量，每题大体一次
+B. EXP-005A-Control：随机 M 题，重复到 187 steps
+C. EXP-005A-Boundary：边界 M 题，重复到 187 steps
+```
+
+B vs C 才是判断“边界选择本身”是否有效的核心对照。
+
 ## 保持不变的变量
 
 - Base model revision；
@@ -127,6 +151,33 @@ r1, r2, r3, r4
 vs
 SFT-policy 边界 prompt 分配
 ```
+
+## 三组预算
+
+### A. EXP-003 全量随机
+
+- unique tasks：374
+- optimizer steps：187
+- RL prompt groups：374
+- RL completions：1496
+
+### B. 同大小随机子集
+
+- unique tasks：M
+- optimizer steps：187
+- RL prompt groups：374
+- RL completions：1496
+
+### C. 边界子集
+
+- unique tasks：M
+- optimizer steps：187
+- RL prompt groups：374
+- RL completions：1496
+
+B/C 的任务重复频率相同，只改变“随机选还是边界选”。
+
+边界筛选额外 1496 completions 单独计入总成本。
 
 ## 主要指标
 
