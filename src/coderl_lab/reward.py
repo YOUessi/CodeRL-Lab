@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import builtins
+import symtable
 from dataclasses import dataclass
 from typing import Any, Iterable
 
@@ -98,42 +99,27 @@ def _module_defined_names(tree: ast.Module) -> set[str]:
     return names
 
 
-def _function_local_names(fn: ast.AST) -> set[str]:
+def _referenced_global_names(table) -> set[str]:
+    """Collect names that Python resolves through the module/global scope.
+
+    Python's symbol table already understands nested functions, lambdas,
+    comprehensions, recursion and free variables. That is exactly what the
+    earlier AST-only implementation was missing.
+    """
     names: set[str] = set()
-
-    args = getattr(fn, "args", None)
-    if args is not None:
-        for arg in (
-            list(args.posonlyargs)
-            + list(args.args)
-            + list(args.kwonlyargs)
-        ):
-            names.add(arg.arg)
-        if args.vararg is not None:
-            names.add(args.vararg.arg)
-        if args.kwarg is not None:
-            names.add(args.kwarg.arg)
-
-    for node in ast.walk(fn):
-        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
-            names.add(node.id)
-        elif isinstance(node, (ast.Import, ast.ImportFrom)):
-            for alias in node.names:
-                if isinstance(node, ast.Import):
-                    names.add(alias.asname or alias.name.split(".")[0])
-                else:
-                    names.add(alias.asname or alias.name)
-        elif isinstance(node, ast.ExceptHandler) and isinstance(node.name, str):
-            names.add(node.name)
+    for symbol in table.get_symbols():
+        if symbol.is_referenced() and symbol.is_global():
+            names.add(symbol.get_name())
+    for child in table.get_children():
+        names.update(_referenced_global_names(child))
     return names
 
 
-def _function_loaded_names(fn: ast.AST) -> set[str]:
-    return {
-        node.id
-        for node in ast.walk(fn)
-        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
-    }
+def _find_function_symbol_table(module_table, entry_point: str):
+    for child in module_table.get_children():
+        if child.get_name() == entry_point and child.get_type() == "function":
+            return child
+    return None
 
 
 def analyze_dependency_completeness(
@@ -142,17 +128,37 @@ def analyze_dependency_completeness(
     entry_point: str,
     setup_code: str = "",
 ) -> DependencyAnalysis:
-    """Find obvious unresolved runtime names in the target function.
+    """Find unresolved module/global names reachable from the target function.
 
-    This is deliberately conservative and fully static. It treats builtins,
-    module-level imports/definitions and setup-code definitions as available.
-    It does not use hidden tests and never executes the candidate.
+    The analysis is static and never uses hidden tests. Unlike a naive AST walk,
+    Python's symbol table correctly models nested scopes. Lambda/comprehension
+    variables, nested helper arguments and recursive nested functions therefore
+    do not become false "missing dependencies".
+
+    A name is considered available when it is:
+    - a Python builtin;
+    - defined/imported at candidate module scope;
+    - defined/imported by benchmark setup_code.
     """
     try:
         tree = ast.parse(code)
+        module_table = symtable.symtable(code, "<candidate>", "exec")
     except SyntaxError:
         return DependencyAnalysis(
             syntax_ok=False,
+            entry_point_found=False,
+            unresolved_names=(),
+        )
+
+    target_exists = any(
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name == entry_point
+        for node in tree.body
+    )
+    target_table = _find_function_symbol_table(module_table, entry_point)
+    if not target_exists or target_table is None:
+        return DependencyAnalysis(
+            syntax_ok=True,
             entry_point_found=False,
             unresolved_names=(),
         )
@@ -165,29 +171,14 @@ def analyze_dependency_completeness(
             setup_tree = ast.Module(body=[], type_ignores=[])
         setup_names = _module_defined_names(setup_tree)
 
-    target: ast.AST | None = None
-    for node in tree.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            if node.name == entry_point:
-                target = node
-                break
-
-    if target is None:
-        return DependencyAnalysis(
-            syntax_ok=True,
-            entry_point_found=False,
-            unresolved_names=(),
-        )
-
     available = (
         set(dir(builtins))
         | _module_defined_names(tree)
         | setup_names
-        | _function_local_names(target)
     )
-    unresolved = tuple(
-        sorted(_function_loaded_names(target) - available)
-    )
+    referenced_globals = _referenced_global_names(target_table)
+    unresolved = tuple(sorted(referenced_globals - available))
+
     return DependencyAnalysis(
         syntax_ok=True,
         entry_point_found=True,
