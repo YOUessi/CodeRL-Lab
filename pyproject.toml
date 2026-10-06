@@ -16,14 +16,20 @@ dependencies = [
 dev = [
   "pytest>=8.0",
 ]
+data = [
+  "datasets>=3.0",
+]
 model = [
   "torch",
   "transformers",
   "accelerate",
-  "datasets",
+  "datasets>=3.0",
   "trl",
   "peft",
   "Pillow>=10.0",
+]
+benchmark = [
+  "evalplus>=0.2.1",
 ]
 
 [tool.setuptools.packages.find]

@@ -75,11 +75,13 @@ def evaluate_predictions(
             completion,
             entry_point=task.entry_point,
             cases=task.public_tests,
+            setup_code=task.setup_code,
         )
         hidden_report = executor.run(
             completion,
             entry_point=task.entry_point,
             cases=task.hidden_tests,
+            setup_code=task.setup_code,
         )
 
         training_reward = compute_training_reward(

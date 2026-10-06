@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "dataset_id": "google-research-datasets/mbpp",
+  "dataset_config": "full",
+  "requested_revision": "4bb6404fdc6cacfda99d4ac4205087b89d32030c",
+  "resolved_dataset_sha": "4bb6404fdc6cacfda99d4ac4205087b89d32030c",
+  "expected_split_sizes": {
+    "train": 374,
+    "validation": 90,
+    "test": 500,
+    "prompt": 10
+  },
+  "split_fingerprints": {
+    "train": "5cdc16311fd8e220",
+    "validation": "8f9deacfc72ae133",
+    "test": "44206dd27b0bf01d"
+  },
+  "train_public_tests": 2,
+  "eval_public_tests": 1,
+  "limit": null,
+  "artifacts": {
+    "train_tasks": {
+      "path": "train_tasks.jsonl",
+      "rows": 374,
+      "sha256": "52f92e7d9e38c91fa25c283dcea53a507f3ea0983d6d82b9c3f91fa2a72ce689"
+    },
+    "train_sft": {
+      "path": "train_sft.jsonl",
+      "rows": 374,
+      "sha256": "0b1fc1a0a09b32e49b38c87caf29b223a761d8b184ebc62ebfb5282b35962d69"
+    },
+    "validation_tasks": {
+      "path": "validation_tasks.jsonl",
+      "rows": 90,
+      "sha256": "5317393d970c5d009d726b184b6ac737715d692fadb9f0fb9571972e4307b751"
+    },
+    "test_tasks": {
+      "path": "test_tasks.jsonl",
+      "rows": 500,
+      "sha256": "04d992f8b1519e8457ef985e605ab832078283f79dd181fd0a3e2d219c4a148c"
+    }
+  }
+}
