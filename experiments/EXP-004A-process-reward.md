@@ -166,3 +166,35 @@ GRPO：hidden-correct dependency complete 100%，hidden-incorrect 77.07%；hidde
 Smoke adapter SHA-256：f4c2cffe61afa93653a3c102c8c1b430438fecebf40dc54db27eccbe35064a47。
 
 结论：GPU smoke 通过，可以进入与 EXP-006A 纯 GRPO 完全同预算的 187-step 正式训练。
+
+## 离线奖励方差审计结果
+
+固定 1.7B SFT policy，对 374 个 train task 各采样 4 次，共 1496 completions。
+同一批 completions 同时计算旧 outcome reward 和新 execution-stage reward。
+
+结果：
+
+- outcome flat tasks：208 / 374 = 55.61%；
+- process flat tasks：161 / 374 = 43.05%；
+- flat 比例下降：12.57 个百分点；
+- outcome-flat 被过程奖励救活：47 / 208 = 22.60%；
+- rescued zero-public tasks：47；
+- outcome-mixed 被压成 process-flat：0；
+- overall dependency complete：81.15%；
+- overall runtime clean：74.13%。
+
+47 个被救活的 flat group 中：
+
+- dependency variation：28；
+- runtime variation：47；
+- runtime-only：19；
+- dependency + runtime：28；
+- syntax variation：0。
+
+预注册门槛判定：
+
+- flat 比例下降至少 10 个百分点：通过（12.57）；
+- 或救活至少 20% outcome-flat：通过（22.60%）；
+- mixed→flat 不超过 5%：通过（0%）。
+
+因此 EXP-004A 允许进入 2-step GPU smoke。
