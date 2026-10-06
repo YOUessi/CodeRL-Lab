@@ -4,7 +4,7 @@
 
 **设计：完成。**  
 **代码：第一版完成。**  
-**GPU 冒烟：待运行。**  
+**GPU 冒烟：已通过。**  
 **正式实验：待运行。**
 
 ## 来自 EXP-005A 的问题
@@ -144,3 +144,67 @@ TRL 1.14.1 的 GRPO 内部把：
 - 更合理的 exploit_fraction；
 - group 内 drop+refill；
 - 或 reward / process supervision，而不是继续单纯采样。
+
+
+## GPU 冒烟结果
+
+代码提交：
+
+`32c208985668ee2b63517dd941fbf5ea90002af2`
+
+设置：
+
+- train tasks：32；
+- max steps：4；
+- num_generations：4；
+- generation batch：2 prompt groups；
+- exploit_fraction：0.5；
+- 无离线 screening。
+
+结果：
+
+| 指标 | 数值 |
+|---|---:|
+| train runtime | 11.50 s |
+| zero-grad steps | 1 / 4 |
+| mean frac_reward_zero_std | 0.50 |
+| peak allocated | 2,032,813,056 bytes |
+| peak reserved | 3,118,465,024 bytes |
+| actual rollout groups | 8 |
+| actual rollout completions | 32 |
+| total sampler selections | 10 |
+| prefetched but unobserved groups | 2 |
+| exploit selections | 3 |
+| explore selections | 7 |
+| unique selected tasks | 7 |
+| unique observed tasks | 6 |
+
+在线状态在 4 步中实际观察到：
+
+- mixed groups：4；
+- flat groups：4；
+- observed mixed fraction：0.5。
+
+状态转移：
+
+```text
+unknown -> mixed : 3
+unknown -> flat  : 3
+mixed   -> mixed : 1
+mixed   -> flat  : 1
+```
+
+这验证了 005B 的核心假设：
+
+> boundary 是 current-policy-dependent 状态，而不是静态 task 属性。
+
+特别是 `mixed -> flat` 已在极小冒烟中出现，说明 exploit pool 会真实动态变化。
+
+另外 sampler 会因 DataLoader/Trainer 预取产生尚未实际 rollout 的 selection。当前实现已分别记录：
+
+- total group selections；
+- groups observed；
+- prefetched unobserved selections；
+- actual rollout groups / completions。
+
+因此正式实验的 raw RL budget 以后以**实际 observed rollout**为准，不用 sampler 预取数冒充计算预算。
