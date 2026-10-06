@@ -3,7 +3,7 @@
 ## 状态
 
 **代码实现：第一版完成。**  
-**SFT 策略全训练集筛选：待运行。**  
+**SFT 策略全训练集筛选：已完成。**  
 **匹配预算 GRPO：待运行。**
 
 ## 为什么现在做这个实验
@@ -211,3 +211,59 @@ B/C 的任务重复频率相同，只改变“随机选还是边界选”。
 4. 为后续在线动态采样提供明确数据依据。
 
 若只减少 zero-grad、但最终性能不变，也仍是有价值的负结果。
+
+
+## SFT 策略全训练集筛选结果
+
+筛选代码提交：
+
+`8650cb38104c90171dae253fc3c92e3e4a42ea7f`
+
+固定 SFT policy 对全部 374 个 train task 各采样 4 个候选，共：
+
+```text
+374 × 4 = 1496 completions
+```
+
+筛选结果：
+
+| 类别 | 任务数 | 占比 |
+|---|---:|---:|
+| mixed | **181** | **48.40%** |
+| flat_test_fail | 132 | 35.29% |
+| flat_all_pass | 59 | 15.78% |
+| flat_partial | 2 | 0.53% |
+| 合计 | 374 | 100% |
+
+因此：
+
+- 边界训练集大小 M = **181**；
+- 同大小随机控制集也固定为 **181**；
+- 两组正式 GRPO 都仍跑 187 optimizer steps；
+- 两组正式 RL rollout budget 都是 1496 completions；
+- 边界筛选额外产生的 1496 completions 单独计费。
+
+筛选文件哈希：
+
+- 原 train tasks：`52f92e7d9e38c91fa25c283dcea53a507f3ea0983d6d82b9c3f91fa2a72ce689`
+- predictions：`9d014c1574df072cb9f2177d6c37b91758b7fcc4375b2fbc2c0620aa4e56b75d`
+- screening：`54042d35efad2d8c6232e5e33a886a5a40a8408d755bd495a5a2fcb8c76b7e06`
+- boundary tasks：`27dd268487c219413ec2966595704bc6d84ed62e953645d4c2c0f974e21d2e7f`
+- random control tasks：`13ca896810d9ccc82d437eae9dc95d41b0a2ac76077265bcfa0433275a01b559`
+
+跨 374 题的平均 reward：0.4419。  
+平均 reward spread：0.3636。
+
+### 与 EXP-003 的直接对应
+
+EXP-003 在线训练中：
+
+`mean frac_reward_zero_std = 52.14%`
+
+离线 SFT 筛选中非 mixed 比例：
+
+```text
+(132 + 59 + 2) / 374 = 51.60%
+```
+
+两者非常接近，说明 EXP-003 中大量零组内方差信号不是偶然 batch 现象，而是训练题在当前 policy 下的系统性难度分层。
