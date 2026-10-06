@@ -575,6 +575,15 @@ def run_grpo(
                 "enabled": True,
                 "config": online_cfg,
                 "state_summary": online_state.summary(),
+                "actual_rollout_groups": online_state.groups_observed,
+                "actual_rollout_completions": (
+                    online_state.groups_observed * num_generations
+                ),
+                "prefetched_unobserved_group_selections": max(
+                    0,
+                    len(online_state.selection_events)
+                    - online_state.groups_observed,
+                ),
             }
             if online_state is not None
             else {"enabled": False}
