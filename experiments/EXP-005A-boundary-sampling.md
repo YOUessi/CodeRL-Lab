@@ -4,7 +4,7 @@
 
 **代码实现：第一版完成。**  
 **SFT 策略全训练集筛选：已完成。**  
-**匹配预算 GRPO：随机控制臂已完成；boundary 臂待运行。**
+**匹配预算 GRPO：随机控制臂与 boundary 臂均已完成。**
 
 ## 为什么现在做这个实验
 
@@ -337,3 +337,183 @@ EXP-003：
 > **缩小为 181 题并重复训练本身没有减少无效更新，反而略差。**
 
 这排除了一个重要替代解释：如果 boundary 臂后续 zero-std 明显下降，不能简单归因于“子集更小、重复更多”。
+
+
+## C 组：离线 boundary 子集 GRPO 结果
+
+训练集：181 个离线筛选 mixed 任务，初始 SFT policy 下 181 / 181 都有组内奖励差异。
+
+训练预算与随机控制完全一致：
+
+- optimizer steps：187；
+- RL prompt groups：374；
+- RL completions：1496；
+- 初始化：同一 EXP-002 SFT adapter；
+- 相同 reward / learning rate / batch / seed。
+
+结果：
+
+| 指标 | Random subset | Boundary subset |
+|---|---:|---:|
+| train runtime | 712.79 s | **702.26 s** |
+| mean reward | 0.4510 | **0.5112** |
+| mean public reward | 0.3941 | **0.4639** |
+| mean entropy | 0.2802 | 0.2695 |
+| mean frac_reward_zero_std | 54.01% | **33.16%** |
+| zero-grad steps | 56 / 187 | **22 / 187** |
+| zero-grad fraction | 29.95% | **11.76%** |
+| effective optimizer steps | 131 | **165** |
+| RL completions / effective step | 11.42 | **9.07** |
+
+Boundary adapter SHA-256：
+
+`5087a832e6659374fa4a08525638dc265d0447a6a6a3301e74f786a1bba26d48`
+
+### 训练效率结论
+
+相对同大小随机控制：
+
+- zero-std group 平均比例：**-20.86 个百分点**；
+- zero-grad fraction：**-18.18 个百分点**；
+- 有效更新：**+34 步**；
+- 每个有效更新需要的 RL completions：**-2.35**；
+- 约减少 **20.6%** 的 rollout / effective-update 成本。
+
+因此：
+
+> **静态边界选题确实能够显著提高纯 GRPO 的训练信号利用率。**
+
+但 005A 需要额外 1496 个 screening completions，所以这是“RL 阶段效率提升”，**不是端到端总成本下降**。
+
+## 90 题 validation：A/B/C 最终对照
+
+| 指标 | A 全量随机 | B 同大小随机 | C Boundary |
+|---|---:|---:|---:|
+| Pass@1 | 27.22% | **28.89%** | 26.94% |
+| Pass@4 | 42.22% | **44.44%** | **44.44%** |
+| hidden mean pass rate | 29.86% | **31.81%** | 30.28% |
+| solved tasks | 38 / 90 | **40 / 90** | **40 / 90** |
+| 4/4 全正确任务 | **12** | 10 | 10 |
+| 语法失败 | 0 | 0 | 0 |
+
+### Boundary vs 同大小随机控制
+
+- Pass@1：-1.94 个百分点；
+- Pass@4：0；
+- hidden mean：-1.53 个百分点；
+- solved tasks：0。
+
+所以 boundary 的训练效率优势**没有转化成更高的 validation 表现**。
+
+## 配对 Bootstrap
+
+使用 90 个相同 validation task 做 20,000 次按题配对 bootstrap。
+
+### Boundary - Random subset
+
+Pass@1：
+
+- observed delta：**-1.94 个百分点**
+- 95% CI：**[-5.00, +0.83] 个百分点**
+- bootstrap P(delta > 0)：0.0763
+
+Pass@4 / solved-task rate：
+
+- observed delta：0
+- 95% CI：**[-5.56, +5.56] 个百分点**
+
+因此不能声称 boundary 在 validation 上显著优于或劣于同大小随机控制。
+
+### Boundary - EXP-003 full random
+
+Pass@1：
+
+- observed delta：-0.28 个百分点
+- 95% CI：[-2.22, +1.67] 个百分点
+
+Pass@4：
+
+- observed delta：+2.22 个百分点
+- 95% CI：[-3.33, +7.78] 个百分点
+
+同样没有足够证据说明 validation 性能发生可靠提升。
+
+## 005A 最终结论
+
+005A 得到两个同时成立、但必须分开的结论：
+
+### 1. 训练效率：明确正结果
+
+离线 boundary selection 把：
+
+```text
+zero-grad fraction
+29.95% → 11.76%
+```
+
+并把：
+
+```text
+effective steps
+131 → 165
+```
+
+这证明“哪些 prompt 值得 rollout”确实是 GRPO 的重要工程 / 算法变量。
+
+### 2. 最终泛化：没有正证据
+
+尽管有效更新更多，boundary validation 并没有超过同大小随机控制。
+
+这说明：
+
+> **更多非零梯度 ≠ 自动带来更好的泛化。**
+
+可能原因包括：
+
+1. 静态边界集在训练开始时有效，但 policy 更新后会迅速过期；
+2. 只训练初始边界题牺牲了任务多样性；
+3. 反复训练 181 个固定 mixed task 可能过度集中；
+4. 随机控制本身通过“较小子集 + 重复训练”获得了额外收益；
+5. 当前 validation 90 题统计功效有限。
+
+## 为什么下一步必须是 005B 在线动态采样
+
+005A 训练期间已经直接观察到：
+
+> 初始时是 mixed 的题，后续重新采样时仍会变成 flat-all-pass 或 flat-fail。
+
+因此“边界”不是静态数据属性，而是：
+
+[
+	ext{boundary}(x, \pi_t)
+]
+
+它依赖当前策略 (pi_t)。
+
+005B 要测试：
+
+1. 当前 policy 在线生成 group；
+2. 若 group reward spread = 0，则不做 policy update；
+3. 从候选池补采新的 prompt；
+4. 直到凑够固定数量的有效 mixed groups；
+5. 与固定 **raw rollout budget** 和固定 **effective-update budget** 两种口径分别比较。
+
+同时必须保留一定随机 / 多样性成分，避免 005A 的“只盯静态边界子集”问题。
+
+## 005A 结论边界
+
+现在可以说：
+
+- 静态边界筛选显著减少无效 GRPO update；
+- 该效果不能由“子集更小、重复更多”解释；
+- 在当前单 seed、90 题 validation 下，没有证据证明静态 boundary selection 提升最终性能；
+- 结果支持继续研究在线动态采样。
+
+现在不能说：
+
+- boundary sampling 比随机采样整体更优；
+- boundary sampling 端到端更省算力；
+- 005A 已复现完整 DAPO dynamic sampling；
+- 当前差异已经具有跨 seed / 跨模型统计稳定性。
+
+后续还需要多个训练 seed、1.7B 模型和外部评测确认。
