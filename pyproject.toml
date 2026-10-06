@@ -17,16 +17,16 @@ dev = [
   "pytest>=8.0",
 ]
 data = [
-  "datasets>=3.0",
+  "datasets==5.1.0",
 ]
 model = [
-  "torch",
-  "transformers",
-  "accelerate",
-  "datasets>=3.0",
-  "trl",
-  "peft",
-  "Pillow>=10.0",
+  "torch==2.10.0",
+  "transformers==5.18.0",
+  "accelerate==1.15.0",
+  "datasets==5.1.0",
+  "trl==1.14.1",
+  "peft==0.21.2",
+  "Pillow==12.3.0",
 ]
 benchmark = [
   "evalplus>=0.2.1",
