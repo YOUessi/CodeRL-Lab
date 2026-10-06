@@ -198,3 +198,42 @@ Smoke adapter SHA-256：f4c2cffe61afa93653a3c102c8c1b430438fecebf40dc54db27eccbe
 - mixed→flat 不超过 5%：通过（0%）。
 
 因此 EXP-004A 允许进入 2-step GPU smoke。
+
+## 187-step 正式训练结果
+
+固定与 EXP-006A 1.7B 纯 GRPO 完全相同的训练预算：374 tasks、187 optimizer steps、4 generations、1496 RL completions、beta=0、loss_type=grpo。
+
+唯一主变量是 reward：outcome-only → execution-stage v1。
+
+### 训练动力学
+
+| 指标 | 纯 GRPO | 过程奖励 GRPO | 变化 |
+|---|---:|---:|---:|
+| zero-grad steps | 60 / 187 | **34 / 187** | -26 |
+| zero-grad fraction | 32.09% | **18.18%** | **-13.90 pp** |
+| mean frac_reward_zero_std | 60.16% | **43.05%** | **-17.11 pp** |
+| effective steps | 127 | **153** | +26 |
+| completions / effective step | 11.78 | **9.78** | -2.00 |
+| public reward mean | 44.69% | **45.62%** | +0.94 pp |
+| entropy mean | 0.2452 | 0.2424 | -0.0029 |
+| train runtime | 815.22 s | 841.91 s | +26.69 s |
+
+过程奖励新增组件均值：
+
+- dependency_complete：83.36%；
+- runtime_clean：76.91%。
+
+前25%→后25%：
+
+- public reward：39.40% → 54.48%；
+- dependency complete：86.41% → 89.40%；
+- runtime clean：77.99% → 85.19%；
+- process zero-std：43.48% → 47.83%。
+
+因此过程奖励显著减少整体无效更新，但 zero-std 并没有在训练后段继续单调下降；它主要通过把原本 outcome-flat 的组拆分成有执行阶段差异的组，提升整个训练周期的有效梯度密度。
+
+正式 adapter SHA-256：571052fe0e43eaf9a2b1900d3b11dadc2a137ae60e38f8d2ea95c7a96eb5eec2。
+
+峰值 GPU：allocated 5.15GB，reserved 9.20GB；Docker 残留容器 0。
+
+训练效率层面已经通过。当前 n=16 validation 正在运行，只有 hidden-test / Pass@k / execution-stage diagnostics 同时改善，才能宣称 EXP-004A 方法有效。
