@@ -206,6 +206,40 @@ GRPO 冒烟完成后检查执行环境，发现历史评测中有若干 `python:
 
 正式训练前会再次运行 2-step smoke，比较 step time 并确认奖励数值不变。
 
+
+
+### 奖励并行优化验证
+
+completion 级奖励并行从 1 worker 提升到 4 workers 后，重新运行完全相同的 2-step 冒烟：
+
+| 指标 | 串行 | 4 workers |
+|---|---:|---:|
+| train runtime | 12.18 s | **7.39 s** |
+| step 1 reward mean | 0.150 | 0.150 |
+| step 2 reward mean | 0.775 | 0.775 |
+| step 1 reward std | 0.1414 | 0.1414 |
+| step 2 reward std | 0.4166 | 0.4166 |
+| step 1 entropy | 0.2439 | 0.2439 |
+| step 2 entropy | 0.2214 | 0.2214 |
+| step 1 grad norm | 1.117 | 1.117 |
+| step 2 grad norm | 0.8019 | 0.8019 |
+
+并行化只改变奖励计算吞吐，没有改变这次固定种子冒烟的算法输出。
+
+训练后：
+
+```text
+running coderl_lab=1 containers = 0
+```
+
+### 初始策略权重校验
+
+正式 GRPO 启动前，脚本会计算：
+
+`adapter_model.safetensors`
+
+的 SHA-256，并与配置中的 EXP-002 adapter 哈希比较。不一致则拒绝训练。
+
 ## 冒烟门槛
 
 - [ ] GRPOConfig / GRPOTrainer 在固定环境中可导入；
