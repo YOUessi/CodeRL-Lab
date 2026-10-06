@@ -1,4 +1,4 @@
-from coderl_lab.train.sft import prepare_prompt_completion_rows
+from coderl_lab.train.sft import compute_warmup_steps, prepare_prompt_completion_rows
 
 
 def test_prepare_sft_rows_uses_same_generation_prompt() -> None:
@@ -32,3 +32,23 @@ def test_max_samples_is_deterministic() -> None:
     b = prepare_prompt_completion_rows(rows, seed=7, max_samples=5)
     assert a == b
     assert len(a) == 5
+
+
+def test_warmup_steps_for_smoke_run() -> None:
+    assert compute_warmup_steps(
+        num_examples=32,
+        epochs=1.0,
+        per_device_batch_size=2,
+        gradient_accumulation_steps=8,
+        warmup_ratio=0.05,
+    ) == 1
+
+
+def test_warmup_steps_for_full_run() -> None:
+    assert compute_warmup_steps(
+        num_examples=374,
+        epochs=3.0,
+        per_device_batch_size=2,
+        gradient_accumulation_steps=8,
+        warmup_ratio=0.05,
+    ) == 4
