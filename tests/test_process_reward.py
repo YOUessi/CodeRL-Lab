@@ -133,3 +133,62 @@ def test_original_outcome_reward_is_unchanged() -> None:
         public_pass_rate=0.5,
     )
     assert reward.total == pytest.approx(0.5)
+
+
+def test_lambda_parameters_are_not_false_dependencies() -> None:
+    code = """
+def largest_pos(values):
+    return max(filter(lambda x: x > 0, values))
+"""
+    result = analyze_dependency_completeness(
+        code,
+        entry_point="largest_pos",
+    )
+    assert result.complete
+    assert result.unresolved_names == ()
+
+
+def test_nested_recursive_helper_is_not_false_dependency() -> None:
+    code = """
+def get_lcm(values):
+    def gcd(a, b):
+        if a == 0:
+            return b
+        return gcd(b % a, a)
+    result = values[0]
+    for value in values[1:]:
+        result = result * value // gcd(result, value)
+    return result
+"""
+    result = analyze_dependency_completeness(
+        code,
+        entry_point="get_lcm",
+    )
+    assert result.complete
+    assert result.unresolved_names == ()
+
+
+def test_comprehension_target_is_not_false_dependency() -> None:
+    code = """
+def squares(values):
+    return [x * x for x in values]
+"""
+    result = analyze_dependency_completeness(
+        code,
+        entry_point="squares",
+    )
+    assert result.complete
+    assert result.unresolved_names == ()
+
+
+def test_missing_global_inside_lambda_is_detected() -> None:
+    code = """
+def roots(values):
+    return list(map(lambda x: math.sqrt(x), values))
+"""
+    result = analyze_dependency_completeness(
+        code,
+        entry_point="roots",
+    )
+    assert result.unresolved_names == ("math",)
+    assert not result.complete
