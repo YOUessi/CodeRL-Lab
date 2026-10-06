@@ -77,3 +77,18 @@ def test_sampler_length_matches_repeat_contract() -> None:
         seed=42,
     )
     assert len(sampler) == 32
+
+
+def test_summary_separates_prefetched_selections_from_observed_groups() -> None:
+    state = OnlineBoundaryState(["a", "b", "c"])
+    state.record_selection("a", mode="explore")
+    state.record_selection("b", mode="explore")
+    state.record_selection("c", mode="explore")
+    state.update_group("a", [0.0, 1.0])
+    state.update_group("b", [0.0, 0.0])
+    summary = state.summary()
+    assert summary["total_group_selections"] == 3
+    assert summary["groups_observed"] == 2
+    assert summary["prefetched_unobserved_group_selections"] == 1
+    assert summary["unique_selected_tasks"] == 3
+    assert summary["unique_observed_tasks"] == 2
