@@ -1,0 +1,93 @@
+{
+  "experiment": "EXP-006A",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "model_revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "validation": {
+    "tasks": 90,
+    "samples_per_task": 4,
+    "base": {
+      "pass_at_1": 0.33611111111111114,
+      "pass_at_4": 0.6444444444444445,
+      "hidden_mean": 0.3472222222222222,
+      "solved_tasks": 58,
+      "all4_tasks": 4,
+      "syntax_failures": 92
+    },
+    "sft": {
+      "pass_at_1": 0.36666666666666664,
+      "pass_at_4": 0.5333333333333333,
+      "hidden_mean": 0.3861111111111111,
+      "solved_tasks": 48,
+      "all4_tasks": 19,
+      "syntax_failures": 1
+    },
+    "grpo": {
+      "pass_at_1": 0.3611111111111111,
+      "pass_at_4": 0.5555555555555556,
+      "hidden_mean": 0.3861111111111111,
+      "solved_tasks": 50,
+      "all4_tasks": 17,
+      "syntax_failures": 1
+    },
+    "sft_minus_base": {
+      "pass_at_1": 0.030555555555555503,
+      "pass_at_4": -0.11111111111111116,
+      "hidden_mean": 0.03888888888888886,
+      "solved_tasks": -10
+    },
+    "grpo_minus_sft": {
+      "pass_at_1": -0.005555555555555536,
+      "pass_at_4": 0.022222222222222254,
+      "hidden_mean": 0,
+      "solved_tasks": 2
+    },
+    "bootstrap_sft_minus_base": {
+      "pass_at_1": {
+        "delta": 0.030555555555555555,
+        "ci95_low": -0.03888888888888889,
+        "ci95_high": 0.1,
+        "probability_positive": 0.7947
+      },
+      "pass_at_4": {
+        "delta": -0.1111111111111111,
+        "ci95_low": -0.2,
+        "ci95_high": -0.022222222222222223,
+        "probability_positive": 0.00645
+      }
+    },
+    "bootstrap_grpo_minus_sft": {
+      "pass_at_1": {
+        "delta": -0.005555555555555556,
+        "ci95_low": -0.03333333333333333,
+        "ci95_high": 0.019444444444444445,
+        "probability_positive": 0.2987
+      },
+      "pass_at_4": {
+        "delta": 0.022222222222222223,
+        "ci95_low": -0.022222222222222223,
+        "ci95_high": 0.06666666666666667,
+        "probability_positive": 0.77145
+      }
+    }
+  },
+  "grpo_training": {
+    "optimizer_steps": 187,
+    "runtime_seconds": 815.2182,
+    "reward_mean": 0.4985962600551824,
+    "frac_reward_zero_std_mean": 0.6016042780748663,
+    "zero_grad_steps": 60,
+    "zero_grad_fraction": 0.32085561497326204,
+    "entropy_mean": 0.24523074969768843,
+    "adapter_sha256": "b858f377e43a7cb75ebd9ef332d2f77dba9728d25954fadc4e512a26a47da46c"
+  },
+  "cross_scale_vs_0_6b": {
+    "base_pass_at_1_delta": 0.2,
+    "base_pass_at_4_delta": 0.2555555555555556,
+    "sft_gain_pass_at_1_delta": -0.08888888888888893,
+    "sft_gain_pass_at_4_delta": -0.1555555555555556,
+    "grpo_gain_pass_at_1_delta": -0.0222222222222222,
+    "grpo_gain_pass_at_4_delta": 0.03333333333333338,
+    "grpo_zero_grad_fraction_delta": 0.04278074866310161,
+    "grpo_frac_reward_zero_std_delta": 0.08021390374331545
+  }
+}
