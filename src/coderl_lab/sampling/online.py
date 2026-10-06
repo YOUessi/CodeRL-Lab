@@ -158,6 +158,8 @@ class OnlineBoundaryState:
         exploit = sum(rec.exploit_selections for rec in self.records.values())
         explore = sum(rec.explore_selections for rec in self.records.values())
         unique_selected = sum(rec.selections > 0 for rec in self.records.values())
+        unique_observed = sum(rec.observations > 0 for rec in self.records.values())
+        prefetched_unobserved = max(0, total_selections - self.groups_observed)
         return {
             "num_tasks": len(self.records),
             "status_counts": statuses,
@@ -170,9 +172,12 @@ class OnlineBoundaryState:
                 else 0.0
             ),
             "total_group_selections": total_selections,
+            "groups_observed": self.groups_observed,
+            "prefetched_unobserved_group_selections": prefetched_unobserved,
             "exploit_selections": exploit,
             "explore_selections": explore,
             "unique_selected_tasks": unique_selected,
+            "unique_observed_tasks": unique_observed,
             "transition_counts": dict(sorted(self.transition_counts.items())),
         }
 
