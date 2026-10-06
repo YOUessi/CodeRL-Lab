@@ -168,34 +168,115 @@ Boundary - random 的 Pass@1 配对 bootstrap 95% CI：
 
 而且 005A 需要额外 1496 个 screening completions，所以不能宣称端到端更省算力。
 
-### 当前优先：EXP-005B 在线动态采样
+### EXP-005B：在线策略依赖动态采样 ✅
 
-005A 直接暴露了静态筛选的限制：
+005A 证明静态 boundary 可以显著减少无效更新，但不能改善 validation，而且需要额外离线 screening。
 
-> 一个题在初始 SFT policy 下是 mixed，不代表训练若干步后仍然是 mixed。
-
-因此 005B 改为 policy-dependent 在线策略：
+005B-v1 因此改为：
 
 ```text
 当前 policy
   ↓
-采样 prompt group
+exploration slot：优先选择未观察任务
++
+exploitation slot：优先选择当前 mixed 任务
   ↓
-计算公共测试 reward
+4 completions / prompt
   ↓
-reward spread = 0 ?
-  ├─ 是：丢弃该 group，补采新的 prompt
-  └─ 否：进入 GRPO update
+公共测试 reward
+  ↓
+实时更新 unknown / mixed / flat
+  ↓
+mixed↔flat 可双向转移
 ```
 
-核心对照要分两个预算口径：
+它不修改 TRL 的 reward→advantage→loss 内核，只改变 prompt 分配。
 
-1. **固定 raw rollout budget**：看动态采样能否用相同生成成本获得更多有效更新；
-2. **固定 effective-update budget**：看为了获得同样有效更新，动态采样需要多少总 rollout。
+固定与 EXP-003 完全相同：
 
-005B 还会保留随机/多样性成分，避免只围绕少量边界题反复训练。
+- 187 optimizer steps；
+- 374 actual prompt groups；
+- 1496 actual RL completions；
+- 无离线 screening；
+- 相同 SFT 初始化、reward、学习率和生成参数。
 
-EXP-004 过程奖励继续作为后续独立变量，不与采样策略同时修改。
+训练效率：
+
+| 指标 | 全量随机 GRPO | 静态 Boundary | **在线动态** |
+|---|---:|---:|---:|
+| zero-grad fraction | 27.81% | 11.76% | **10.70%** |
+| effective steps | 135 | 165 | **167** |
+| completions / effective step | 11.08 | 9.07 | **8.96** |
+| mean frac_reward_zero_std | 52.14% | **33.16%** | 39.57% |
+| 额外 screening completions | 0 | 1496 | **0** |
+
+在线状态确实持续变化：
+
+- unknown→mixed：84
+- unknown→flat：105
+- mixed→mixed：137
+- **mixed→flat：39**
+- **flat→mixed：5**
+- flat→flat：4
+
+共实际观察 189 个不同任务；374 个 rollout group 中 60.43% 为 mixed。
+
+90 题 validation：
+
+| 模型 | Pass@1 | Pass@4 | hidden mean | solved tasks |
+|---|---:|---:|---:|---:|
+| SFT | 25.56% | 43.33% | 28.19% | 39 |
+| 全量随机 GRPO | 27.22% | 42.22% | 29.86% | 38 |
+| 181题随机控制 | **28.89%** | **44.44%** | **31.81%** | **40** |
+| 静态 Boundary | 26.94% | **44.44%** | 30.28% | **40** |
+| **在线动态** | 28.06% | 42.22% | 31.39% | 38 |
+
+在线动态相对全量随机：
+
+- Pass@1：+0.83 个百分点；
+- Pass@4：0；
+- Pass@1 配对 bootstrap 95% CI：[-1.67, +3.61] 个百分点。
+
+因此当前证据是：
+
+> **在线动态采样明显提高了 GRPO 的有效更新/rollout 利用率，但没有产生统计上可靠的 validation 增益。**
+
+这说明“减少无效梯度”本身并不足以扩大模型能力。
+
+### 当前优先：1.7B 主模型迁移
+
+0.6B 已经完成了完整研究闭环：
+
+```text
+Base
+→ SFT
+→ GRPO
+→ 静态 Boundary
+→ 在线 Dynamic Sampling
+→ Pass@k + hidden test + bootstrap
+```
+
+继续只在 0.6B 上叠加复杂机制的边际价值开始下降。
+
+下一步优先把最关键的三条基线迁移到约 1.7B：
+
+1. Base；
+2. SFT；
+3. SFT + 纯 GRPO。
+
+先验证 0.6B 上观察到的：
+
+- SFT 主要提高 Pass@1；
+- GRPO 更偏概率集中而非覆盖扩张；
+- 大量零组内方差 rollout；
+
+是否在更强模型上仍成立。
+
+若这些现象在 1.7B 上仍存在，再进入：
+
+- EXP-004：过程级可验证奖励 / 信用分配；
+- EXP-006：更大的 Pass@k 和能力边界分析；
+- 005B-v2：batch 内 drop+refill（仅在确有必要时）。
 
 ## 快速开始
 
@@ -274,10 +355,10 @@ Tang（RTX 4090 Laptop GPU，16 GB）仅作为 GPU 执行节点：需要 CUDA、
 - [x] EXP-002：监督微调基线
 - [x] EXP-003：纯 GRPO + 最终结果奖励
 - [x] EXP-005A：离线能力边界筛选 + 同大小随机控制
-- [ ] EXP-005B：在线动态采样（当前优先）
+- [x] EXP-005B：在线策略依赖动态采样
 - [ ] EXP-004：过程级可验证奖励
 - [ ] EXP-006：SFT 与 RL 泛化 / 能力边界对照
 - [ ] EXP-007：奖励投机与隐藏测试鲁棒性
 - [ ] MBPP+ / LiveCodeBench 外部评测
-- [ ] 1.7B 主模型迁移
+- [ ] 1.7B 主模型迁移（当前优先）
 - [ ] 仓库级软件工程任务扩展
