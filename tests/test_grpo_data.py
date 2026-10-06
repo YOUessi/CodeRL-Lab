@@ -56,3 +56,16 @@ def test_grpo_warmup_for_full_mbpp_epoch() -> None:
         num_train_epochs=1,
         warmup_ratio=0.05,
     ) == 10
+
+
+def test_grpo_config_pins_sft_adapter_hash() -> None:
+    import yaml
+    from pathlib import Path
+
+    config = yaml.safe_load(
+        Path("configs/grpo_qwen3_0.6b.yaml").read_text(encoding="utf-8")
+    )
+    assert (
+        config["initial_policy"]["expected_sha256"]
+        == "7fcb2b0ca7608be980fb4cbae5158241886ac67f3cc2f5b855cf34531c5982f7"
+    )
