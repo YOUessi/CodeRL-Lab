@@ -1,7 +1,16 @@
 from coderl_lab.analysis.process_reward_screen import summarize
 
 
-def row(task, sample, outcome, process, public, dep=True, clean=1.0):
+def row(
+    task,
+    sample,
+    outcome,
+    process,
+    public,
+    dep=True,
+    clean=1.0,
+    syntax=True,
+):
     return {
         "task_id": task,
         "sample_id": sample,
@@ -10,6 +19,7 @@ def row(task, sample, outcome, process, public, dep=True, clean=1.0):
         "public_pass_rate": public,
         "dependency_complete": dep,
         "runtime_clean_rate": clean,
+        "syntax_ok": syntax,
     }
 
 
