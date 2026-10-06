@@ -4,7 +4,7 @@
 
 **设计：完成。**  
 **16-sample GPU smoke：已通过。**  
-**90题 × 16 正式采样：待运行。**
+**90题 × 16 正式采样：已完成。**
 
 ## 研究动机
 
@@ -200,3 +200,118 @@ validation 前 2 题，三条 policy 各 16 samples。
 - 任一 completion 不一致则停止，不允许进入 k=64 结论。
 
 这样 k=64 才是对 n=16 的严格扩展，而不是另一轮随机重采样。
+
+
+# n=16 正式结果
+
+三条固定 policy 均完成：
+
+```text
+90 tasks × 16 samples = 1440 completions / policy
+3 policies = 4320 completions
+```
+
+## Pass@k
+
+| Policy | Pass@1 | Pass@4 | Pass@8 | Pass@16 | solved@16 |
+|---|---:|---:|---:|---:|---:|
+| Base | 34.31% | **60.63%** | **65.80%** | 67.78% | 61/90 |
+| SFT | 37.29% | 54.26% | 59.68% | 63.33% | 57/90 |
+| GRPO | **38.82%** | 56.85% | 63.63% | **68.89%** | **62/90** |
+
+### 语法与执行
+
+| Policy | 语法失败 | hidden mean | hidden-all-pass candidates |
+|---|---:|---:|---:|
+| Base | 352 / 1440 | 36.32% | 494 |
+| SFT | **4 / 1440** | 39.34% | 537 |
+| GRPO | 8 / 1440 | **41.32%** | **559** |
+
+## n=16 经验支持集
+
+### Base → SFT
+
+- Base solved：61；
+- SFT solved：57；
+- Base retained by SFT：52 / 61 = **85.25%**；
+- Base solved / SFT unsolved：**9**；
+- SFT 新增 vs Base：5；
+- Jaccard(Base, SFT)：0.7879。
+
+因此，k=4 时看起来非常严重的覆盖下降，在 n=16 下已经明显缩小，但没有完全消失。
+
+### SFT → GRPO
+
+- SFT solved：57；
+- GRPO solved：62；
+- GRPO 新增 vs SFT：6；
+- SFT lost by GRPO：1；
+- Jaccard(SFT, GRPO)：0.8889。
+
+在 Base 被 SFT 丢掉的 9 个 n=16 任务中，GRPO 恢复 5 个：
+
+```text
+recovery_fraction = 5 / 9 = 55.56%
+```
+
+## 追踪 EXP-006A 的 15 个 k=4 丢失任务
+
+EXP-006A 中共有 15 题满足：
+
+`Base k=4 solved / SFT k=4 unsolved`
+
+到了 n=16：
+
+- SFT 恢复：**8 / 15（53.33%）**；
+- SFT 仍 0/16：7；
+- GRPO 在这 7 题中又恢复：3。
+
+这直接说明：
+
+> k=4 下超过一半的所谓“能力丢失”不是经验支持集彻底消失，而是正确轨迹概率下降后 4 次采样没有命中。
+
+## 配对 bootstrap（n=16）
+
+### SFT - Base：经验成功率
+
+- delta：+2.99 个百分点；
+- 95% CI：[-1.94, +7.99]；
+- P(delta > 0)：0.8804。
+
+### SFT - Base：solved@16
+
+- delta：-4.44 个百分点；
+- 95% CI：[-12.22, +3.33]；
+- P(delta > 0)：0.1131。
+
+到 n=16 后，SFT 的覆盖下降不再有 k=4 时那样明确的统计证据。
+
+### GRPO - SFT：经验成功率
+
+- delta：**+1.53 个百分点**；
+- 95% CI：**[+0.21, +2.85]**；
+- P(delta > 0)：0.9873。
+
+### GRPO - SFT：solved@16
+
+- delta：+5.56 个百分点；
+- 95% CI：[0, +11.11]；
+- P(delta > 0)：0.9656。
+
+这是目前第一次在更大采样预算下看到 GRPO 相对 SFT 的经验成功率改善具有正向 bootstrap 区间。
+
+## n=16 当前解释
+
+现在更支持：
+
+```text
+SFT
+主要改变正确轨迹概率分布
+而不是简单删除全部 Base 能力
+```
+
+但仍有 9 个任务在当前 n=16 经验支持下表现为：
+
+`Base solved / SFT unsolved`
+
+所以第二阶段继续只针对这 9 题做严格 k=64 续采样。
