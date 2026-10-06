@@ -1,0 +1,29 @@
+{
+  "experiment": "EXP-005B-smoke",
+  "code_commit": "32c208985668ee2b63517dd941fbf5ea90002af2",
+  "tasks": 32,
+  "optimizer_steps": 4,
+  "actual_rollout_groups": 8,
+  "actual_rollout_completions": 32,
+  "total_group_selections": 10,
+  "prefetched_unobserved_group_selections": 2,
+  "exploit_selections": 3,
+  "explore_selections": 7,
+  "unique_selected_tasks": 7,
+  "unique_observed_tasks": 6,
+  "groups_observed": 8,
+  "mixed_groups_observed": 4,
+  "flat_groups_observed": 4,
+  "observed_mixed_fraction": 0.5,
+  "transitions": {
+    "unknown->mixed": 3,
+    "unknown->flat": 3,
+    "mixed->mixed": 1,
+    "mixed->flat": 1
+  },
+  "zero_grad_steps": 1,
+  "zero_grad_fraction": 0.25,
+  "train_runtime_seconds": 11.5039,
+  "peak_allocated_bytes": 2032813056,
+  "peak_reserved_bytes": 3118465024
+}
