@@ -1,0 +1,94 @@
+{
+  "experiment": "EXP-006B-k64-targeted",
+  "target_definition": "n16 Base solved / SFT unsolved",
+  "target_count": 9,
+  "strict_prefix_verification": {
+    "base": {
+      "expected": 144,
+      "matched": 144,
+      "missing": 0,
+      "mismatched": 0,
+      "identical": true
+    },
+    "sft": {
+      "expected": 144,
+      "matched": 144,
+      "missing": 0,
+      "mismatched": 0,
+      "identical": true
+    },
+    "grpo": {
+      "expected": 144,
+      "matched": 144,
+      "missing": 0,
+      "mismatched": 0,
+      "identical": true
+    }
+  },
+  "recovery_curve": {
+    "base": {
+      "k16": 9,
+      "k32": 9,
+      "k64": 9
+    },
+    "sft": {
+      "k16": 0,
+      "k32": 4,
+      "k64": 8
+    },
+    "grpo": {
+      "k16": 5,
+      "k32": 6,
+      "k64": 8
+    }
+  },
+  "targeted_pass_at_k": {
+    "base": {
+      "pass1": 0.21354166666666666,
+      "pass4": 0.5301592198075541,
+      "pass8": 0.6856321331141412,
+      "pass16": 0.8017031805651404,
+      "pass32": 0.9038549150254577,
+      "pass64": 1
+    },
+    "sft": {
+      "pass1": 0.043402777777777776,
+      "pass4": 0.1608571582461059,
+      "pass8": 0.29177818077602585,
+      "pass16": 0.4865781398927271,
+      "pass32": 0.7108068917830889,
+      "pass64": 0.8888888888888888
+    },
+    "grpo": {
+      "pass1": 0.052083333333333336,
+      "pass4": 0.18674891367910934,
+      "pass8": 0.32611324990552815,
+      "pass16": 0.5139508625701905,
+      "pass32": 0.7124248108049652,
+      "pass64": 0.8888888888888888
+    }
+  },
+  "remaining_task": {
+    "task_id": "mbpp_validation_0534",
+    "base_correct_64": 1,
+    "sft_correct_64": 0,
+    "grpo_correct_64": 0,
+    "base_empirical_success_rate": 0.015625,
+    "probability_zero_of_64_if_p_equals_base_empirical": 0.36498652424390743,
+    "fisher_exact_two_sided_base_vs_sft": 1,
+    "fisher_exact_two_sided_base_vs_grpo": 1,
+    "import_diagnostic": {
+      "sft": {
+        "uses_re": 60,
+        "uses_re_without_import": 60,
+        "patched_import_only_correct": 17
+      },
+      "grpo": {
+        "uses_re": 60,
+        "uses_re_without_import": 59,
+        "patched_import_only_correct": 16
+      }
+    }
+  },
+  "conclusion": "Evidence favors probability redistribution and code-completeness shifts over true deletion of underlying algorithmic capability support within this experimental regime."
+}
