@@ -27,10 +27,24 @@ try:
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
-    fn = getattr(module, case["entry_point"])
-    actual = fn(*case.get("args", []), **case.get("kwargs", {}))
-    expected = case.get("expected")
-    passed = actual == expected
+
+    namespace = module.__dict__
+    setup_code = case.get("setup_code", "")
+    if setup_code:
+        exec(setup_code, namespace, namespace)
+
+    assertion = case.get("assertion")
+    if assertion:
+        exec(assertion, namespace, namespace)
+        actual = True
+        expected = True
+        passed = True
+    else:
+        fn = getattr(module, case["entry_point"])
+        actual = fn(*case.get("args", []), **case.get("kwargs", {}))
+        expected = case.get("expected")
+        passed = actual == expected
+
     print(json.dumps({
         "passed": passed,
         "actual": actual,
@@ -84,14 +98,7 @@ def check_syntax(code: str) -> bool:
 
 
 class PythonExecutor:
-    """Execute function-level candidates.
-
-    Docker mode is the default for model-generated code. Local mode exists only
-    for trusted smoke-test fixtures and must be explicitly enabled.
-
-    Docker images are never pulled implicitly here. Runtime setup must prepare
-    the image first so a network pull cannot consume a per-test timeout budget.
-    """
+    """Execute candidate code inside the configured runtime."""
 
     def __init__(
         self,
@@ -139,6 +146,7 @@ class PythonExecutor:
         code: str,
         entry_point: str,
         cases: Iterable[TestCase],
+        setup_code: str = "",
     ) -> ExecutionReport:
         case_list = tuple(cases)
         if not check_syntax(code):
@@ -158,9 +166,7 @@ class PythonExecutor:
 
         with tempfile.TemporaryDirectory(prefix="coderl_lab_") as tmp:
             workdir = Path(tmp)
-            # TemporaryDirectory is mode 0700 by default. Rootless Docker may
-            # map container root to an unprivileged host UID, so make the
-            # read-only bind mount traversable without making it writable.
+            # Rootless Docker needs execute permission to traverse the bind mount.
             workdir.chmod(0o755)
 
             solution_path = workdir / "solution.py"
@@ -175,6 +181,7 @@ class PythonExecutor:
                     workdir=workdir,
                     entry_point=entry_point,
                     case=case,
+                    setup_code=setup_code,
                 )
                 for case in case_list
             )
@@ -186,6 +193,7 @@ class PythonExecutor:
         workdir: Path,
         entry_point: str,
         case: TestCase,
+        setup_code: str,
     ) -> CaseResult:
         payload = json.dumps(
             {
@@ -193,6 +201,8 @@ class PythonExecutor:
                 "args": case.args,
                 "kwargs": case.kwargs,
                 "expected": case.expected,
+                "assertion": case.assertion,
+                "setup_code": setup_code,
             },
             ensure_ascii=False,
         )
