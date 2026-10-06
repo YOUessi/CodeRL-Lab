@@ -15,6 +15,7 @@ import yaml
 from coderl_lab.execution import PythonExecutor
 from coderl_lab.generation import build_prompt, extract_python_code
 from coderl_lab.reward import compute_training_reward
+from coderl_lab.sampling.online import OnlineAdaptiveRepeatSampler, OnlineBoundaryState
 from coderl_lab.schema import TestCase
 
 
@@ -124,6 +125,8 @@ class VerifiableCodeReward:
         memory_limit: str,
         docker_image: str,
         max_workers: int = 1,
+        sampling_state: OnlineBoundaryState | None = None,
+        num_generations: int | None = None,
     ) -> None:
         self.executor = PythonExecutor(
             mode="docker",
@@ -134,6 +137,14 @@ class VerifiableCodeReward:
         if max_workers <= 0:
             raise ValueError("max_workers must be positive")
         self.max_workers = max_workers
+        self.sampling_state = sampling_state
+        self.num_generations = num_generations
+        if self.sampling_state is not None and (
+            self.num_generations is None or self.num_generations <= 0
+        ):
+            raise ValueError(
+                "num_generations must be positive when sampling_state is enabled"
+            )
 
     def _score_one(
         self,
@@ -213,6 +224,14 @@ class VerifiableCodeReward:
         pass_rates = [x[2] for x in scored]
         all_pass_values = [x[3] for x in scored]
 
+        online_batch_stats = None
+        if self.sampling_state is not None:
+            online_batch_stats = self.sampling_state.update_from_batch(
+                task_ids=[str(x) for x in (task_id or [])],
+                rewards=rewards,
+                num_generations=int(self.num_generations),
+            )
+
         if log_metric is not None and rewards:
             log_metric("reward/public_mean", sum(pass_rates) / len(pass_rates))
             log_metric("reward/syntax_mean", sum(syntax_values) / len(syntax_values))
@@ -220,6 +239,21 @@ class VerifiableCodeReward:
                 "reward/public_all_pass_mean",
                 sum(all_pass_values) / len(all_pass_values),
             )
+            if online_batch_stats is not None:
+                log_metric(
+                    "online/mixed_group_fraction",
+                    float(online_batch_stats["mixed_fraction"]),
+                )
+                status_counts = self.sampling_state.status_counts()
+                total_tasks = max(1, sum(status_counts.values()))
+                log_metric(
+                    "online/current_mixed_pool_fraction",
+                    status_counts["mixed"] / total_tasks,
+                )
+                log_metric(
+                    "online/current_unknown_pool_fraction",
+                    status_counts["unknown"] / total_tasks,
+                )
 
         if log_extra is not None:
             log_extra("task_id", list(task_id or []))
@@ -265,6 +299,8 @@ def run_grpo(
     reward_cfg = dict(cfg["reward"])
     generation_cfg = dict(cfg["generation"])
     initial_policy_cfg = dict(cfg.get("initial_policy", {}))
+    online_cfg = dict(cfg.get("online_sampling", {}))
+    online_enabled = bool(online_cfg.get("enabled", False))
 
     seed = int(train_cfg.get("seed", 42))
     rows = load_grpo_rows(
@@ -273,6 +309,14 @@ def run_grpo(
         max_tasks=max_tasks,
     )
     dataset = Dataset.from_list(rows)
+    online_state = (
+        OnlineBoundaryState(
+            [str(row["task_id"]) for row in rows],
+            spread_epsilon=float(online_cfg.get("spread_epsilon", 1e-12)),
+        )
+        if online_enabled
+        else None
+    )
 
     model_name = str(model_cfg["name_or_path"])
     revision = str(model_cfg["revision"])
@@ -403,6 +447,7 @@ def run_grpo(
         remove_unused_columns=False,
         use_vllm=False,
         log_completions=bool(train_cfg.get("log_completions", False)),
+        dataloader_num_workers=int(train_cfg.get("dataloader_num_workers", 0)),
     )
 
     reward_func = VerifiableCodeReward(
@@ -410,15 +455,68 @@ def run_grpo(
         memory_limit=str(reward_cfg["memory_limit"]),
         docker_image=str(reward_cfg["docker_image"]),
         max_workers=int(reward_cfg.get("max_workers", 1)),
+        sampling_state=online_state,
+        num_generations=num_generations if online_enabled else None,
     )
 
-    trainer = GRPOTrainer(
-        model=model,
-        reward_funcs=reward_func,
-        args=args,
-        train_dataset=dataset,
-        processing_class=tokenizer,
-    )
+    if online_enabled:
+        class OnlineAdaptiveGRPOTrainer(GRPOTrainer):
+            def __init__(
+                self,
+                *trainer_args,
+                online_sampling_state,
+                online_sampling_config,
+                **trainer_kwargs,
+            ):
+                self.online_sampling_state = online_sampling_state
+                self.online_sampling_config = online_sampling_config
+                super().__init__(*trainer_args, **trainer_kwargs)
+
+            def _get_train_sampler(self, dataset=None):
+                if dataset is None:
+                    dataset = self.train_dataset
+                task_ids = [str(x) for x in dataset["task_id"]]
+                return OnlineAdaptiveRepeatSampler(
+                    task_ids=task_ids,
+                    state=self.online_sampling_state,
+                    mini_repeat_count=self.num_generations,
+                    batch_size=(
+                        self.args.generation_batch_size
+                        // self.num_generations
+                    ),
+                    repeat_count=(
+                        self.num_iterations
+                        * self.args.steps_per_generation
+                    ),
+                    exploit_fraction=float(
+                        self.online_sampling_config.get(
+                            "exploit_fraction", 0.5
+                        )
+                    ),
+                    seed=self.args.seed,
+                )
+
+        trainer = OnlineAdaptiveGRPOTrainer(
+            model=model,
+            reward_funcs=reward_func,
+            args=args,
+            train_dataset=dataset,
+            processing_class=tokenizer,
+            online_sampling_state=online_state,
+            online_sampling_config=online_cfg,
+        )
+        if trainer.accelerator.num_processes != 1:
+            raise RuntimeError(
+                "EXP-005B online sampler v1 currently supports one process only"
+            )
+    else:
+        trainer = GRPOTrainer(
+            model=model,
+            reward_funcs=reward_func,
+            args=args,
+            train_dataset=dataset,
+            processing_class=tokenizer,
+        )
 
     started = time.perf_counter()
     train_result = trainer.train()
@@ -432,6 +530,16 @@ def run_grpo(
         json.dumps(log_history, ensure_ascii=False, indent=2, default=str) + "\n",
         encoding="utf-8",
     )
+    if online_state is not None:
+        (final_output / "online_sampling_state.json").write_text(
+            json.dumps(
+                online_state.to_dict(),
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
 
     trainable = sum(
         p.numel() for p in trainer.model.parameters() if p.requires_grad
@@ -462,6 +570,24 @@ def run_grpo(
         "trainer_max_steps": trainer.state.max_steps,
         "final_epoch": trainer.state.epoch,
         "log_history_entries": len(log_history),
+        "online_sampling": (
+            {
+                "enabled": True,
+                "config": online_cfg,
+                "state_summary": online_state.summary(),
+                "actual_rollout_groups": online_state.groups_observed,
+                "actual_rollout_completions": (
+                    online_state.groups_observed * num_generations
+                ),
+                "prefetched_unobserved_group_selections": max(
+                    0,
+                    len(online_state.selection_events)
+                    - online_state.groups_observed,
+                ),
+            }
+            if online_state is not None
+            else {"enabled": False}
+        ),
         "trainable_parameters": trainable,
         "total_parameters": total,
         "trainable_fraction": trainable / total,
