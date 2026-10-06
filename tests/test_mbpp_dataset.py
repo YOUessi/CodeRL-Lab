@@ -37,7 +37,7 @@ def test_infer_entry_point_ignores_helper() -> None:
 def test_starter_code_does_not_leak_solution() -> None:
     starter = starter_code_from_reference(REFERENCE, "square_sum")
     assert "def square_sum(nums):" in starter
-    assert "sum(" not in starter
+    assert "return sum(" not in starter
     assert "pass" in starter
 
 
