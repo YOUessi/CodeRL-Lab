@@ -38,6 +38,7 @@ python -m coderl_lab.evaluation \
   --executor docker \
   --timeout 5 \
   --memory 512m \
+  --max-workers 4 \
   --k 1 4
 
 python -m coderl_lab.analysis.evaluation_summary \
