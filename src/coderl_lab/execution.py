@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import uuid
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
@@ -207,11 +208,17 @@ class PythonExecutor:
             ensure_ascii=False,
         )
 
+        container_name: str | None = None
         if self.mode == "docker":
+            container_name = f"coderl-lab-{uuid.uuid4().hex[:12]}"
             command = [
                 "docker",
                 "run",
                 "--rm",
+                "--name",
+                container_name,
+                "--label",
+                "coderl_lab=1",
                 "--network",
                 "none",
                 "--memory",
@@ -252,6 +259,14 @@ class PythonExecutor:
                 check=False,
             )
         except subprocess.TimeoutExpired:
+            if container_name is not None:
+                subprocess.run(
+                    ["docker", "rm", "-f", container_name],
+                    text=True,
+                    capture_output=True,
+                    timeout=10,
+                    check=False,
+                )
             return CaseResult(
                 name=case.name,
                 passed=False,
