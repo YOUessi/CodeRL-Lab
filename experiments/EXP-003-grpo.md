@@ -155,6 +155,57 @@ GRPO 冒烟完成后检查执行环境，发现历史评测中有若干 `python:
 
 正式 GRPO 扩大训练前，必须用真实死循环候选验证容器不会泄漏。
 
+
+
+## 两步 GRPO 冒烟结果
+
+在容器泄漏修复和预热计算修复后重新运行：
+
+- 唯一训练题：16
+- num_generations：4
+- max_steps：2
+- loss_type：grpo
+- beta：0
+- warmup_steps：1
+
+结果：
+
+| 指标 | step 1 | step 2 |
+|---|---:|---:|
+| reward mean | 0.150 | 0.775 |
+| reward std | 0.1414 | 0.4166 |
+| public pass mean | 0.0625 | 0.7500 |
+| syntax mean | 1.0 | 1.0 |
+| frac reward zero std | 0.5 | 0.5 |
+| entropy | 0.2439 | 0.2214 |
+| grad norm | 1.117 | 0.8019 |
+
+整体：
+
+- 训练时间：12.18 秒；
+- 峰值 allocated：2,037,356,544 bytes；
+- 峰值 reserved：2,973,761,536 bytes；
+- 训练后运行中的 `coderl_lab=1` 容器：0。
+
+注意：两步 reward 数值来自不同 prompt 组，**不能解释为“训练导致奖励从 0.15 提升到 0.775”**。
+
+真正值得关注的是：
+
+`frac_reward_zero_std = 0.5`
+
+说明这一小批里一半 prompt 的 4 个候选奖励完全相同，因此组相对优势为零或近零。这为后续动态采样实验提供了直接动机。
+
+## 奖励执行性能
+
+第一版公共测试奖励对 completion 串行执行 Docker 测试。为降低正式训练的 rollout 奖励瓶颈，在不改变测试语义的前提下增加 completion 级并行：
+
+- 每个候选仍使用独立容器；
+- 每个候选仍执行相同公共测试；
+- 最大并发 reward worker = 4；
+- 结果顺序保持与 completions 输入一致。
+
+正式训练前会再次运行 2-step smoke，比较 step time 并确认奖励数值不变。
+
 ## 冒烟门槛
 
 - [ ] GRPOConfig / GRPOTrainer 在固定环境中可导入；
