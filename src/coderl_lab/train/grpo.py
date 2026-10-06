@@ -70,6 +70,8 @@ def compute_warmup_steps(
     *,
     num_examples: int,
     num_generations: int,
+    per_device_train_batch_size: int,
+    gradient_accumulation_steps: int,
     max_steps: int,
     num_train_epochs: float,
     warmup_ratio: float,
@@ -78,12 +80,29 @@ def compute_warmup_steps(
     if not 0.0 <= warmup_ratio <= 1.0:
         raise ValueError("warmup_ratio must be in [0, 1]")
 
+    if per_device_train_batch_size <= 0 or gradient_accumulation_steps <= 0:
+        raise ValueError("batch sizes must be positive")
+
+    generation_batch_size = (
+        per_device_train_batch_size * gradient_accumulation_steps
+    )
+    if generation_batch_size % num_generations != 0:
+        raise ValueError(
+            "per-device batch × gradient accumulation must be divisible "
+            "by num_generations"
+        )
+
     if max_steps > 0:
         total_steps = max_steps
     else:
-        # With num_generations=G, RepeatSampler exposes G rows per unique prompt.
-        total_rows = num_examples * num_generations
-        total_steps = max(1, math.ceil(total_rows * num_train_epochs / num_generations))
+        unique_prompts_per_update = generation_batch_size // num_generations
+        optimizer_steps_per_epoch = math.ceil(
+            num_examples / unique_prompts_per_update
+        )
+        total_steps = max(
+            1,
+            math.ceil(optimizer_steps_per_epoch * num_train_epochs),
+        )
 
     if warmup_ratio == 0:
         return 0
@@ -277,9 +296,17 @@ def run_grpo(
     num_generations = int(generation_cfg["num_generations"])
     epochs = float(train_cfg.get("num_train_epochs", 1.0))
     warmup_ratio = float(train_cfg.get("warmup_ratio", 0.0))
+    per_device_train_batch_size = int(
+        train_cfg["per_device_train_batch_size"]
+    )
+    gradient_accumulation_steps = int(
+        train_cfg["gradient_accumulation_steps"]
+    )
     warmup_steps = compute_warmup_steps(
         num_examples=len(dataset),
         num_generations=num_generations,
+        per_device_train_batch_size=per_device_train_batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         max_steps=requested_max_steps,
         num_train_epochs=epochs,
         warmup_ratio=warmup_ratio,
@@ -289,12 +316,8 @@ def run_grpo(
         output_dir=str(final_output),
         num_train_epochs=epochs,
         max_steps=requested_max_steps,
-        per_device_train_batch_size=int(
-            train_cfg["per_device_train_batch_size"]
-        ),
-        gradient_accumulation_steps=int(
-            train_cfg["gradient_accumulation_steps"]
-        ),
+        per_device_train_batch_size=per_device_train_batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         learning_rate=float(train_cfg["learning_rate"]),
         warmup_steps=warmup_steps,
         weight_decay=float(train_cfg.get("weight_decay", 0.0)),
