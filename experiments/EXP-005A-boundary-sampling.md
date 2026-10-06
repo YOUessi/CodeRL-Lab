@@ -4,7 +4,7 @@
 
 **代码实现：第一版完成。**  
 **SFT 策略全训练集筛选：已完成。**  
-**匹配预算 GRPO：待运行。**
+**匹配预算 GRPO：随机控制臂已完成；boundary 臂待运行。**
 
 ## 为什么现在做这个实验
 
@@ -286,3 +286,54 @@ EXP-003 在线训练中：
 
 - B：相同子集大小，但普通随机组成；
 - C：相同子集大小，100% 位于初始 SFT policy 的组内奖励边界。
+
+
+## B 组：同大小随机子集 GRPO 结果
+
+训练集：181 个随机任务（seed=42），其中 mixed 93 题（51.38%）。
+
+训练预算：
+
+- optimizer steps：187；
+- num_generations：4；
+- RL prompt groups：374；
+- RL completions：1496；
+- 初始化：EXP-002 SFT adapter；
+- 其它超参数与 EXP-003 / boundary 臂一致。
+
+训练结果：
+
+| 指标 | Random subset |
+|---|---:|
+| train runtime | 712.79 s |
+| mean reward | 0.4510 |
+| mean public reward | 0.3941 |
+| mean entropy | 0.2802 |
+| mean frac_reward_zero_std | **54.01%** |
+| zero-grad steps | **56 / 187** |
+| zero-grad fraction | **29.95%** |
+| whole-batch reward std = 0 | 28 / 187 |
+| peak allocated | 2,703,588,864 bytes |
+| peak reserved | 5,836,374,016 bytes |
+
+Adapter SHA-256：
+
+`99ce438d10d6ed0ab163517992fc86fcf394d9669a5bbf807d001898006ef06b`
+
+### 相对 EXP-003 全量随机
+
+EXP-003：
+
+- zero-grad fraction：27.81%；
+- mean frac_reward_zero_std：52.14%。
+
+随机 181 题控制：
+
+- zero-grad fraction：29.95%；
+- mean frac_reward_zero_std：54.01%。
+
+因此：
+
+> **缩小为 181 题并重复训练本身没有减少无效更新，反而略差。**
+
+这排除了一个重要替代解释：如果 boundary 臂后续 zero-std 明显下降，不能简单归因于“子集更小、重复更多”。
