@@ -97,6 +97,12 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
     rescued = 0
     collapsed = 0
     rescued_zero_public = 0
+    rescued_with_dependency_variation = 0
+    rescued_with_runtime_variation = 0
+    rescued_with_syntax_variation = 0
+    rescued_dependency_only = 0
+    rescued_runtime_only = 0
+    rescued_dependency_and_runtime = 0
 
     for task_id, task_rows in sorted(grouped.items()):
         task_rows.sort(key=lambda x: int(x["sample_id"]))
@@ -113,6 +119,23 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
             rescued += 1
             if all(float(x["public_pass_rate"]) == 0.0 for x in task_rows):
                 rescued_zero_public += 1
+
+            dep_var = len(
+                {bool(x["dependency_complete"]) for x in task_rows}
+            ) > 1
+            runtime_var = len(
+                {float(x["runtime_clean_rate"]) for x in task_rows}
+            ) > 1
+            syntax_var = len(
+                {bool(x["syntax_ok"]) for x in task_rows}
+            ) > 1
+
+            rescued_with_dependency_variation += int(dep_var)
+            rescued_with_runtime_variation += int(runtime_var)
+            rescued_with_syntax_variation += int(syntax_var)
+            rescued_dependency_only += int(dep_var and not runtime_var)
+            rescued_runtime_only += int(runtime_var and not dep_var)
+            rescued_dependency_and_runtime += int(dep_var and runtime_var)
         if not old_flat and new_flat:
             collapsed += 1
 
@@ -152,6 +175,14 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
             rescued / outcome_flat if outcome_flat else 0.0
         ),
         "rescued_zero_public_tasks": rescued_zero_public,
+        "rescued_signal_attribution": {
+            "dependency_variation": rescued_with_dependency_variation,
+            "runtime_variation": rescued_with_runtime_variation,
+            "syntax_variation": rescued_with_syntax_variation,
+            "dependency_only": rescued_dependency_only,
+            "runtime_only": rescued_runtime_only,
+            "dependency_and_runtime": rescued_dependency_and_runtime,
+        },
         "mixed_tasks_collapsed_by_process_reward": collapsed,
         "overall_dependency_complete_rate": (
             sum(bool(x["dependency_complete"]) for x in rows) / n_rows
