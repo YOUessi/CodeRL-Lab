@@ -1,0 +1,17 @@
+{
+  "experiment": "EXP-006B-n16-base",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "tasks": 90,
+  "samples_per_task": 16,
+  "pass_at_1": 0.34305555555555556,
+  "pass_at_4": 0.6063431013431014,
+  "pass_at_8": 0.6580074246740911,
+  "pass_at_16": 0.6777777777777778,
+  "syntax_failures": 352,
+  "syntax_failure_rate": 0.24444444444444444,
+  "public_mean": 0.35625,
+  "hidden_mean": 0.36319444444444443,
+  "hidden_all_pass_candidates": 494,
+  "solved_tasks": 61,
+  "note": "This is the unified n=16 resampling run. Its Pass@4 is not expected to exactly equal EXP-006A's separate n=4 run."
+}
