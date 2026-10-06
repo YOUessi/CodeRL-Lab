@@ -1,0 +1,23 @@
+{
+  "experiment": "EXP-006B-smoke",
+  "tasks": 2,
+  "samples_per_task": 16,
+  "base": {
+    "peak_allocated_bytes": 4662031360,
+    "peak_reserved_bytes": 5937037312
+  },
+  "sft": {
+    "peak_allocated_bytes": 4046539776,
+    "peak_reserved_bytes": 4221566976
+  },
+  "grpo": {
+    "peak_allocated_bytes": 4003616768,
+    "peak_reserved_bytes": 4190109696
+  },
+  "support_smoke": {
+    "base_solved": 1,
+    "sft_solved": 2,
+    "grpo_solved": 2
+  },
+  "conclusion": "16-return generation is safe on Tang 16GB; proceed to full 90-task n=16 evaluation."
+}
