@@ -6,7 +6,7 @@
 **Base smoke：已通过。**  
 **SFT smoke：已通过。**  
 **正式 SFT：已完成；90题 Base / SFT 评测待运行。**  
-**GRPO：等待正式 SFT adapter 哈希后再配置。**
+**GRPO：配置已完成，等待 2-step GPU 冒烟。**
 
 ## 研究问题
 
@@ -209,3 +209,25 @@ vs
 结论：
 
 > 1.7B LoRA SFT 在 Tang 16GB 上稳定完成，峰值 reserved 约 7.43GB，因此后续 1.7B GRPO 有实际尝试空间。
+
+
+## 1.7B GRPO 配置冻结
+
+正式 SFT adapter 已固定：
+
+`e1ea9a007a3e4213cdeb1ca6b1e12d29adb83594991421757d0d40b9168d0861`
+
+GRPO 第一版完全复用 0.6B 的算法设置：
+
+- num_generations = 4；
+- max completion length = 256；
+- per-device batch = 4；
+- gradient accumulation = 2；
+- learning rate = 1e-6；
+- loss_type = grpo；
+- beta = 0；
+- 公共测试奖励；
+- hidden tests 禁止进入训练；
+- 4 路 reward worker。
+
+先运行 16 题 / 2 step 冒烟；只有 16GB 显存可承受时才进入完整 187 step。
