@@ -1,0 +1,35 @@
+dataset:
+  id: google-research-datasets/mbpp
+  config: full
+  revision: main
+
+split_policy:
+  train:
+    expected_tasks: 374
+    public_tests_per_task: 2
+    purpose:
+      - sft
+      - rl
+  validation:
+    expected_tasks: 90
+    public_tests_per_task: 1
+    purpose:
+      - hyperparameter_selection
+      - reward_debugging
+  test:
+    expected_tasks: 500
+    public_tests_per_task: 1
+    purpose:
+      - in_distribution_evaluation
+
+external_evaluation:
+  evalplus_mbpp_plus:
+    purpose: robust_hidden_test_evaluation
+  livecodebench:
+    purpose: out_of_distribution_and_contamination_sensitive_evaluation
+
+rules:
+  - "test split canonical solutions are never used for training."
+  - "hidden tests are never used to compute training reward."
+  - "MBPP is an in-distribution benchmark, not proof of contamination-free generalization."
+  - "Capability-boundary claims require additional external evaluation."
