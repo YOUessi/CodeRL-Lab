@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from concurrent.futures import ThreadPoolExecutor
@@ -263,6 +264,7 @@ def run_grpo(
     train_cfg = dict(cfg["training"])
     reward_cfg = dict(cfg["reward"])
     generation_cfg = dict(cfg["generation"])
+    initial_policy_cfg = dict(cfg.get("initial_policy", {}))
 
     seed = int(train_cfg.get("seed", 42))
     rows = load_grpo_rows(
@@ -312,6 +314,26 @@ def run_grpo(
             f"SFT adapter not found: {sft_adapter_path}. "
             "Run EXP-002 on Tang first."
         )
+
+    adapter_weights = sft_adapter_path / "adapter_model.safetensors"
+    expected_adapter_sha = initial_policy_cfg.get("expected_sha256")
+    resolved_adapter_sha = None
+    if adapter_weights.exists():
+        resolved_adapter_sha = hashlib.sha256(
+            adapter_weights.read_bytes()
+        ).hexdigest()
+    if expected_adapter_sha:
+        if resolved_adapter_sha is None:
+            raise FileNotFoundError(
+                f"adapter weights not found for SHA verification: "
+                f"{adapter_weights}"
+            )
+        if resolved_adapter_sha != str(expected_adapter_sha):
+            raise ValueError(
+                "SFT adapter SHA-256 mismatch: "
+                f"expected {expected_adapter_sha}, "
+                f"got {resolved_adapter_sha}"
+            )
 
     model = PeftModel.from_pretrained(
         base_model,
@@ -414,6 +436,7 @@ def run_grpo(
         "config_path": str(config_path),
         "tasks_path": str(tasks_path),
         "sft_adapter_path": str(sft_adapter_path),
+        "sft_adapter_sha256": resolved_adapter_sha,
         "output_dir": str(final_output),
         "model": model_name,
         "requested_model_revision": revision,
