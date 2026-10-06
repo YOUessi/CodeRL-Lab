@@ -10,13 +10,13 @@ python -m coderl_lab.analysis.large_k_boundary \
   --grpo "$ROOT/grpo/evaluation/summary.json" \
   --output "$ROOT/support_analysis.json"
 
-python -m coderl_lab.analysis.paired_bootstrap \
+python -m coderl_lab.analysis.paired_support_bootstrap \
   --a "$ROOT/base/evaluation/summary.json" \
   --b "$ROOT/sft/evaluation/summary.json" \
   --iterations 20000 --seed 42 \
   --output "$ROOT/base_vs_sft_bootstrap.json"
 
-python -m coderl_lab.analysis.paired_bootstrap \
+python -m coderl_lab.analysis.paired_support_bootstrap \
   --a "$ROOT/sft/evaluation/summary.json" \
   --b "$ROOT/grpo/evaluation/summary.json" \
   --iterations 20000 --seed 42 \
