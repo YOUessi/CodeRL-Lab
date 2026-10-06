@@ -24,6 +24,7 @@ reward:
   docker_image: python:3.11-slim
   timeout_seconds: 5.0
   memory_limit: 512m
+  max_workers: 4
   hidden_tests_allowed: false
 
 generation:
