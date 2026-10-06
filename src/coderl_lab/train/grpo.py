@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+from concurrent.futures import ThreadPoolExecutor
 import random
 import time
 from pathlib import Path
@@ -121,12 +122,42 @@ class VerifiableCodeReward:
         timeout_seconds: float,
         memory_limit: str,
         docker_image: str,
+        max_workers: int = 1,
     ) -> None:
         self.executor = PythonExecutor(
             mode="docker",
             timeout_seconds=timeout_seconds,
             docker_image=docker_image,
             memory_limit=memory_limit,
+        )
+        if max_workers <= 0:
+            raise ValueError("max_workers must be positive")
+        self.max_workers = max_workers
+
+    def _score_one(
+        self,
+        raw: str,
+        entry_point: str,
+        tests: list[dict[str, Any]],
+        setup_code: str,
+    ) -> tuple[float, float, float, float]:
+        code = extract_python_code(str(raw), str(entry_point))
+        cases = tuple(TestCase.from_dict(x) for x in tests)
+        report = self.executor.run(
+            code,
+            entry_point=str(entry_point),
+            cases=cases,
+            setup_code=str(setup_code),
+        )
+        reward = compute_training_reward(
+            syntax_ok=report.syntax_ok,
+            public_pass_rate=report.pass_rate,
+        )
+        return (
+            float(reward.total),
+            float(reward.syntax),
+            float(reward.public_pass_rate),
+            float(reward.all_public_pass_bonus),
         )
 
     def __call__(
@@ -152,34 +183,34 @@ class VerifiableCodeReward:
         ):
             raise ValueError("reward inputs must have one metadata row per completion")
 
-        rewards: list[float] = []
-        syntax_values: list[float] = []
-        pass_rates: list[float] = []
-        all_pass_values: list[float] = []
+        work_items = list(
+            zip(
+                completions,
+                entry_point or [],
+                public_tests or [],
+                setup_code or [],
+                strict=True,
+            )
+        )
 
-        for raw, ep, tests, setup in zip(
-            completions,
-            entry_point or [],
-            public_tests or [],
-            setup_code or [],
-            strict=True,
-        ):
-            code = extract_python_code(str(raw), str(ep))
-            cases = tuple(TestCase.from_dict(x) for x in tests)
-            report = self.executor.run(
-                code,
-                entry_point=str(ep),
-                cases=cases,
-                setup_code=str(setup),
-            )
-            reward = compute_training_reward(
-                syntax_ok=report.syntax_ok,
-                public_pass_rate=report.pass_rate,
-            )
-            rewards.append(float(reward.total))
-            syntax_values.append(float(reward.syntax))
-            pass_rates.append(float(reward.public_pass_rate))
-            all_pass_values.append(float(reward.all_public_pass_bonus))
+        if self.max_workers == 1:
+            scored = [
+                self._score_one(raw, ep, tests, setup)
+                for raw, ep, tests, setup in work_items
+            ]
+        else:
+            with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
+                scored = list(
+                    pool.map(
+                        lambda item: self._score_one(*item),
+                        work_items,
+                    )
+                )
+
+        rewards = [x[0] for x in scored]
+        syntax_values = [x[1] for x in scored]
+        pass_rates = [x[2] for x in scored]
+        all_pass_values = [x[3] for x in scored]
 
         if log_metric is not None and rewards:
             log_metric("reward/public_mean", sum(pass_rates) / len(pass_rates))
@@ -356,6 +387,7 @@ def run_grpo(
         timeout_seconds=float(reward_cfg["timeout_seconds"]),
         memory_limit=str(reward_cfg["memory_limit"]),
         docker_image=str(reward_cfg["docker_image"]),
+        max_workers=int(reward_cfg.get("max_workers", 1)),
     )
 
     trainer = GRPOTrainer(
