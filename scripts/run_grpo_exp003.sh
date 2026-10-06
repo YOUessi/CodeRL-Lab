@@ -21,3 +21,8 @@ python -m coderl_lab.train.grpo \
   --tasks "$DATA_DIR/train_tasks.jsonl" \
   --sft-adapter "$SFT_ADAPTER" \
   --output-dir "$OUTPUT_DIR"
+
+
+python -m coderl_lab.analysis.grpo_history \
+  --input "$OUTPUT_DIR/log_history.json" \
+  --output "$OUTPUT_DIR/dynamics_summary.json"
