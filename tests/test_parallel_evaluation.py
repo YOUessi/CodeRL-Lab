@@ -1,6 +1,6 @@
 from coderl_lab.evaluation import evaluate_predictions
 from coderl_lab.execution import PythonExecutor
-from coderl_lab.schema import CodeTask, TestCase
+from coderl_lab.schema import CodeTask, TestCase as CodeTestCase
 
 
 def make_tasks():
@@ -9,8 +9,8 @@ def make_tasks():
         prompt="add",
         entry_point="add",
         starter_code="def add(a,b):\n    pass\n",
-        public_tests=(TestCase(args=[1, 2], expected=3),),
-        hidden_tests=(TestCase(args=[-1, 1], expected=0),),
+        public_tests=(CodeTestCase(args=[1, 2], expected=3),),
+        hidden_tests=(CodeTestCase(args=[-1, 1], expected=0),),
     )
     return {"add": task}
 
