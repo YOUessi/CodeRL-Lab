@@ -104,6 +104,34 @@ TRL 的 GRPO trainer 导入 vLLM 客户端模块，而当前项目模型依赖�
 - 环境修复后再继续读取真实 GRPO API；
 - 不在 Tang 临时修改源码。
 
+
+
+### 问题 2：YAML 的 `no` 被解析为布尔值
+
+第一次 16 题 / 2 步 GRPO 冒烟在创建 `GRPOConfig` 时失败：
+
+```text
+ValueError: False is not a valid SaveStrategy
+```
+
+原因：
+
+PyYAML 将未加引号的：
+
+```yaml
+save_strategy: no
+```
+
+按 YAML 1.1 规则解释成布尔值 `False`。
+
+处理：
+
+```yaml
+save_strategy: "no"
+```
+
+该问题发生在任何 rollout 或参数更新之前，因此没有产生 GRPO 训练结果。
+
 ## 冒烟门槛
 
 - [ ] GRPOConfig / GRPOTrainer 在固定环境中可导入；
