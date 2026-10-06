@@ -6,7 +6,7 @@
 **Base smoke：已通过。**  
 **SFT smoke：已通过。**  
 **正式 Base / SFT validation：已完成。**  
-**GRPO：配置已完成，等待 2-step GPU 冒烟。**
+**GRPO：2-step GPU 冒烟已通过，正式187-step待运行。**
 
 ## 研究问题
 
@@ -317,3 +317,39 @@ GRPO 第一版完全复用 0.6B 的算法设置：
 > **在 Qwen3-1.7B-Base 上，这套 SFT 显著降低了 4-sample 任务覆盖率，同时大幅提高输出语法有效性和部分任务的成功概率集中度。**
 
 这比 0.6B 上“Pass@1 增益大于 Pass@4”更强，说明概率集中/覆盖收缩并不是 0.6B 容量特例。
+
+
+## 1.7B GRPO 2-step GPU 冒烟
+
+配置：
+
+- 16 个 train tasks；
+- 2 optimizer steps；
+- num_generations = 4；
+- loss_type = grpo；
+- beta = 0；
+- 公共测试奖励；
+- SFT adapter 哈希校验通过。
+
+结果：
+
+| 指标 | 数值 |
+|---|---:|
+| train runtime | 10.76 s |
+| mean reward | 0.3500 |
+| mean frac_reward_zero_std | 25.0% |
+| zero-grad steps | 0 / 2 |
+| peak allocated | 4,931,461,120 bytes |
+| peak reserved | 6,362,759,168 bytes |
+
+Smoke adapter SHA-256：
+
+`3df2ffae732c6501c1454b2b91016c645a660a2239852c88f984e94d0b4a6cc4`
+
+Docker timeout 清理后运行容器数：0。
+
+结论：
+
+> 1.7B 在 Tang 16GB 上可以直接沿用 0.6B 的 4-generation 纯 GRPO 配置，无需为了显存改变算法变量。
+
+因此进入完整 374 题 / 187 optimizer step GRPO。
