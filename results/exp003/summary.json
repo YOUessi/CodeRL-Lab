@@ -1,0 +1,76 @@
+{
+  "experiment": "EXP-003",
+  "model": "Qwen/Qwen3-0.6B-Base",
+  "model_revision": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
+  "dataset": "google-research-datasets/mbpp",
+  "dataset_revision": "4bb6404fdc6cacfda99d4ac4205087b89d32030c",
+  "initial_sft_adapter_sha256": "7fcb2b0ca7608be980fb4cbae5158241886ac67f3cc2f5b855cf34531c5982f7",
+  "grpo_adapter_sha256": "1140fab138e31882404933ce4ba91f40a483e0ec9db18b4acc999383fb34529b",
+  "training": {
+    "unique_tasks": 374,
+    "optimizer_steps": 187,
+    "num_generations": 4,
+    "generation_batch_size": 8,
+    "beta": 0,
+    "loss_type": "grpo",
+    "train_runtime_seconds": 751.0959,
+    "peak_allocated_bytes": 2704101888,
+    "peak_reserved_bytes": 6958350336
+  },
+  "dynamics": {
+    "reward_mean": 0.4342246025322593,
+    "reward_std_mean": 0.33135108466454366,
+    "frac_reward_zero_std_mean": 0.5213903743315508,
+    "entropy_mean": 0.27698536603686646,
+    "grad_norm_mean": 0.9257989788756651,
+    "zero_grad_steps": 52,
+    "zero_grad_fraction": 0.27807486631016043,
+    "zero_reward_std_steps": 28,
+    "zero_reward_std_step_fraction": 0.1497326203208556,
+    "first_quarter_public_reward": 0.37228260869565216,
+    "last_quarter_public_reward": 0.4741847826086957
+  },
+  "validation": {
+    "tasks": 90,
+    "samples_per_task": 4,
+    "base": {
+      "pass_at_1": 0.1361111111111111,
+      "pass_at_4": 0.3888888888888889,
+      "syntax_failures": 182,
+      "hidden_mean": 0.1486111111111111,
+      "solved_tasks": 35,
+      "all4_tasks": 0
+    },
+    "sft": {
+      "pass_at_1": 0.25555555555555554,
+      "pass_at_4": 0.43333333333333335,
+      "syntax_failures": 0,
+      "hidden_mean": 0.28194444444444444,
+      "solved_tasks": 39,
+      "all4_tasks": 8
+    },
+    "grpo": {
+      "pass_at_1": 0.2722222222222222,
+      "pass_at_4": 0.4222222222222222,
+      "syntax_failures": 0,
+      "public_mean": 0.3055555555555556,
+      "hidden_mean": 0.2986111111111111,
+      "public_all": 110,
+      "hidden_all": 98,
+      "public_all_hidden_fail": 16,
+      "solved_tasks": 38,
+      "all4_tasks": 12
+    },
+    "grpo_minus_sft": {
+      "pass_at_1": 0.016666666666666663,
+      "pass_at_4": -0.011111111111111127,
+      "public_mean": 0.02777777777777779,
+      "hidden_mean": 0.016666666666666663,
+      "improved_tasks": 10,
+      "degraded_tasks": 4,
+      "same_tasks": 76,
+      "gained_from_zero": 2,
+      "lost_to_zero": 3
+    }
+  }
+}
