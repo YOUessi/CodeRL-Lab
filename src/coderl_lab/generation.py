@@ -95,6 +95,7 @@ def generate_predictions(
     max_tasks: int | None = None,
     batch_samples: bool = False,
     sample_batch_size: int | None = None,
+    task_seed_map_path: Path | None = None,
 ) -> dict:
     try:
         import torch
@@ -114,6 +115,13 @@ def generate_predictions(
 
     tasks = load_tasks(tasks_path)
     task_list = list(tasks.values())
+
+    task_seed_map: dict[str, int] = {}
+    if task_seed_map_path is not None:
+        raw_seed_map = json.loads(task_seed_map_path.read_text(encoding="utf-8"))
+        if not isinstance(raw_seed_map, dict):
+            raise ValueError("task seed map must be a JSON object")
+        task_seed_map = {str(k): int(v) for k, v in raw_seed_map.items()}
     if max_tasks is not None:
         task_list = task_list[:max_tasks]
 
@@ -155,7 +163,10 @@ def generate_predictions(
             prompt_length = encoded["input_ids"].shape[1]
 
             if batch_samples:
-                task_seed = seed + task_index * 100_000
+                task_seed = task_seed_map.get(
+                    task.task_id,
+                    seed + task_index * 100_000,
+                )
                 for batch_start, batch_count in _sample_batch_ranges(
                     num_samples,
                     sample_batch_size,
@@ -211,7 +222,11 @@ def generate_predictions(
                         generated_count += 1
             else:
                 for sample_id in range(num_samples):
-                    sample_seed = seed + task_index * 100_000 + sample_id
+                    task_seed = task_seed_map.get(
+                        task.task_id,
+                        seed + task_index * 100_000,
+                    )
+                    sample_seed = task_seed + sample_id
                     _seed_everything(torch, sample_seed)
 
                     with torch.inference_mode():
@@ -270,6 +285,7 @@ def generate_predictions(
         "samples_per_task": num_samples,
         "sample_batching": batch_samples,
         "sample_batch_size": sample_batch_size,
+        "task_seed_map": str(task_seed_map_path) if task_seed_map_path else None,
         "generated_count": generated_count,
         "max_new_tokens": max_new_tokens,
         "temperature": temperature,
@@ -319,6 +335,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--num-samples", type=int, default=16)
     parser.add_argument(
+        "--task-seed-map",
+        type=Path,
+        help=(
+            "Optional JSON mapping task_id to the original task-level seed. "
+            "Used for strict continuation when evaluating a task subset."
+        ),
+    )
+    parser.add_argument(
         "--sample-batch-size",
         type=int,
         help=(
@@ -346,6 +370,7 @@ def main() -> None:
         batch_samples=args.batch_samples,
         sample_batch_size=args.sample_batch_size,
         num_samples=args.num_samples,
+        task_seed_map_path=args.task_seed_map,
         max_new_tokens=args.max_new_tokens,
         temperature=args.temperature,
         top_p=args.top_p,
