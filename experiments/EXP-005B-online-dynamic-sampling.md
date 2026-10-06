@@ -5,7 +5,7 @@
 **设计：完成。**  
 **代码：第一版完成。**  
 **GPU 冒烟：已通过。**  
-**正式实验：待运行。**
+**正式实验：已完成。**
 
 ## 来自 EXP-005A 的问题
 
@@ -208,3 +208,176 @@ mixed   -> flat  : 1
 - actual rollout groups / completions。
 
 因此正式实验的 raw RL budget 以后以**实际 observed rollout**为准，不用 sampler 预取数冒充计算预算。
+
+
+## 正式 187-step 结果
+
+训练代码基于 PR #9 当前分支。
+
+固定预算：
+
+- optimizer steps：187；
+- actual rollout groups：374；
+- actual RL completions：1496；
+- offline screening：0；
+- num_generations：4；
+- exploit_fraction：0.5。
+
+### 训练动力学
+
+| 指标 | EXP-003 全量随机 | 005A 静态边界 | **005B 在线动态** |
+|---|---:|---:|---:|
+| zero-grad fraction | 27.81% | 11.76% | **10.70%** |
+| zero-grad steps | 52 | 22 | **20** |
+| effective steps | 135 | 165 | **167** |
+| completions / effective step | 11.08 | 9.07 | **8.96** |
+| mean frac_reward_zero_std | 52.14% | **33.16%** | 39.57% |
+| train runtime | 751.10 s | 702.26 s | 743.26 s |
+
+005B 没有静态 boundary 那么低的组内零方差比例，但获得了**最高的有效优化步数**，且不需要额外 1496-completion 离线筛选。
+
+Adapter SHA-256：
+
+`35d911cfe8f3c26fe087b44f19087ee348ff4ef94db43485bae37a8b89edcd8d`
+
+### 在线 sampler 行为
+
+最终状态：
+
+- unknown：185；
+- mixed：50；
+- flat：139；
+- unique observed tasks：189；
+- exploit selections：185；
+- explore selections：189；
+- actual groups observed：374；
+- prefetched but unobserved：0。
+
+374 个实际 group 中：
+
+- mixed group：226；
+- flat group：148；
+- observed mixed fraction：**60.43%**。
+
+状态转移：
+
+```text
+unknown -> mixed : 84
+unknown -> flat  : 105
+mixed   -> mixed : 137
+mixed   -> flat  : 39
+flat    -> mixed : 5
+flat    -> flat  : 4
+```
+
+这里最重要的是：
+
+- `mixed -> flat = 39`；
+- `flat -> mixed = 5`。
+
+说明 task 是否位于能力边界确实依赖当前 policy，不是静态属性。
+
+## 90 题 validation
+
+统一设置：
+
+- MBPP validation 90 题；
+- 每题 4 候选；
+- 与 EXP-003 / 005A 相同生成参数和 Docker 隐藏测试。
+
+| 模型 | Pass@1 | Pass@4 | hidden mean | solved tasks |
+|---|---:|---:|---:|---:|
+| EXP-003 全量 GRPO | 27.22% | 42.22% | 29.86% | 38 |
+| 005A 随机 181题 | **28.89%** | **44.44%** | **31.81%** | **40** |
+| 005A 静态 boundary | 26.94% | **44.44%** | 30.28% | **40** |
+| **005B 在线动态** | 28.06% | 42.22% | 31.39% | 38 |
+
+005B 其它指标：
+
+- syntax failures：1 / 360；
+- hidden-all-pass candidates：101 / 360；
+- public-all-hidden-fail：15 / 360；
+- all-4-correct tasks：8。
+
+## 配对 bootstrap（20,000 次）
+
+### 005B - EXP-003 全量随机
+
+Pass@1：
+
+- observed delta：+0.83 个百分点；
+- 95% CI：[-1.67, +3.61] 个百分点；
+- bootstrap P(delta > 0)：0.6915。
+
+Pass@4 solved-task：
+
+- delta：0；
+- 95% CI：[-4.44, +4.44] 个百分点。
+
+### 005B - 005A 静态 boundary
+
+Pass@1：
+
+- observed delta：+1.11 个百分点；
+- 95% CI：[-1.39, +3.89] 个百分点；
+- P(delta > 0)：0.7626。
+
+Pass@4：
+
+- observed delta：-2.22 个百分点；
+- 95% CI：[-7.78, +3.33] 个百分点。
+
+### 005B - 同大小随机子集
+
+Pass@1：-0.83 个百分点，95% CI [-3.06, +1.39]。  
+Pass@4：-2.22 个百分点，95% CI [-7.78, +3.33]。
+
+## EXP-005B 结论
+
+### 可以确认
+
+1. **在线策略依赖采样显著提高 rollout / 梯度利用率。**
+   - zero-grad 从全量随机 27.81% 降到 10.70%；
+   - 在相同 1496 completions 下多得到 32 个有效 optimizer step。
+
+2. **边界状态确实随 policy 动态变化。**
+   mixed↔flat 双向转移在正式训练中大量出现。
+
+3. **在线方法不需要 005A 的额外离线筛选成本。**
+   在有效更新效率上略优于静态 boundary。
+
+### 不能确认
+
+1. validation 没有出现统计上可靠的提升；
+2. Pass@4 没有超过 EXP-003，并低于两个 005A 子集臂；
+3. 提高“有效梯度比例”并不自动等价于扩大代码能力覆盖。
+
+## 当前科研判断
+
+EXP-003 → 005A → 005B 已形成一个很清楚的证据链：
+
+```text
+大量 flat group
+  ↓
+静态 boundary 筛选
+  ↓
+有效梯度显著增加
+  ↓
+validation 不提升
+  ↓
+boundary 会随 policy 变化
+  ↓
+在线动态采样
+  ↓
+有效梯度进一步提高、无需离线筛选
+  ↓
+validation 仍无显著提升
+```
+
+因此下一步不应该继续只优化“题目怎么采样”。
+
+更值得进入：
+
+- EXP-004：过程级可验证奖励 / 信用分配；
+- 或更强模型 1.7B 复现实验，检查 0.6B 是否成为能力瓶颈；
+- 再之后才考虑 005B-v2 的 batch 内 drop+refill。
