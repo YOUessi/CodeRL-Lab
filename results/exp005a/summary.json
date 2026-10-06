@@ -1,0 +1,91 @@
+{
+  "experiment": "EXP-005A",
+  "dataset_revision": "4bb6404fdc6cacfda99d4ac4205087b89d32030c",
+  "model": "Qwen/Qwen3-0.6B-Base",
+  "model_revision": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
+  "screening": {
+    "tasks": 374,
+    "samples_per_task": 4,
+    "completions": 1496,
+    "mixed_tasks": 181,
+    "mixed_fraction": 0.4839572192513369
+  },
+  "arms": {
+    "full_random": {
+      "unique_tasks": 374,
+      "optimizer_steps": 187,
+      "rl_completions": 1496,
+      "runtime_seconds": 751.0959,
+      "frac_reward_zero_std": 0.5213903743315508,
+      "zero_grad_steps": 52,
+      "zero_grad_fraction": 0.27807486631016043,
+      "effective_steps": 135,
+      "completions_per_effective_step": 11.08148148148148,
+      "pass_at_1": 0.2722222222222222,
+      "pass_at_4": 0.4222222222222222,
+      "hidden_mean": 0.2986111111111111,
+      "solved_tasks": 38,
+      "all4_tasks": 12
+    },
+    "random_subset": {
+      "unique_tasks": 181,
+      "optimizer_steps": 187,
+      "rl_completions": 1496,
+      "runtime_seconds": 712.789,
+      "frac_reward_zero_std": 0.5401069518716578,
+      "zero_grad_steps": 56,
+      "zero_grad_fraction": 0.2994652406417112,
+      "effective_steps": 131,
+      "completions_per_effective_step": 11.419847328244275,
+      "pass_at_1": 0.28888888888888886,
+      "pass_at_4": 0.4444444444444444,
+      "hidden_mean": 0.31805555555555554,
+      "solved_tasks": 40,
+      "all4_tasks": 10,
+      "adapter_sha256": "99ce438d10d6ed0ab163517992fc86fcf394d9669a5bbf807d001898006ef06b"
+    },
+    "boundary_subset": {
+      "unique_tasks": 181,
+      "optimizer_steps": 187,
+      "rl_completions": 1496,
+      "runtime_seconds": 702.2559,
+      "frac_reward_zero_std": 0.3315508021390374,
+      "zero_grad_steps": 22,
+      "zero_grad_fraction": 0.11764705882352941,
+      "effective_steps": 165,
+      "completions_per_effective_step": 9.066666666666666,
+      "pass_at_1": 0.26944444444444443,
+      "pass_at_4": 0.4444444444444444,
+      "hidden_mean": 0.30277777777777776,
+      "solved_tasks": 40,
+      "all4_tasks": 10,
+      "adapter_sha256": "5087a832e6659374fa4a08525638dc265d0447a6a6a3301e74f786a1bba26d48"
+    }
+  },
+  "primary_boundary_minus_random": {
+    "zero_grad_fraction": -0.1818181818181818,
+    "frac_reward_zero_std": -0.20855614973262038,
+    "effective_steps": 34,
+    "completions_per_effective_step": -2.3531806615776087,
+    "pass_at_1": -0.01944444444444443,
+    "pass_at_4": 0,
+    "hidden_mean": -0.015277777777777779
+  },
+  "paired_bootstrap_boundary_minus_random": {
+    "pass_at_1": {
+      "observed_delta": -0.019444444444444445,
+      "ci95_low": -0.05,
+      "ci95_high": 0.008333333333333333,
+      "probability_positive": 0.0763
+    },
+    "pass_at_4": {
+      "observed_delta": 0,
+      "ci95_low": -0.05555555555555555,
+      "ci95_high": 0.05555555555555555,
+      "probability_positive": 0.41435
+    },
+    "iterations": 20000,
+    "seed": 42
+  },
+  "conclusion": "Static boundary selection strongly improves gradient/rollout efficiency but does not outperform a same-size random subset on current validation. Proceed to online dynamic sampling."
+}
