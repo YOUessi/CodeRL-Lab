@@ -203,10 +203,15 @@ def case_runtime_clean(case: Any) -> bool:
     failures. Call-style tests with a wrong returned value have error=None and
     are also considered clean.
     """
-    if bool(getattr(case, "timed_out", False)):
-        return False
+    if isinstance(case, dict):
+        timed_out = bool(case.get("timed_out", False))
+        error = case.get("error")
+    else:
+        timed_out = bool(getattr(case, "timed_out", False))
+        error = getattr(case, "error", None)
 
-    error = getattr(case, "error", None)
+    if timed_out:
+        return False
     if error is None:
         return True
     return "AssertionError" in str(error)
