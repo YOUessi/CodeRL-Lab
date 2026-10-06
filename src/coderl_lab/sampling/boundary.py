@@ -6,6 +6,7 @@ import json
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+import random
 from statistics import mean
 from typing import Any
 
@@ -52,6 +53,17 @@ def classify_reward_group(
     if all(abs(x) <= epsilon for x in public_pass_rates):
         return "flat_test_fail"
     return "flat_partial"
+
+
+def select_random_control_ids(
+    task_ids: list[str],
+    count: int,
+    *,
+    seed: int,
+) -> list[str]:
+    if count < 0 or count > len(task_ids):
+        raise ValueError("random control count is out of range")
+    return random.Random(seed).sample(task_ids, count)
 
 
 def strip_hidden_for_training(task: dict[str, Any]) -> dict[str, Any]:
@@ -170,6 +182,7 @@ def build_screening(
     memory_limit: str,
     docker_image: str,
     max_workers: int,
+    random_control_seed: int = 42,
 ) -> dict[str, Any]:
     task_rows = _load_jsonl(tasks_path)
     prediction_rows = _load_jsonl(predictions_path)
@@ -251,6 +264,24 @@ def build_screening(
                     json.dumps(stripped, ensure_ascii=False) + "\n"
                 )
 
+    all_task_ids = [str(row["task_id"]) for row in task_rows]
+    random_control_ids = select_random_control_ids(
+        all_task_ids,
+        len(selected_ids),
+        seed=random_control_seed,
+    )
+    random_control_set = set(random_control_ids)
+    random_control_path = output_dir / "random_control_train_tasks.jsonl"
+    with random_control_path.open("w", encoding="utf-8") as handle:
+        for row in task_rows:
+            if str(row["task_id"]) in random_control_set:
+                stripped = strip_hidden_for_training(row)
+                stripped["metadata"]["random_control"] = True
+                stripped["metadata"]["random_control_seed"] = random_control_seed
+                handle.write(
+                    json.dumps(stripped, ensure_ascii=False) + "\n"
+                )
+
     category_counts = Counter(
         row["category"] for row in screening_rows
     )
@@ -266,6 +297,8 @@ def build_screening(
         "selected_category": "mixed",
         "selected_tasks": len(selected_ids),
         "selected_fraction": len(selected_ids) / len(task_rows),
+        "random_control_seed": random_control_seed,
+        "random_control_tasks": len(random_control_ids),
         "mean_reward_across_tasks": mean(
             row["reward_mean"] for row in screening_rows
         ),
@@ -277,6 +310,8 @@ def build_screening(
             "screening_sha256": _sha256(screening_path),
             "boundary_tasks_jsonl": selected_path.name,
             "boundary_tasks_sha256": _sha256(selected_path),
+            "random_control_tasks_jsonl": random_control_path.name,
+            "random_control_tasks_sha256": _sha256(random_control_path),
         },
     }
 
@@ -299,6 +334,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--memory", default="512m")
     parser.add_argument("--docker-image", default="python:3.11-slim")
     parser.add_argument("--max-workers", type=int, default=4)
+    parser.add_argument("--random-control-seed", type=int, default=42)
     return parser.parse_args()
 
 
@@ -313,6 +349,7 @@ def main() -> None:
         memory_limit=args.memory,
         docker_image=args.docker_image,
         max_workers=args.max_workers,
+        random_control_seed=args.random_control_seed,
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
