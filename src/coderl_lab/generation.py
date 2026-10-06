@@ -78,6 +78,7 @@ def generate_predictions(
     model_revision: str | None = None,
     adapter_path: Path | None = None,
     max_tasks: int | None = None,
+    batch_samples: bool = False,
 ) -> dict:
     try:
         import torch
@@ -137,54 +138,103 @@ def generate_predictions(
             encoded = {k: v.to(model.device) for k, v in encoded.items()}
             prompt_length = encoded["input_ids"].shape[1]
 
-            for sample_id in range(num_samples):
-                sample_seed = seed + task_index * 100_000 + sample_id
-                _seed_everything(torch, sample_seed)
-
+            if batch_samples:
+                task_seed = seed + task_index * 100_000
+                _seed_everything(torch, task_seed)
                 with torch.inference_mode():
-                    output = model.generate(
+                    outputs = model.generate(
                         **encoded,
                         max_new_tokens=max_new_tokens,
                         do_sample=True,
                         temperature=temperature,
                         top_p=top_p,
-                        num_return_sequences=1,
+                        num_return_sequences=num_samples,
                         pad_token_id=tokenizer.eos_token_id,
                     )
 
-                generated_tokens = output[0, prompt_length:]
-                raw_completion = tokenizer.decode(
-                    generated_tokens,
-                    skip_special_tokens=True,
-                )
-                completion = extract_python_code(
-                    raw_completion,
-                    entry_point=task.entry_point,
-                )
-
-                handle.write(
-                    json.dumps(
-                        {
-                            "task_id": task.task_id,
-                            "sample_id": sample_id,
-                            "completion": completion,
-                            "raw_completion": raw_completion,
-                            "generation": {
-                                "model": model_name,
-                                "requested_revision": model_revision,
-                                "adapter": str(adapter_path) if adapter_path else None,
-                                "seed": sample_seed,
-                                "temperature": temperature,
-                                "top_p": top_p,
-                                "max_new_tokens": max_new_tokens,
-                            },
-                        },
-                        ensure_ascii=False,
+                for sample_id, output in enumerate(outputs):
+                    generated_tokens = output[prompt_length:]
+                    raw_completion = tokenizer.decode(
+                        generated_tokens,
+                        skip_special_tokens=True,
                     )
-                    + "\n"
-                )
-                handle.flush()
-                generated_count += 1
+                    completion = extract_python_code(
+                        raw_completion,
+                        entry_point=task.entry_point,
+                    )
+                    handle.write(
+                        json.dumps(
+                            {
+                                "task_id": task.task_id,
+                                "sample_id": sample_id,
+                                "completion": completion,
+                                "raw_completion": raw_completion,
+                                "generation": {
+                                    "model": model_name,
+                                    "requested_revision": model_revision,
+                                    "adapter": str(adapter_path) if adapter_path else None,
+                                    "seed": task_seed,
+                                    "batched_sample_index": sample_id,
+                                    "temperature": temperature,
+                                    "top_p": top_p,
+                                    "max_new_tokens": max_new_tokens,
+                                },
+                            },
+                            ensure_ascii=False,
+                        )
+                        + "\n"
+                    )
+                    handle.flush()
+                    generated_count += 1
+            else:
+                for sample_id in range(num_samples):
+                    sample_seed = seed + task_index * 100_000 + sample_id
+                    _seed_everything(torch, sample_seed)
+
+                    with torch.inference_mode():
+                        output = model.generate(
+                            **encoded,
+                            max_new_tokens=max_new_tokens,
+                            do_sample=True,
+                            temperature=temperature,
+                            top_p=top_p,
+                            num_return_sequences=1,
+                            pad_token_id=tokenizer.eos_token_id,
+                        )
+
+                    generated_tokens = output[0, prompt_length:]
+                    raw_completion = tokenizer.decode(
+                        generated_tokens,
+                        skip_special_tokens=True,
+                    )
+                    completion = extract_python_code(
+                        raw_completion,
+                        entry_point=task.entry_point,
+                    )
+
+                    handle.write(
+                        json.dumps(
+                            {
+                                "task_id": task.task_id,
+                                "sample_id": sample_id,
+                                "completion": completion,
+                                "raw_completion": raw_completion,
+                                "generation": {
+                                    "model": model_name,
+                                    "requested_revision": model_revision,
+                                    "adapter": str(adapter_path) if adapter_path else None,
+                                    "seed": sample_seed,
+                                    "temperature": temperature,
+                                    "top_p": top_p,
+                                    "max_new_tokens": max_new_tokens,
+                                },
+                            },
+                            ensure_ascii=False,
+                        )
+                        + "\n"
+                    )
+                    handle.flush()
+                    generated_count += 1
 
     elapsed = time.perf_counter() - started
     base_config = getattr(model, "base_model", model).config
@@ -195,6 +245,7 @@ def generate_predictions(
         "adapter": str(adapter_path) if adapter_path else None,
         "tasks": len(task_list),
         "samples_per_task": num_samples,
+        "sample_batching": batch_samples,
         "generated_count": generated_count,
         "max_new_tokens": max_new_tokens,
         "temperature": temperature,
@@ -237,6 +288,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--revision")
     parser.add_argument("--adapter", type=Path)
     parser.add_argument("--max-tasks", type=int)
+    parser.add_argument(
+        "--batch-samples",
+        action="store_true",
+        help="Generate all samples for a task in one model.generate call.",
+    )
     parser.add_argument("--num-samples", type=int, default=16)
     parser.add_argument("--max-new-tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.8)
@@ -255,6 +311,7 @@ def main() -> None:
         model_revision=args.revision,
         adapter_path=args.adapter,
         max_tasks=args.max_tasks,
+        batch_samples=args.batch_samples,
         num_samples=args.num_samples,
         max_new_tokens=args.max_new_tokens,
         temperature=args.temperature,
