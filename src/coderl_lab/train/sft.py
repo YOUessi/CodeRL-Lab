@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
 import time
 from pathlib import Path
@@ -60,6 +61,43 @@ def load_config(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError("training config must be a mapping")
     return data
+
+
+def compute_warmup_steps(
+    *,
+    num_examples: int,
+    epochs: float,
+    per_device_batch_size: int,
+    gradient_accumulation_steps: int,
+    warmup_ratio: float,
+) -> int:
+    """Convert the configured warmup ratio into optimizer update steps.
+
+    TRL 1.14.1 exposes warmup_steps rather than warmup_ratio. Keep the
+    experiment configuration expressed as a ratio, but materialize an integer
+    number of optimizer steps deterministically for the pinned runtime.
+    """
+    if num_examples <= 0:
+        raise ValueError("num_examples must be positive")
+    if epochs <= 0:
+        raise ValueError("epochs must be positive")
+    if per_device_batch_size <= 0 or gradient_accumulation_steps <= 0:
+        raise ValueError("batch sizes must be positive")
+    if not 0.0 <= warmup_ratio <= 1.0:
+        raise ValueError("warmup_ratio must be in [0, 1]")
+
+    micro_batches_per_epoch = math.ceil(num_examples / per_device_batch_size)
+    update_steps_per_epoch = math.ceil(
+        micro_batches_per_epoch / gradient_accumulation_steps
+    )
+    total_update_steps = math.ceil(update_steps_per_epoch * epochs)
+
+    if warmup_ratio == 0.0:
+        return 0
+    return min(
+        total_update_steps,
+        max(1, math.ceil(total_update_steps * warmup_ratio)),
+    )
 
 
 def run_sft(
@@ -147,14 +185,24 @@ def run_sft(
         if num_train_epochs is not None
         else float(train_cfg["num_train_epochs"])
     )
+    per_device_batch_size = int(train_cfg["per_device_train_batch_size"])
+    gradient_accumulation_steps = int(train_cfg["gradient_accumulation_steps"])
+    warmup_ratio = float(train_cfg.get("warmup_ratio", 0.0))
+    warmup_steps = compute_warmup_steps(
+        num_examples=len(dataset),
+        epochs=epochs,
+        per_device_batch_size=per_device_batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        warmup_ratio=warmup_ratio,
+    )
 
     args = SFTConfig(
         output_dir=str(final_output),
         num_train_epochs=epochs,
-        per_device_train_batch_size=int(train_cfg["per_device_train_batch_size"]),
-        gradient_accumulation_steps=int(train_cfg["gradient_accumulation_steps"]),
+        per_device_train_batch_size=per_device_batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         learning_rate=float(train_cfg["learning_rate"]),
-        warmup_ratio=float(train_cfg.get("warmup_ratio", 0.0)),
+        warmup_steps=warmup_steps,
         weight_decay=float(train_cfg.get("weight_decay", 0.0)),
         lr_scheduler_type=str(train_cfg.get("lr_scheduler_type", "cosine")),
         logging_steps=int(train_cfg.get("logging_steps", 1)),
@@ -201,6 +249,8 @@ def run_sft(
         "dtype": dtype_name,
         "num_examples": len(dataset),
         "num_train_epochs": epochs,
+        "warmup_ratio_requested": warmup_ratio,
+        "warmup_steps": warmup_steps,
         "seed": seed,
         "lora": {
             "r": peft_config.r,
