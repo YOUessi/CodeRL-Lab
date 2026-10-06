@@ -240,6 +240,32 @@ running coderl_lab=1 containers = 0
 
 的 SHA-256，并与配置中的 EXP-002 adapter 哈希比较。不一致则拒绝训练。
 
+
+
+### 问题 4：完整训练缺少逐步训练历史持久化
+
+第一次正式 374 题运行到约 21 / 187 step 时主动中止。
+
+原因不是训练失败，而是检查发现当前 `run_summary.json` 只保存最终指标，没有持久化每一步：
+
+- reward；
+- reward std；
+- frac_reward_zero_std；
+- entropy；
+- grad norm；
+- completion length；
+- step time。
+
+这些指标正是分析 GRPO 探索和有效样本比例的核心证据，因此不接受“先跑完再说”。
+
+修复：
+
+- 保存完整 `trainer.state.log_history` 到 `log_history.json`；
+- 最终摘要增加 global step、trainer max steps、generation batch size、steps per generation；
+- 从固定 GitHub 提交重新启动正式训练。
+
+被中止的 21-step 运行不作为正式实验结果。
+
 ## 冒烟门槛
 
 - [ ] GRPOConfig / GRPOTrainer 在固定环境中可导入；
