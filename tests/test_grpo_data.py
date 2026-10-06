@@ -38,7 +38,21 @@ def test_grpo_warmup_for_smoke() -> None:
     assert compute_warmup_steps(
         num_examples=16,
         num_generations=4,
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=2,
         max_steps=2,
         num_train_epochs=1,
         warmup_ratio=0.05,
     ) == 1
+
+
+def test_grpo_warmup_for_full_mbpp_epoch() -> None:
+    assert compute_warmup_steps(
+        num_examples=374,
+        num_generations=4,
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=2,
+        max_steps=-1,
+        num_train_epochs=1,
+        warmup_ratio=0.05,
+    ) == 10
