@@ -86,3 +86,14 @@ GRPO：hidden-correct dependency complete 100%，hidden-incorrect 77.07%；hidde
 统一使用 EXP-006B 口径：MBPP validation 90 题、n=16、Pass@1/4/8/16、hidden mean、solved@16、syntax/runtime/dependency diagnostics、zero-grad / frac_reward_zero_std、配对 bootstrap。
 
 最终回答：更细的执行阶段可验证奖励，能否提高真正隐藏测试正确性与代码完整性，而不仅仅让训练 reward 更密？
+
+## 离线审计预注册通过门槛
+
+为避免看到结果后再调整判断标准，在全训练集 1496 个固定 rollout 完成前预先规定：
+
+- process flat-group fraction 相比 outcome flat-group fraction 至少下降 10 个百分点；
+- 或者 process reward 至少救活 20% 的 outcome-flat prompt；
+- mixed→flat 的组不能超过全部 prompt 的 5%；
+- 审计只使用 train split 公共测试和静态/运行时训练可见信号，不使用 hidden test。
+
+满足前两项任一项、且不违反 mixed-collapse 限制，才进入 2-step GPU smoke 和 187-step 正式训练。
