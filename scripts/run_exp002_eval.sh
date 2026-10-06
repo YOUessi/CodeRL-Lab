@@ -22,6 +22,7 @@ for MODE in base sft; do
     --model "$MODEL" \
     --revision "$REVISION" \
     "${EXTRA[@]}" \
+    --batch-samples \
     --num-samples 4 \
     --max-new-tokens 512 \
     --temperature 0.8 \
