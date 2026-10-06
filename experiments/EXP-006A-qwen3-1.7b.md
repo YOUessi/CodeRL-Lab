@@ -6,7 +6,7 @@
 **Base smoke：已通过。**  
 **SFT smoke：已通过。**  
 **正式 Base / SFT validation：已完成。**  
-**GRPO：2-step GPU 冒烟已通过，正式187-step待运行。**
+**GRPO：187-step 正式训练已完成；90题 validation 待运行。**
 
 ## 研究问题
 
@@ -353,3 +353,60 @@ Docker timeout 清理后运行容器数：0。
 > 1.7B 在 Tang 16GB 上可以直接沿用 0.6B 的 4-generation 纯 GRPO 配置，无需为了显存改变算法变量。
 
 因此进入完整 374 题 / 187 optimizer step GRPO。
+
+
+## 正式 1.7B GRPO 训练结果
+
+固定：
+
+- 374 个 train tasks；
+- 187 optimizer steps；
+- 4 generations / prompt；
+- 纯 `loss_type=grpo`；
+- beta=0；
+- 公共测试奖励；
+- SFT adapter：`e1ea9a007a3e4213cdeb1ca6b1e12d29adb83594991421757d0d40b9168d0861`。
+
+训练结果：
+
+| 指标 | 1.7B GRPO |
+|---|---:|
+| train runtime | 815.22 s |
+| mean reward | 0.4986 |
+| mean public reward | 0.4469 |
+| mean entropy | 0.2452 |
+| mean frac_reward_zero_std | **60.16%** |
+| zero-grad steps | **60 / 187** |
+| zero-grad fraction | **32.09%** |
+| whole-batch reward std = 0 | 28 / 187 |
+| peak allocated | 5,151,586,816 bytes |
+| peak reserved | 11,607,736,320 bytes |
+
+Adapter SHA-256：
+
+`b858f377e43a7cb75ebd9ef332d2f77dba9728d25954fadc4e512a26a47da46c`
+
+### 前后阶段变化
+
+前 25% → 后 25%：
+
+- reward：0.4590 → 0.5723；
+- public reward：0.4022 → **0.5285**；
+- frac_reward_zero_std：64.13% → **56.52%**；
+- entropy：0.2575 → 0.2374。
+
+GRPO 在训练中确实提高了公共测试 reward，并让零方差组比例有所下降，但训练后段仍有超过一半 prompt group 缺乏组内差异。
+
+### 与 0.6B GRPO 对照
+
+| 指标 | 0.6B | 1.7B |
+|---|---:|---:|
+| mean frac_reward_zero_std | 52.14% | **60.16%** |
+| zero-grad fraction | 27.81% | **32.09%** |
+| train runtime | 751.10 s | 815.22 s |
+
+因此：
+
+> “大量 flat group / zero-grad rollout”不是 0.6B 容量不足造成的特例；在更强的 1.7B SFT policy 上仍然存在，而且更严重。
+
+当前只差 90 题 GRPO validation，才能判断 1.7B 上 GRPO 是否继续表现为“提高高概率成功、但不扩张覆盖”。
