@@ -1,0 +1,85 @@
+{
+  "experiment": "EXP-006B-n16",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "tasks": 90,
+  "samples_per_task": 16,
+  "completions_per_policy": 1440,
+  "policies": {
+    "base": {
+      "pass_at_1": 0.34305555555555556,
+      "pass_at_4": 0.6063431013431014,
+      "pass_at_8": 0.6580074246740911,
+      "pass_at_16": 0.6777777777777778,
+      "solved_at_16": 61,
+      "syntax_failures": 352,
+      "hidden_mean": 0.36319444444444443
+    },
+    "sft": {
+      "pass_at_1": 0.3729166666666667,
+      "pass_at_4": 0.5425641025641025,
+      "pass_at_8": 0.5967806267806265,
+      "pass_at_16": 0.6333333333333333,
+      "solved_at_16": 57,
+      "syntax_failures": 4,
+      "hidden_mean": 0.39340277777777777
+    },
+    "grpo": {
+      "pass_at_1": 0.38819444444444445,
+      "pass_at_4": 0.5684920634920636,
+      "pass_at_8": 0.636317879651213,
+      "pass_at_16": 0.6888888888888889,
+      "solved_at_16": 62,
+      "syntax_failures": 8,
+      "hidden_mean": 0.4131944444444444
+    }
+  },
+  "support": {
+    "base_solved": 61,
+    "sft_solved": 57,
+    "grpo_solved": 62,
+    "base_retained_by_sft": 52,
+    "base_retention_fraction_sft": 0.8524590163934426,
+    "base_lost_by_sft": 9,
+    "sft_new_vs_base": 5,
+    "base_lost_then_recovered_by_grpo": 5,
+    "recovery_fraction_grpo": 0.5555555555555556,
+    "sft_lost_by_grpo": 1,
+    "grpo_new_vs_sft": 6,
+    "jaccard_base_sft": 0.7878787878787878,
+    "jaccard_sft_grpo": 0.8888888888888888,
+    "jaccard_base_grpo": 0.8636363636363636
+  },
+  "k4_lost_tracking": {
+    "k4_lost_tasks": 15,
+    "sft_recovered_at_n16": 8,
+    "sft_recovery_fraction": 0.5333333333333333,
+    "sft_still_missing_at_n16": 7,
+    "grpo_recovers_sft_missing_at_n16": 3
+  },
+  "bootstrap": {
+    "sft_minus_base_empirical_rate": {
+      "delta": 0.029861111111111113,
+      "ci95_low": -0.019444444444444445,
+      "ci95_high": 0.0798611111111111,
+      "probability_positive": 0.8804
+    },
+    "sft_minus_base_solved_at_n": {
+      "delta": -0.044444444444444446,
+      "ci95_low": -0.12222222222222222,
+      "ci95_high": 0.03333333333333333,
+      "probability_positive": 0.11305
+    },
+    "grpo_minus_sft_empirical_rate": {
+      "delta": 0.015277777777777777,
+      "ci95_low": 0.0020833333333333333,
+      "ci95_high": 0.02847222222222222,
+      "probability_positive": 0.9873
+    },
+    "grpo_minus_sft_solved_at_n": {
+      "delta": 0.05555555555555555,
+      "ci95_low": 0,
+      "ci95_high": 0.1111111111111111,
+      "probability_positive": 0.9656
+    }
+  }
+}
