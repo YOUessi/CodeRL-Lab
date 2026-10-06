@@ -1,0 +1,27 @@
+{
+  "experiment": "EXP-005A-random-control",
+  "unique_tasks": 181,
+  "mixed_tasks_in_subset": 93,
+  "mixed_fraction": 0.5138121546961326,
+  "optimizer_steps": 187,
+  "rl_prompt_groups": 374,
+  "rl_completions": 1496,
+  "train_runtime_seconds": 712.789,
+  "dynamics": {
+    "reward_mean": 0.4510026798847525,
+    "public_reward_mean": 0.3940508021390374,
+    "frac_reward_zero_std_mean": 0.5401069518716578,
+    "entropy_mean": 0.2801847387961844,
+    "zero_grad_steps": 56,
+    "zero_grad_fraction": 0.2994652406417112,
+    "zero_reward_std_steps": 28,
+    "zero_reward_std_step_fraction": 0.1497326203208556
+  },
+  "adapter_sha256": "99ce438d10d6ed0ab163517992fc86fcf394d9669a5bbf807d001898006ef06b",
+  "comparison_to_exp003": {
+    "exp003_zero_grad_fraction": 0.27807486631016043,
+    "exp003_frac_reward_zero_std_mean": 0.5213903743315508,
+    "zero_grad_fraction_delta": 0.021390374331550777,
+    "zero_std_fraction_delta": 0.018716577540107027
+  }
+}

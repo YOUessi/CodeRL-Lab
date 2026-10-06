@@ -1,0 +1,27 @@
+{
+  "experiment": "EXP-005A-screen",
+  "code_commit": "8650cb38104c90171dae253fc3c92e3e4a42ea7f",
+  "policy": "EXP-002 SFT",
+  "tasks": 374,
+  "samples_per_task": 4,
+  "screening_completions": 1496,
+  "categories": {
+    "mixed": 181,
+    "flat_test_fail": 132,
+    "flat_all_pass": 59,
+    "flat_partial": 2
+  },
+  "selected_tasks": 181,
+  "selected_fraction": 0.4839572192513369,
+  "random_control_tasks": 181,
+  "random_control_seed": 42,
+  "mean_reward_across_tasks": 0.44191176470588234,
+  "mean_reward_spread": 0.36363636363636365,
+  "hashes": {
+    "tasks": "52f92e7d9e38c91fa25c283dcea53a507f3ea0983d6d82b9c3f91fa2a72ce689",
+    "predictions": "9d014c1574df072cb9f2177d6c37b91758b7fcc4375b2fbc2c0620aa4e56b75d",
+    "screening": "54042d35efad2d8c6232e5e33a886a5a40a8408d755bd495a5a2fcb8c76b7e06",
+    "boundary_tasks": "27dd268487c219413ec2966595704bc6d84ed62e953645d4c2c0f974e21d2e7f",
+    "random_control_tasks": "13ca896810d9ccc82d437eae9dc95d41b0a2ac76077265bcfa0433275a01b559"
+  }
+}

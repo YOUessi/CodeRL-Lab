@@ -139,34 +139,63 @@ GRPO 的行为非常明确：
 
 > **怎样减少对“全对/全错/组内无差异”题目的无效 rollout，把预算集中到模型当前能力边界附近。**
 
-### 当前优先：EXP-005 动态采样
+### EXP-005A：离线能力边界筛选 ✅
 
-目标：
+SFT policy 对 374 个 train task 各采样 4 次：
+
+- mixed：181（48.40%）
+- flat：193（51.60%）
+
+三组在相同 187 optimizer steps / 1496 RL completions 下比较：
+
+| 指标 | 全量随机 | 181题随机控制 | 181题 Boundary |
+|---|---:|---:|---:|
+| zero-grad fraction | 27.81% | 29.95% | **11.76%** |
+| frac reward zero std | 52.14% | 54.01% | **33.16%** |
+| effective steps | 135 | 131 | **165** |
+| completions / effective step | 11.08 | 11.42 | **9.07** |
+| Pass@1 | 27.22% | **28.89%** | 26.94% |
+| Pass@4 | 42.22% | **44.44%** | **44.44%** |
+| solved tasks | 38 | **40** | **40** |
+
+结论：
+
+> 静态 boundary selection 显著提高 rollout / 梯度利用率，但当前 validation 没有证据显示它优于同大小随机子集。
+
+Boundary - random 的 Pass@1 配对 bootstrap 95% CI：
+
+`[-5.00, +0.83]` 个百分点，包含 0。
+
+而且 005A 需要额外 1496 个 screening completions，所以不能宣称端到端更省算力。
+
+### 当前优先：EXP-005B 在线动态采样
+
+005A 直接暴露了静态筛选的限制：
+
+> 一个题在初始 SFT policy 下是 mixed，不代表训练若干步后仍然是 mixed。
+
+因此 005B 改为 policy-dependent 在线策略：
 
 ```text
-SFT policy
+当前 policy
   ↓
-预估每题当前成功率
+采样 prompt group
   ↓
-全错 / 混合 / 全对
+计算公共测试 reward
   ↓
-优先保留组内有奖励差异的题
-  ↓
-与随机 GRPO 在相同 rollout budget 下比较
+reward spread = 0 ?
+  ├─ 是：丢弃该 group，补采新的 prompt
+  └─ 否：进入 GRPO update
 ```
 
-核心对照：
+核心对照要分两个预算口径：
 
-- 有效梯度比例；
-- zero-std group 比例；
-- wall-clock；
-- Pass@1；
-- Pass@4；
-- 覆盖题数；
-- entropy；
-- 每个有效更新消耗的 rollout 数。
+1. **固定 raw rollout budget**：看动态采样能否用相同生成成本获得更多有效更新；
+2. **固定 effective-update budget**：看为了获得同样有效更新，动态采样需要多少总 rollout。
 
-EXP-004 过程奖励暂不与这一实验同时修改，避免无法判断增益来源。
+005B 还会保留随机/多样性成分，避免只围绕少量边界题反复训练。
+
+EXP-004 过程奖励继续作为后续独立变量，不与采样策略同时修改。
 
 ## 快速开始
 
@@ -244,7 +273,8 @@ Tang（RTX 4090 Laptop GPU，16 GB）仅作为 GPU 执行节点：需要 CUDA、
 - [x] 数据层 v1：固定 MBPP 训练 / 验证 / 测试分割
 - [x] EXP-002：监督微调基线
 - [x] EXP-003：纯 GRPO + 最终结果奖励
-- [ ] EXP-005：能力边界动态采样（当前优先）
+- [x] EXP-005A：离线能力边界筛选 + 同大小随机控制
+- [ ] EXP-005B：在线动态采样（当前优先）
 - [ ] EXP-004：过程级可验证奖励
 - [ ] EXP-006：SFT 与 RL 泛化 / 能力边界对照
 - [ ] EXP-007：奖励投机与隐藏测试鲁棒性
