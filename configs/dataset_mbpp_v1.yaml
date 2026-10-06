@@ -1,7 +1,7 @@
 dataset:
   id: google-research-datasets/mbpp
   config: full
-  revision: main
+  revision: 4bb6404fdc6cacfda99d4ac4205087b89d32030c
 
 split_policy:
   train:
