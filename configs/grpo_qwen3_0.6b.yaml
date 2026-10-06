@@ -46,7 +46,7 @@ training:
   lr_scheduler_type: cosine
   gradient_checkpointing: true
   logging_steps: 1
-  save_strategy: no
+  save_strategy: "no"
   beta: 0.0
   loss_type: grpo
   scale_rewards: group
