@@ -427,6 +427,12 @@ def run_grpo(
     trainer.save_model(str(final_output))
     tokenizer.save_pretrained(str(final_output))
 
+    log_history = list(trainer.state.log_history)
+    (final_output / "log_history.json").write_text(
+        json.dumps(log_history, ensure_ascii=False, indent=2, default=str) + "\n",
+        encoding="utf-8",
+    )
+
     trainable = sum(
         p.numel() for p in trainer.model.parameters() if p.requires_grad
     )
@@ -450,6 +456,12 @@ def run_grpo(
         "loss_type": args.loss_type,
         "beta": args.beta,
         "scale_rewards": args.scale_rewards,
+        "generation_batch_size": args.generation_batch_size,
+        "steps_per_generation": args.steps_per_generation,
+        "global_step": trainer.state.global_step,
+        "trainer_max_steps": trainer.state.max_steps,
+        "final_epoch": trainer.state.epoch,
+        "log_history_entries": len(log_history),
         "trainable_parameters": trainable,
         "total_parameters": total,
         "trainable_fraction": trainable / total,
