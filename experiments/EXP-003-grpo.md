@@ -2,9 +2,10 @@
 
 ## 状态
 
-**环境与接口核验：进行中。**  
-**GRPO 代码：待实现。**  
-**GPU 冒烟：待执行。**
+**环境与接口核验：完成。**  
+**2-step GRPO 冒烟：完成。**  
+**374 题完整 1 epoch GRPO：完成。**  
+**90 题 validation：完成。**
 
 ## 研究目的
 
@@ -30,17 +31,15 @@ SFT + GRPO
 
 ## 初始化策略
 
-从 EXP-002 的 SFT adapter 继续训练，而不是直接从 Base 做 RL。
-
 基础模型：
 
 `Qwen/Qwen3-0.6B-Base@da87bfb608c14b7cf20ba1ce41287e8de496c0cd`
 
 SFT adapter：
 
-SHA-256：
-
 `7fcb2b0ca7608be980fb4cbae5158241886ac67f3cc2f5b855cf34531c5982f7`
+
+GRPO 启动前强制校验该 SHA-256，不一致则拒绝训练。
 
 ## 数据
 
@@ -48,21 +47,14 @@ SHA-256：
 
 `google-research-datasets/mbpp@4bb6404fdc6cacfda99d4ac4205087b89d32030c`
 
-训练时只允许使用：
+训练时只使用：
 
 - train split prompt；
 - train split 公共测试。
 
-禁止使用：
-
-- train hidden tests；
-- validation hidden tests；
-- test hidden tests；
-- MBPP+ 隐藏测试。
+训练数据结构中**不包含 hidden_tests**。
 
 ## 第一版奖励
-
-第一版保持简单，避免奖励函数本身成为主要变量：
 
 ```text
 R = 0.10 × 语法正确
@@ -70,183 +62,88 @@ R = 0.10 × 语法正确
   + 0.10 × 公共测试全部通过
 ```
 
-与 EXP-001 已实现的训练奖励口径一致。
+## GRPO 配置
 
-## 计划的第一版 GRPO
+- `loss_type = "grpo"`，显式覆盖 TRL 1.14.1 默认的 `dapo`；
+- `beta = 0`；
+- `num_generations = 4`；
+- `scale_rewards = "group"`；
+- temperature = 0.8；
+- top-p = 0.95；
+- max completion length = 256；
+- per-device batch = 4；
+- gradient accumulation = 2；
+- generation batch = 8；
+- 每个优化步包含 2 个独立 prompt 组；
+- learning rate = 1e-6；
+- 1 epoch；
+- warmup = 10 optimizer steps；
+- seed = 42。
 
-初始目标：
+## 工程问题与修复
 
-- num_generations：4；
-- beta：优先从 0 开始，先避免额外 reference model 显存；
-- 温度：与当前采样基线一致；
-- 单卡 Tang 4090 Laptop 16GB；
-- 先小数据冒烟，再扩大到正式训练。
+### 1. GRPOTrainer 缺少 requests
 
-所有具体参数必须以 Tang 上固定 TRL 1.14.1 的**真实接口**为准，不按其它版本文档猜测。
+TRL 1.14.1 导入 GRPO trainer 时会加载 vLLM client，环境缺少 `requests`。
 
-## 环境问题记录
+修复：固定 `requests==2.34.2`。
 
-### 问题 1：GRPOTrainer 导入失败
-
-首次读取 TRL 1.14.1 GRPO 接口时出现：
-
-```text
-ModuleNotFoundError: No module named 'requests'
-```
-
-原因：
-
-TRL 的 GRPO trainer 导入 vLLM 客户端模块，而当前项目模型依赖没有显式包含 `requests`。
-
-处理：
-
-- 在 GitHub 项目依赖中增加固定 `requests==2.34.2`；
-- 环境修复后再继续读取真实 GRPO API；
-- 不在 Tang 临时修改源码。
-
-
-
-### 问题 2：YAML 的 `no` 被解析为布尔值
-
-第一次 16 题 / 2 步 GRPO 冒烟在创建 `GRPOConfig` 时失败：
-
-```text
-ValueError: False is not a valid SaveStrategy
-```
-
-原因：
-
-PyYAML 将未加引号的：
+### 2. YAML 的 no 被解析成 False
 
 ```yaml
 save_strategy: no
 ```
 
-按 YAML 1.1 规则解释成布尔值 `False`。
-
-处理：
+被 PyYAML 解释成布尔值。改为：
 
 ```yaml
 save_strategy: "no"
 ```
 
-该问题发生在任何 rollout 或参数更新之前，因此没有产生 GRPO 训练结果。
+### 3. Docker timeout 留下孤儿容器
 
-
-
-### 问题 3：超时代码留下 Docker 容器
-
-GRPO 冒烟完成后检查执行环境，发现历史评测中有若干 `python:3.11-slim` 容器持续运行。
-
-根因：
-
-- 执行器通过 `subprocess.run(..., timeout=...)` 启动 `docker run --rm`；
-- Python 超时会结束 Docker CLI；
-- 但候选代码所在容器可能继续运行；
-- `--rm` 只有在容器本身退出后才生效。
+原执行器 timeout 只结束 `docker run` CLI，候选死循环容器可能继续运行。
 
 修复：
 
-1. 每次执行分配唯一 `coderl-lab-<id>` 容器名；
-2. 添加 `coderl_lab=1` 标签；
-3. 捕获 `TimeoutExpired` 后执行 `docker rm -f <name>`；
-4. 增加清理脚本 `scripts/cleanup_executor_containers.sh`；
-5. 新增单元测试验证超时清理命令一定发出。
+- 每次容器设置唯一名称；
+- 加 `coderl_lab=1` 标签；
+- 超时后强制 `docker rm -f`；
+- 真实死循环测试验证：
+  `timed_out=True`，残留容器数 = 0。
 
-正式 GRPO 扩大训练前，必须用真实死循环候选验证容器不会泄漏。
+历史遗留 9 个容器已清理。
 
+### 4. 预热步数计算
 
+374 个唯一任务、4 generation、batch 4、gradient accumulation 2：
 
-## 两步 GRPO 冒烟结果
-
-在容器泄漏修复和预热计算修复后重新运行：
-
-- 唯一训练题：16
-- num_generations：4
-- max_steps：2
-- loss_type：grpo
-- beta：0
-- warmup_steps：1
-
-结果：
-
-| 指标 | step 1 | step 2 |
-|---|---:|---:|
-| reward mean | 0.150 | 0.775 |
-| reward std | 0.1414 | 0.4166 |
-| public pass mean | 0.0625 | 0.7500 |
-| syntax mean | 1.0 | 1.0 |
-| frac reward zero std | 0.5 | 0.5 |
-| entropy | 0.2439 | 0.2214 |
-| grad norm | 1.117 | 0.8019 |
-
-整体：
-
-- 训练时间：12.18 秒；
-- 峰值 allocated：2,037,356,544 bytes；
-- 峰值 reserved：2,973,761,536 bytes；
-- 训练后运行中的 `coderl_lab=1` 容器：0。
-
-注意：两步 reward 数值来自不同 prompt 组，**不能解释为“训练导致奖励从 0.15 提升到 0.775”**。
-
-真正值得关注的是：
-
-`frac_reward_zero_std = 0.5`
-
-说明这一小批里一半 prompt 的 4 个候选奖励完全相同，因此组相对优势为零或近零。这为后续动态采样实验提供了直接动机。
-
-## 奖励执行性能
-
-第一版公共测试奖励对 completion 串行执行 Docker 测试。为降低正式训练的 rollout 奖励瓶颈，在不改变测试语义的前提下增加 completion 级并行：
-
-- 每个候选仍使用独立容器；
-- 每个候选仍执行相同公共测试；
-- 最大并发 reward worker = 4；
-- 结果顺序保持与 completions 输入一致。
-
-正式训练前会再次运行 2-step smoke，比较 step time 并确认奖励数值不变。
-
-
-
-### 奖励并行优化验证
-
-completion 级奖励并行从 1 worker 提升到 4 workers 后，重新运行完全相同的 2-step 冒烟：
-
-| 指标 | 串行 | 4 workers |
-|---|---:|---:|
-| train runtime | 12.18 s | **7.39 s** |
-| step 1 reward mean | 0.150 | 0.150 |
-| step 2 reward mean | 0.775 | 0.775 |
-| step 1 reward std | 0.1414 | 0.1414 |
-| step 2 reward std | 0.4166 | 0.4166 |
-| step 1 entropy | 0.2439 | 0.2439 |
-| step 2 entropy | 0.2214 | 0.2214 |
-| step 1 grad norm | 1.117 | 1.117 |
-| step 2 grad norm | 0.8019 | 0.8019 |
-
-并行化只改变奖励计算吞吐，没有改变这次固定种子冒烟的算法输出。
-
-训练后：
+每个 optimizer update 实际覆盖 2 个唯一 prompt，因此：
 
 ```text
-running coderl_lab=1 containers = 0
+ceil(374 / 2) = 187 optimizer steps
 ```
 
-### 初始策略权重校验
+5% warmup：
 
-正式 GRPO 启动前，脚本会计算：
+```text
+ceil(187 × 0.05) = 10
+```
 
-`adapter_model.safetensors`
+### 5. 奖励并行
 
-的 SHA-256，并与配置中的 EXP-002 adapter 哈希比较。不一致则拒绝训练。
+completion reward 从串行执行改为 4 worker 并行。
 
+固定 2-step 冒烟中：
 
+- reward / reward_std / entropy / grad_norm 完全一致；
+- runtime 从 12.18 s 降到 7.39 s。
 
-### 问题 4：完整训练缺少逐步训练历史持久化
+说明只是吞吐优化，不改变算法结果。
 
-第一次正式 374 题运行到约 21 / 187 step 时主动中止。
+### 6. 持久化逐步训练历史
 
-原因不是训练失败，而是检查发现当前 `run_summary.json` 只保存最终指标，没有持久化每一步：
+首次正式运行到 21/187 step 时主动中止，因为发现没有保存逐步：
 
 - reward；
 - reward std；
@@ -256,25 +153,208 @@ running coderl_lab=1 containers = 0
 - completion length；
 - step time。
 
-这些指标正是分析 GRPO 探索和有效样本比例的核心证据，因此不接受“先跑完再说”。
+随后增加 `log_history.json` 后，从固定代码重新完整训练。
 
-修复：
+该 21-step 运行不算正式结果。
 
-- 保存完整 `trainer.state.log_history` 到 `log_history.json`；
-- 最终摘要增加 global step、trainer max steps、generation batch size、steps per generation；
-- 从固定 GitHub 提交重新启动正式训练。
+## 正式训练结果
 
-被中止的 21-step 运行不作为正式实验结果。
+最终 GRPO adapter SHA-256：
 
-## 冒烟门槛
+`1140fab138e31882404933ce4ba91f40a483e0ec9db18b4acc999383fb34529b`
 
-- [ ] GRPOConfig / GRPOTrainer 在固定环境中可导入；
-- [ ] 明确奖励函数参数传递方式；
-- [ ] 明确从已有 SFT adapter 继续训练的方法；
-- [ ] 16/32 题小规模 rollout 可执行；
-- [ ] 公共测试 reward 工作；
-- [ ] hidden tests 未进入 reward；
-- [ ] loss / reward / advantage 有限；
-- [ ] 无 OOM；
-- [ ] adapter 可保存和重新加载；
-- [ ] 结果写回 GitHub。
+| 指标 | 数值 |
+|---|---:|
+| unique train tasks | 374 |
+| optimizer steps | 187 |
+| num generations | 4 |
+| train runtime | 751.10 s |
+| steps/s | 0.249 |
+| 峰值 GPU allocated | 2,704,101,888 bytes |
+| 峰值 GPU reserved | 6,958,350,336 bytes |
+| 最终运行容器残留 | 0 |
+
+GRPO 的 policy-gradient loss 接近 0 是组相对目标的正常数值表现，不能像 SFT 交叉熵一样直接解释训练好坏。
+
+## 训练动力学
+
+187 个训练 step 的均值：
+
+| 指标 | 均值 |
+|---|---:|
+| reward | 0.4342 |
+| reward std | 0.3314 |
+| **frac reward zero std** | **0.5214** |
+| entropy | 0.2770 |
+| grad norm | 0.9258 |
+| completion mean length | 55.83 |
+| step time | 4.01 s |
+| public test reward | 0.3753 |
+| syntax reward | 0.9973 |
+
+### 前四分之一 vs 后四分之一
+
+| 指标 | 前 25% | 后 25% | 变化 |
+|---|---:|---:|---:|
+| reward | 0.4315 | 0.5236 | +0.0921 |
+| public test reward | 0.3723 | 0.4742 | +0.1019 |
+| all-public-pass reward | 0.3370 | 0.4457 | +0.1087 |
+| entropy | 0.2803 | 0.2703 | -0.0100 |
+| frac reward zero std | 0.5109 | 0.5109 | **0** |
+
+训练后期公共测试成功率提高，但**无组内差异的比例没有下降**。
+
+### 无效更新信号
+
+- 187 步中 grad norm = 0：**52 步（27.81%）**；
+- 整个 generation batch 的 reward std = 0：28 步（14.97%）；
+- 平均 `frac_reward_zero_std = 52.14%`。
+
+注意：
+
+一个 batch 可以有非零全局 reward std，但其中每个 prompt 组内部奖励完全相同。GRPO 做的是**组内**归一化，因此这种 batch 仍可能没有任何策略梯度。
+
+这解释了为什么：
+
+> 单纯看 batch reward std 不足以判断 GRPO 是否有有效学习信号。
+
+## 90 题 validation
+
+完全沿用 EXP-002：
+
+- 同 90 道 MBPP validation；
+- 每题 4 候选；
+- 同 prompt；
+- 同 temperature/top-p；
+- 同随机种子；
+- 同代码归一化；
+- 同 Docker 执行器；
+- 同隐藏测试。
+
+### 三模型主结果
+
+| 指标 | Base | SFT | SFT + GRPO |
+|---|---:|---:|---:|
+| Pass@1 | 13.61% | 25.56% | **27.22%** |
+| Pass@4 | 38.89% | **43.33%** | 42.22% |
+| 语法失败 | 182 / 360 | 0 / 360 | 0 / 360 |
+| 平均公共测试通过率 | 14.17% | 27.78% | **30.56%** |
+| 平均隐藏测试通过率 | 14.86% | 28.19% | **29.86%** |
+| 公共测试全通过候选 | 51 | 100 | **110** |
+| 隐藏测试全通过候选 | 49 | 92 | **98** |
+| 至少一个候选正确的题 | 35 / 90 | **39 / 90** | 38 / 90 |
+| 4/4 候选全部正确的题 | 0 | 8 | **12** |
+
+### GRPO 相对 SFT
+
+- Pass@1：**+1.67 个百分点**
+- Pass@4：**-1.11 个百分点**
+- 平均公共测试通过率：+2.78 个百分点
+- 平均隐藏测试通过率：+1.67 个百分点
+- 语法失败：保持 0
+
+按题：
+
+- 10 题正确候选数增加；
+- 4 题正确候选数减少；
+- 76 题不变；
+- 2 题从 SFT 的 4 次全错变成 GRPO 至少成功 1 次；
+- 3 题从 SFT 有成功候选变成 GRPO 4 次全错。
+
+## 关键结论
+
+### 1. 第一版 GRPO 有真实但很小的 Pass@1 增益
+
+SFT → GRPO：
+
+```text
+25.56% → 27.22%
+```
+
+说明可验证奖励强化学习在这个 0.6B 设置下仍能进一步提升单次成功概率。
+
+### 2. Pass@4 没有同步提高
+
+```text
+43.33% → 42.22%
+```
+
+这说明 GRPO 的收益不能简单解释成“能力集合扩大”。
+
+至少在当前 k=4 行为上，更像是：
+
+> 对已有输出分布做进一步概率重排。
+
+真正的能力边界结论仍需要更大的 k 和外部基准。
+
+### 3. GRPO 产生了更强的确定性成功
+
+4/4 全正确的题：
+
+```text
+SFT: 8
+GRPO: 12
+```
+
+同时至少有一个候选正确的题：
+
+```text
+SFT: 39
+GRPO: 38
+```
+
+这和 Pass@1 上升、Pass@4 下降是相互一致的：
+
+> 部分已经会的题变得更稳定，但整体覆盖的题并没有扩大。
+
+### 4. 最大训练效率问题已经被直接观测到
+
+平均约一半 prompt group：
+
+```text
+frac_reward_zero_std ≈ 52.14%
+```
+
+没有组内奖励差异。
+
+这意味着大量 rollout 对纯 GRPO 没有相对优势信号。
+
+因此下一阶段最自然的研究问题不是盲目增加训练轮数，而是：
+
+> **能否优先训练“当前模型有时会、有时不会”的能力边界样本？**
+
+这直接对应动态采样（Dynamic Sampling）/课程学习方向。
+
+## EXP-003 结论边界
+
+现在可以说：
+
+- 在相同 0.6B 模型、固定 MBPP-v1 和统一评测下，SFT 后继续做纯 GRPO 可小幅提高 Pass@1；
+- 该增益没有同步提高 Pass@4；
+- GRPO 训练中存在大量零组内方差 prompt；
+- 动态采样有直接实验动机。
+
+现在不能说：
+
+- GRPO 扩展了基础模型的新能力边界；
+- GRPO 一定优于 SFT；
+- 当前 MBPP 结果可以代表无污染泛化；
+- 0.6B 行为可直接外推到 1.7B / 4B。
+
+## 下一步
+
+优先进入**能力边界动态采样实验**：
+
+1. 在当前 SFT policy 上预采样每个训练题的成功率；
+2. 区分全错、混合、全对题；
+3. 对比随机训练与只保留有组内奖励差异的动态训练；
+4. 在相同 rollout budget 下比较：
+   - 有效梯度比例；
+   - wall-clock；
+   - Pass@1；
+   - Pass@4；
+   - 覆盖题数；
+   - entropy；
+   - reward zero-std 比例。
+
+过程级奖励实验保留为后续独立变量，不与动态采样同时修改。
