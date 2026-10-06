@@ -1,3 +1,5 @@
+import pytest
+
 from coderl_lab.analysis.process_reward_compare import compare
 
 
@@ -47,6 +49,6 @@ def test_compare_process_reward() -> None:
         baseline_diag=diag(200, 300),
         process_diag=diag(120, 180),
     )
-    assert out["training"]["zero_grad_fraction_delta"] == -0.1
-    assert out["validation"]["delta"]["pass@16"] == 0.02
+    assert out["training"]["zero_grad_fraction_delta"] == pytest.approx(-0.1)
+    assert out["validation"]["delta"]["pass@16"] == pytest.approx(0.02)
     assert out["diagnostics"]["delta"]["dependency_incomplete_count"] == -80
