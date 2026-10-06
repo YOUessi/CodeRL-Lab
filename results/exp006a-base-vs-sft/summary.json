@@ -1,0 +1,53 @@
+{
+  "experiment": "EXP-006A-Base-vs-SFT",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "tasks": 90,
+  "samples_per_task": 4,
+  "base": {
+    "pass_at_1": 0.33611111111111114,
+    "pass_at_4": 0.6444444444444445,
+    "syntax_failures": 92,
+    "hidden_mean": 0.3472222222222222,
+    "hidden_all_pass_candidates": 121,
+    "solved_tasks": 58,
+    "all4_tasks": 4
+  },
+  "sft": {
+    "pass_at_1": 0.36666666666666664,
+    "pass_at_4": 0.5333333333333333,
+    "syntax_failures": 1,
+    "hidden_mean": 0.3861111111111111,
+    "hidden_all_pass_candidates": 132,
+    "solved_tasks": 48,
+    "all4_tasks": 19
+  },
+  "delta": {
+    "pass_at_1": 0.030555555555555503,
+    "pass_at_4": -0.11111111111111116,
+    "hidden_mean": 0.03888888888888886,
+    "solved_tasks": -10
+  },
+  "task_changes": {
+    "gained_from_zero": 5,
+    "lost_to_zero": 15,
+    "improved": 29,
+    "degraded": 22,
+    "same": 39
+  },
+  "paired_bootstrap": {
+    "pass_at_1": {
+      "observed_delta": 0.030555555555555555,
+      "ci95_low": -0.03888888888888889,
+      "ci95_high": 0.1,
+      "probability_positive": 0.7947
+    },
+    "pass_at_4": {
+      "observed_delta": -0.1111111111111111,
+      "ci95_low": -0.2,
+      "ci95_high": -0.022222222222222223,
+      "probability_positive": 0.00645
+    },
+    "iterations": 20000,
+    "seed": 42
+  }
+}

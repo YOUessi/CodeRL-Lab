@@ -1,0 +1,23 @@
+{
+  "experiment": "EXP-006A-Base",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "validation": {
+    "tasks": 90,
+    "samples_per_task": 4,
+    "pass_at_1": 0.33611111111111114,
+    "pass_at_4": 0.6444444444444445,
+    "syntax_failures": 92,
+    "public_mean": 0.3472222222222222,
+    "hidden_mean": 0.3472222222222222,
+    "hidden_all_pass_candidates": 121,
+    "public_all_hidden_fail_candidates": 7,
+    "solved_tasks": 58,
+    "all4_tasks": 4
+  },
+  "generation": {
+    "elapsed_seconds": 394.5991335689905,
+    "peak_allocated_bytes": 3763734528,
+    "peak_reserved_bytes": 3913285632
+  }
+}

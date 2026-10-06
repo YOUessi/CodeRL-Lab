@@ -1,0 +1,29 @@
+{
+  "experiment": "EXP-006A-GRPO-training",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "optimizer_steps": 187,
+  "num_generations": 4,
+  "runtime_seconds": 815.2182,
+  "reward_mean": 0.4985962600551824,
+  "public_reward_mean": 0.44685828877005346,
+  "entropy_mean": 0.24523074969768843,
+  "frac_reward_zero_std_mean": 0.6016042780748663,
+  "zero_grad_steps": 60,
+  "zero_grad_fraction": 0.32085561497326204,
+  "zero_reward_std_steps": 28,
+  "first_quarter": {
+    "reward": 0.4589673939930356,
+    "public_reward": 0.40217391304347827,
+    "frac_reward_zero_std": 0.6413043478260869,
+    "entropy": 0.25748986835874943
+  },
+  "last_quarter": {
+    "reward": 0.5722826103801313,
+    "public_reward": 0.5285326086956522,
+    "frac_reward_zero_std": 0.5652173913043478,
+    "entropy": 0.23738025630945744
+  },
+  "peak_allocated_bytes": 5151586816,
+  "peak_reserved_bytes": 11607736320,
+  "adapter_sha256": "b858f377e43a7cb75ebd9ef332d2f77dba9728d25954fadc4e512a26a47da46c"
+}
