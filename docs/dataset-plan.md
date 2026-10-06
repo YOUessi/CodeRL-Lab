@@ -15,9 +15,15 @@ CodeRL-Lab 的数据层必须同时满足四个需求：
 
 数据源：`google-research-datasets/mbpp`。
 
+当前 v1 **固定**到数据集提交：
+
+`4bb6404fdc6cacfda99d4ac4205087b89d32030c`
+
+不跟随远端 `main` 漂移。
+
 原始 MBPP 约 1000 道基础 Python 编程题，每题提供任务描述、参考代码和自动测试。
 
-采用官方常见 ID 分割：
+采用标准分割：
 
 - train：374 题；
 - validation：90 题；
@@ -36,15 +42,15 @@ CodeRL-Lab 的数据层必须同时满足四个需求：
 
 ### 验证/测试规则
 
-validation / test 只暴露 1 个公共测试，其余测试保留为隐藏测试。
+validation / test 只保留 1 个公共奖励测试，其余原始测试进入内部隐藏测试。
 
-注意：CodeRL-Lab 的生成提示默认**不直接包含测试内容**。公共/隐藏的区别主要用于奖励可见性和评测隔离。
+CodeRL-Lab 的生成提示默认**不直接包含测试内容**。公共/隐藏的区别用于奖励可见性和评测隔离。
 
 ## 第二层：MBPP+ —— 强化隐藏测试评测
 
 MBPP 原始测试数量太少，容易把脆弱代码误判为正确。
 
-EvalPlus 的 MBPP+ 为原 MBPP 增加了大约 35 倍测试，因此用于：
+EvalPlus 的 MBPP+ 为原 MBPP 增加约 35 倍测试，因此用于：
 
 - 检查模型是否只过了少量原始测试；
 - 比较 SFT / GRPO 后的鲁棒正确率；
@@ -54,7 +60,7 @@ MBPP+ **不用于训练奖励**。
 
 ## 第三层：LiveCodeBench —— 外部分布评测
 
-LiveCodeBench 按发布时间持续收集 LeetCode、AtCoder、Codeforces 等竞赛问题，并专门提供按时间窗口评测能力。
+LiveCodeBench 按发布时间持续收集 LeetCode、AtCoder、Codeforces 等竞赛问题，并支持按时间窗口评测。
 
 它用于后续：
 
@@ -67,7 +73,7 @@ LiveCodeBench 按发布时间持续收集 LeetCode、AtCoder、Codeforces 等竞
 
 ## 污染问题
 
-MBPP / HumanEval 都是长期公开基准，Qwen3 等现代基础模型可能在预训练阶段接触过其内容。
+MBPP / HumanEval 都是长期公开基准，现代基础模型可能在预训练阶段接触过其内容。
 
 因此 CodeRL-Lab 明确禁止以下结论：
 
@@ -89,8 +95,7 @@ MBPP 阶段只能回答：
 GitHub 保存：
 
 - 构建代码；
-- 数据源 ID；
-- 数据源解析后的 commit SHA（若可获取）；
+- 固定的数据源 commit；
 - Hugging Face split fingerprint；
 - 输出文件 SHA-256；
 - split 计数；
@@ -103,8 +108,7 @@ Tang 下载和转换后，只把 `manifest.json` 的精炼信息写回 GitHub。
 运行：
 
 ```bash
-python -m coderl_lab.datasets.mbpp \
-  --output-dir data/generated/mbpp-v1
+bash scripts/prepare_mbpp.sh
 ```
 
 生成：
@@ -117,4 +121,4 @@ test_tasks.jsonl
 manifest.json
 ```
 
-其中生成的数据文件不提交 Git；manifest 会进入实验记录。
+生成的数据文件不提交 Git；manifest 和验证记录进入 GitHub。
