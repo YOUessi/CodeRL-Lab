@@ -1,0 +1,90 @@
+{
+  "experiment": "EXP-006C-MBPPPlus",
+  "evalplus_version": "0.3.1",
+  "mbpp_plus_version": "v0.2.0",
+  "mbpp_plus_hash": "ee43ecabebf20deef4bb776a405ac5b1",
+  "overlap_tasks": 39,
+  "samples_per_task": 16,
+  "models": {
+    "base": {
+      "base_pass_at_k": {
+        "pass1": 0.4198717948717949,
+        "pass4": 0.7464637926176383,
+        "pass8": 0.8061223676608292,
+        "pass16": 0.8205128205128205
+      },
+      "plus_pass_at_k": {
+        "pass1": 0.34775641025641024,
+        "pass4": 0.6183150183150181,
+        "pass8": 0.6755702986472217,
+        "pass16": 0.6923076923076923
+      },
+      "base_solved": 32,
+      "plus_solved": 27,
+      "robust_retention": 0.8282442748091603,
+      "robustness_gap": 0.07211538461538461
+    },
+    "sft": {
+      "base_pass_at_k": {
+        "pass1": 0.4823717948717949,
+        "pass4": 0.6597633136094674,
+        "pass8": 0.6905584444045983,
+        "pass16": 0.6923076923076923
+      },
+      "plus_pass_at_k": {
+        "pass1": 0.3974358974358974,
+        "pass4": 0.5489010989010988,
+        "pass8": 0.5990735759966528,
+        "pass16": 0.6153846153846154
+      },
+      "base_solved": 27,
+      "plus_solved": 24,
+      "robust_retention": 0.8239202657807309,
+      "robustness_gap": 0.08493589743589744
+    },
+    "grpo": {
+      "base_pass_at_k": {
+        "pass1": 0.5048076923076923,
+        "pass4": 0.6826570865032402,
+        "pass8": 0.7229952383798537,
+        "pass16": 0.7435897435897436
+      },
+      "plus_pass_at_k": {
+        "pass1": 0.40544871794871795,
+        "pass4": 0.543491124260355,
+        "pass8": 0.5850616619847389,
+        "pass16": 0.6153846153846154
+      },
+      "base_solved": 29,
+      "plus_solved": 24,
+      "robust_retention": 0.8031746031746032,
+      "robustness_gap": 0.09935897435897435
+    }
+  },
+  "paired_bootstrap": {
+    "sft_minus_base_plus_success": {
+      "delta": 0.049679487179487176,
+      "ci95_low": -0.030448717948717948,
+      "ci95_high": 0.1330128205128205,
+      "probability_positive": 0.87765
+    },
+    "sft_minus_base_plus_solved": {
+      "delta": -0.07692307692307693,
+      "ci95_low": -0.1794871794871795,
+      "ci95_high": 0.02564102564102564,
+      "probability_positive": 0.0472
+    },
+    "grpo_minus_sft_plus_success": {
+      "delta": 0.008012820512820512,
+      "ci95_low": -0.009615384615384616,
+      "ci95_high": 0.030448717948717948,
+      "probability_positive": 0.75135
+    },
+    "grpo_minus_sft_plus_solved": {
+      "delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0
+    }
+  }
+}
