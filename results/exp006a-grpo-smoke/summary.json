@@ -1,0 +1,15 @@
+{
+  "experiment": "EXP-006A-GRPO-smoke",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "sft_adapter_sha256": "e1ea9a007a3e4213cdeb1ca6b1e12d29adb83594991421757d0d40b9168d0861",
+  "tasks": 16,
+  "optimizer_steps": 2,
+  "num_generations": 4,
+  "reward_mean": 0.3500000089406967,
+  "frac_reward_zero_std_mean": 0.25,
+  "zero_grad_steps": 0,
+  "runtime_seconds": 10.7634,
+  "peak_allocated_bytes": 4931461120,
+  "peak_reserved_bytes": 6362759168,
+  "adapter_sha256": "3df2ffae732c6501c1454b2b91016c645a660a2239852c88f984e94d0b4a6cc4"
+}
