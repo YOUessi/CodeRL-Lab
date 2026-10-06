@@ -5,7 +5,7 @@
 **设计：完成。**  
 **Base smoke：已通过。**  
 **SFT smoke：已通过。**  
-**正式 Base / SFT：待运行。**  
+**正式 SFT：已完成；90题 Base / SFT 评测待运行。**  
 **GRPO：等待正式 SFT adapter 哈希后再配置。**
 
 ## 研究问题
@@ -168,3 +168,44 @@ vs
 > Tang 的 16GB RTX 4090 Laptop GPU 可以稳定运行 1.7B LoRA SFT，当前没有显存瓶颈。
 
 因此 EXP-006A 可以直接进入 374 样本 × 3 epoch 正式 SFT。
+
+
+## 正式 1.7B SFT 训练结果
+
+训练代码提交：
+
+`5fc65a5486de90da88679f6e3ee698f792c76a1a`
+
+设置：
+
+- 374 个 train 样本；
+- 3 epoch；
+- 72 optimizer steps；
+- micro batch = 1；
+- gradient accumulation = 16；
+- 有效 batch = 16；
+- learning rate = 2e-4；
+- warmup steps = 4；
+- LoRA r=16 / alpha=32；
+- seed = 42。
+
+结果：
+
+| 指标 | 数值 |
+|---|---:|
+| train loss | **0.45758** |
+| Trainer runtime | 180.96 s |
+| samples/s | 6.20 |
+| steps/s | 0.398 |
+| 可训练参数 | 17,432,576 |
+| 可训练比例 | 1.003% |
+| peak allocated | 4,443,645,952 bytes |
+| peak reserved | 7,432,306,688 bytes |
+
+正式 SFT adapter SHA-256：
+
+`e1ea9a007a3e4213cdeb1ca6b1e12d29adb83594991421757d0d40b9168d0861`
+
+结论：
+
+> 1.7B LoRA SFT 在 Tang 16GB 上稳定完成，峰值 reserved 约 7.43GB，因此后续 1.7B GRPO 有实际尝试空间。
