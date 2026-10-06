@@ -3,8 +3,8 @@
 ## 状态
 
 **设计：完成。**  
-**Base smoke：待运行。**  
-**SFT smoke：待运行。**  
+**Base smoke：已通过。**  
+**SFT smoke：已通过。**  
 **正式 Base / SFT：待运行。**  
 **GRPO：等待正式 SFT adapter 哈希后再配置。**
 
@@ -102,3 +102,69 @@ vs
 - solved-task coverage。
 
 若 1.7B 仍出现“Pass@1 提升 > Pass@4 提升”以及高 zero-std，则说明现象更可能是训练机制问题，而不是 0.6B 容量特例。
+
+
+## Base 20题冒烟结果
+
+代码提交：
+
+`474621406977da3430fab89f62fc2b5a9a6ff00e`
+
+设置：
+
+- MBPP validation 前 20 题；
+- 每题 4 个候选；
+- 共 80 个 completions；
+- 与 0.6B 相同生成参数。
+
+结果：
+
+| 指标 | Qwen3-1.7B-Base |
+|---|---:|
+| Pass@1 | **23.75%** |
+| Pass@4 | **50.00%** |
+| 语法失败 | 23 / 80 |
+| 平均公共测试通过率 | 26.25% |
+| 平均隐藏测试通过率 | 25.63% |
+| 隐藏测试全通过候选 | 19 / 80 |
+| solved tasks | 10 / 20 |
+| 4/4 全正确任务 | 0 |
+| 生成耗时 | 241.04 s |
+| 峰值 allocated | 3,759,021,056 bytes |
+| 峰值 reserved | 3,902,799,872 bytes |
+
+同一 20 题冒烟中，0.6B Base 曾得到：
+
+- Pass@1 = 6.25%；
+- Pass@4 = 25.0%。
+
+因此 1.7B 的基础代码能力明显更强，但正式结论仍以完整 90 题为准。
+
+## 32样本 SFT 冒烟结果
+
+设置：
+
+- 32 个 train 样本；
+- 1 epoch；
+- micro batch = 1；
+- gradient accumulation = 16；
+- 有效 batch = 16；
+- 其它 LoRA / 学习率参数与 0.6B 保持一致。
+
+结果：
+
+| 指标 | 数值 |
+|---|---:|
+| train loss | 1.04804 |
+| Trainer runtime | 7.05 s |
+| 可训练参数 | 17,432,576 |
+| 总参数 | 1,738,007,552 |
+| 可训练比例 | 1.003% |
+| 峰值 allocated | 4,410,994,688 bytes |
+| 峰值 reserved | 5,089,787,904 bytes |
+
+结论：
+
+> Tang 的 16GB RTX 4090 Laptop GPU 可以稳定运行 1.7B LoRA SFT，当前没有显存瓶颈。
+
+因此 EXP-006A 可以直接进入 374 样本 × 3 epoch 正式 SFT。
