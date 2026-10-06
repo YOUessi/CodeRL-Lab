@@ -75,6 +75,9 @@ def generate_predictions(
     top_p: float,
     seed: int,
     metadata_output: Path | None = None,
+    model_revision: str | None = None,
+    adapter_path: Path | None = None,
+    max_tasks: int | None = None,
 ) -> dict:
     try:
         import torch
@@ -93,13 +96,32 @@ def generate_predictions(
     started = time.perf_counter()
 
     tasks = load_tasks(tasks_path)
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    task_list = list(tasks.values())
+    if max_tasks is not None:
+        task_list = task_list[:max_tasks]
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name,
+        revision=model_revision,
+        trust_remote_code=True,
+    )
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype="auto",
+        revision=model_revision,
+        dtype="auto",
         device_map="auto",
         trust_remote_code=True,
     )
+
+    if adapter_path is not None:
+        try:
+            from peft import PeftModel
+        except ImportError as exc:
+            raise RuntimeError(
+                "adapter loading requires PEFT; install with pip install -e '.[model]'"
+            ) from exc
+        model = PeftModel.from_pretrained(model, str(adapter_path))
+
     model.eval()
 
     if torch.cuda.is_available():
@@ -109,7 +131,7 @@ def generate_predictions(
     generated_count = 0
 
     with output_path.open("w", encoding="utf-8") as handle:
-        for task_index, task in enumerate(tasks.values()):
+        for task_index, task in enumerate(task_list):
             prompt = build_prompt(task.prompt, task.starter_code)
             encoded = tokenizer(prompt, return_tensors="pt")
             encoded = {k: v.to(model.device) for k, v in encoded.items()}
@@ -149,6 +171,8 @@ def generate_predictions(
                             "raw_completion": raw_completion,
                             "generation": {
                                 "model": model_name,
+                                "requested_revision": model_revision,
+                                "adapter": str(adapter_path) if adapter_path else None,
                                 "seed": sample_seed,
                                 "temperature": temperature,
                                 "top_p": top_p,
@@ -163,10 +187,13 @@ def generate_predictions(
                 generated_count += 1
 
     elapsed = time.perf_counter() - started
+    base_config = getattr(model, "base_model", model).config
     metadata = {
         "model": model_name,
-        "model_revision": getattr(model.config, "_commit_hash", None),
-        "tasks": len(tasks),
+        "requested_model_revision": model_revision,
+        "resolved_model_revision": getattr(base_config, "_commit_hash", None),
+        "adapter": str(adapter_path) if adapter_path else None,
+        "tasks": len(task_list),
         "samples_per_task": num_samples,
         "generated_count": generated_count,
         "max_new_tokens": max_new_tokens,
@@ -207,6 +234,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--metadata-output", type=Path)
     parser.add_argument("--model", default="Qwen/Qwen3-0.6B-Base")
+    parser.add_argument("--revision")
+    parser.add_argument("--adapter", type=Path)
+    parser.add_argument("--max-tasks", type=int)
     parser.add_argument("--num-samples", type=int, default=16)
     parser.add_argument("--max-new-tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.8)
@@ -222,6 +252,9 @@ def main() -> None:
         output_path=args.output,
         metadata_output=args.metadata_output,
         model_name=args.model,
+        model_revision=args.revision,
+        adapter_path=args.adapter,
+        max_tasks=args.max_tasks,
         num_samples=args.num_samples,
         max_new_tokens=args.max_new_tokens,
         temperature=args.temperature,
