@@ -144,3 +144,25 @@ GRPO：hidden-correct dependency complete 100%，hidden-incorrect 77.07%；hidde
 - process reward mean：0.5449
 
 结论：离线奖励方差审计通过，可以进入 2-step GPU smoke。
+
+## 2-step GPU smoke
+
+16 个 train task，2 optimizer steps，num_generations=4，纯 GRPO，beta=0。
+
+结果：
+
+- reward mean：0.3828
+- reward std mean：0.3881
+- frac_reward_zero_std：0.25
+- zero-grad steps：0 / 2
+- dependency_complete mean：0.6875
+- runtime_clean mean：0.5625
+- public reward mean：0.28125
+- peak allocated：4,931,461,120 bytes
+- peak reserved：6,362,759,168 bytes
+- train runtime：10.27 s
+- Docker 残留容器：0
+
+Smoke adapter SHA-256：f4c2cffe61afa93653a3c102c8c1b430438fecebf40dc54db27eccbe35064a47。
+
+结论：GPU smoke 通过，可以进入与 EXP-006A 纯 GRPO 完全同预算的 187-step 正式训练。
