@@ -1,0 +1,58 @@
+{
+  "experiment": "EXP-005B",
+  "model": "Qwen/Qwen3-0.6B-Base",
+  "optimizer_steps": 187,
+  "actual_rollout_groups": 374,
+  "actual_rl_completions": 1496,
+  "offline_screening_completions": 0,
+  "training": {
+    "runtime_seconds": 743.2567,
+    "frac_reward_zero_std": 0.39572192513368987,
+    "zero_grad_steps": 20,
+    "zero_grad_fraction": 0.10695187165775401,
+    "effective_steps": 167,
+    "completions_per_effective_step": 8.95808383233533,
+    "adapter_sha256": "35d911cfe8f3c26fe087b44f19087ee348ff4ef94db43485bae37a8b89edcd8d"
+  },
+  "online_state": {
+    "unique_observed_tasks": 189,
+    "observed_mixed_fraction": 0.6042780748663101,
+    "exploit_selections": 185,
+    "explore_selections": 189,
+    "status_counts": {
+      "unknown": 185,
+      "mixed": 50,
+      "flat": 139
+    },
+    "transitions": {
+      "unknown->mixed": 84,
+      "unknown->flat": 105,
+      "mixed->mixed": 137,
+      "mixed->flat": 39,
+      "flat->mixed": 5,
+      "flat->flat": 4
+    }
+  },
+  "validation": {
+    "pass_at_1": 0.28055555555555556,
+    "pass_at_4": 0.4222222222222222,
+    "hidden_mean": 0.3138888888888889,
+    "solved_tasks": 38,
+    "all4_tasks": 8,
+    "syntax_failures": 1
+  },
+  "bootstrap_vs_full_random": {
+    "pass_at_1": {
+      "delta": 0.008333333333333333,
+      "ci95_low": -0.016666666666666666,
+      "ci95_high": 0.03611111111111111,
+      "probability_positive": 0.6915
+    },
+    "pass_at_4": {
+      "delta": 0,
+      "ci95_low": -0.044444444444444446,
+      "ci95_high": 0.044444444444444446
+    }
+  },
+  "conclusion": "Online adaptive sampling materially improves gradient/rollout efficiency, but does not produce a statistically reliable validation gain at 0.6B."
+}
