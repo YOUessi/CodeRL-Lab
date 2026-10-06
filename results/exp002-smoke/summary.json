@@ -1,0 +1,32 @@
+{
+  "experiment": "EXP-002-smoke",
+  "code_commit": "6c10a2e2f211a4310a8cc682208ef8e9bf0561ff",
+  "model": "Qwen/Qwen3-0.6B-Base",
+  "model_revision": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
+  "dataset_revision": "4bb6404fdc6cacfda99d4ac4205087b89d32030c",
+  "training": {
+    "samples": 32,
+    "epochs": 1,
+    "train_loss": 1.154789686203003,
+    "warmup_steps": 1,
+    "adapter_sha256": "ee8483a657fe6934dc07ac9c1a0f603e86029243245781bc0311238c23f85b8a"
+  },
+  "evaluation": {
+    "tasks": 20,
+    "samples_per_task": 4,
+    "base": {
+      "pass_at_1": 0.0625,
+      "pass_at_4": 0.25,
+      "syntax_failures": 45,
+      "public_mean": 0.0625,
+      "hidden_mean": 0.075
+    },
+    "sft": {
+      "pass_at_1": 0.1,
+      "pass_at_4": 0.2,
+      "syntax_failures": 49,
+      "public_mean": 0.1,
+      "hidden_mean": 0.10625
+    }
+  }
+}
