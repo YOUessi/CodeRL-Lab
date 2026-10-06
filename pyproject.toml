@@ -30,7 +30,7 @@ model = [
   "requests==2.34.2",
 ]
 benchmark = [
-  "evalplus>=0.2.1",
+  "evalplus==0.3.1",
 ]
 
 [tool.setuptools.packages.find]
