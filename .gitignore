@@ -22,6 +22,10 @@ huggingface/
 *.bin
 *.safetensors
 
+# Generated datasets
+data/generated/
+data/cache/
+
 # Training systems
 wandb/
 runs/
