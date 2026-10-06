@@ -6,28 +6,43 @@ from typing import Any
 
 @dataclass(frozen=True)
 class TestCase:
-    """A JSON-serializable function-level test case."""
+    """A benchmark test case.
+
+    Two representations are supported:
+    1. call test: args / kwargs / expected
+    2. assertion test: a Python assert statement stored in assertion
+    """
 
     args: list[Any] = field(default_factory=list)
     kwargs: dict[str, Any] = field(default_factory=dict)
     expected: Any = None
     name: str = ""
+    assertion: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "TestCase":
         if not isinstance(data, dict):
             raise TypeError("test case must be an object")
+
         args = data.get("args", [])
         kwargs = data.get("kwargs", {})
+        assertion = data.get("assertion")
+
         if not isinstance(args, list):
             raise TypeError("test case 'args' must be a list")
         if not isinstance(kwargs, dict):
             raise TypeError("test case 'kwargs' must be an object")
+        if assertion is not None and not isinstance(assertion, str):
+            raise TypeError("test case 'assertion' must be a string or null")
+        if isinstance(assertion, str) and not assertion.strip():
+            raise ValueError("assertion test cannot be empty")
+
         return cls(
             args=args,
             kwargs=kwargs,
             expected=data.get("expected"),
             name=str(data.get("name", "")),
+            assertion=assertion,
         )
 
 
@@ -41,6 +56,7 @@ class CodeTask:
     starter_code: str
     public_tests: tuple[TestCase, ...]
     hidden_tests: tuple[TestCase, ...]
+    setup_code: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -64,5 +80,6 @@ class CodeTask:
             starter_code=str(data.get("starter_code", "")),
             public_tests=public,
             hidden_tests=hidden,
+            setup_code=str(data.get("setup_code", "")),
             metadata=dict(data.get("metadata", {})),
         )
