@@ -1,0 +1,29 @@
+{
+  "experiment": "EXP-006A-smoke",
+  "code_commit": "474621406977da3430fab89f62fc2b5a9a6ff00e",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "base_smoke": {
+    "tasks": 20,
+    "samples_per_task": 4,
+    "pass_at_1": 0.2375,
+    "pass_at_4": 0.5,
+    "syntax_failures": 23,
+    "hidden_mean": 0.25625,
+    "solved_tasks": 10,
+    "generation_seconds": 241.0405942729849,
+    "peak_allocated_bytes": 3759021056,
+    "peak_reserved_bytes": 3902799872
+  },
+  "sft_smoke": {
+    "examples": 32,
+    "epochs": 1,
+    "train_loss": 1.048037976026535,
+    "runtime_seconds": 7.0549,
+    "trainable_parameters": 17432576,
+    "total_parameters": 1738007552,
+    "trainable_fraction": 0.010030207279559623,
+    "peak_allocated_bytes": 4410994688,
+    "peak_reserved_bytes": 5089787904
+  }
+}
