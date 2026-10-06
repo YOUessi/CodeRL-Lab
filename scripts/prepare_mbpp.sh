@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OUTPUT_DIR="${OUTPUT_DIR:-data/generated/mbpp-v1}"
-REVISION="${REVISION:-main}"
+REVISION="${REVISION:-4bb6404fdc6cacfda99d4ac4205087b89d32030c}"
 
 python -m coderl_lab.datasets.mbpp \
   --output-dir "$OUTPUT_DIR" \
