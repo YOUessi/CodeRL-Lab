@@ -132,6 +132,29 @@ save_strategy: "no"
 
 该问题发生在任何 rollout 或参数更新之前，因此没有产生 GRPO 训练结果。
 
+
+
+### 问题 3：超时代码留下 Docker 容器
+
+GRPO 冒烟完成后检查执行环境，发现历史评测中有若干 `python:3.11-slim` 容器持续运行。
+
+根因：
+
+- 执行器通过 `subprocess.run(..., timeout=...)` 启动 `docker run --rm`；
+- Python 超时会结束 Docker CLI；
+- 但候选代码所在容器可能继续运行；
+- `--rm` 只有在容器本身退出后才生效。
+
+修复：
+
+1. 每次执行分配唯一 `coderl-lab-<id>` 容器名；
+2. 添加 `coderl_lab=1` 标签；
+3. 捕获 `TimeoutExpired` 后执行 `docker rm -f <name>`；
+4. 增加清理脚本 `scripts/cleanup_executor_containers.sh`；
+5. 新增单元测试验证超时清理命令一定发出。
+
+正式 GRPO 扩大训练前，必须用真实死循环候选验证容器不会泄漏。
+
 ## 冒烟门槛
 
 - [ ] GRPOConfig / GRPOTrainer 在固定环境中可导入；
