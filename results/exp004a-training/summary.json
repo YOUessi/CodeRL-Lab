@@ -1,0 +1,51 @@
+{
+  "experiment": "EXP-004A-training",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "sft_adapter_sha256": "e1ea9a007a3e4213cdeb1ca6b1e12d29adb83594991421757d0d40b9168d0861",
+  "reward_type": "execution_stage_v1",
+  "reward_weights": {
+    "syntax": 0.05,
+    "dependency_complete": 0.1,
+    "runtime_clean": 0.1,
+    "public_test": 0.65,
+    "all_public_pass": 0.1
+  },
+  "optimizer_steps": 187,
+  "rl_completions": 1496,
+  "runtime_seconds": 841.9101,
+  "dynamics": {
+    "reward_mean": 0.549247992309657,
+    "public_reward_mean": 0.45621657754010697,
+    "dependency_complete_mean": 0.8335561497326203,
+    "runtime_clean_mean": 0.7690508021390374,
+    "entropy_mean": 0.24235775070713167,
+    "frac_reward_zero_std_mean": 0.4304812834224599,
+    "zero_grad_steps": 34,
+    "zero_grad_fraction": 0.18181818181818182,
+    "effective_steps": 153,
+    "completions_per_effective_step": 9.777777777777779
+  },
+  "baseline_exp006a_grpo": {
+    "frac_reward_zero_std_mean": 0.6016042780748663,
+    "zero_grad_steps": 60,
+    "zero_grad_fraction": 0.32085561497326204,
+    "effective_steps": 127,
+    "completions_per_effective_step": 11.779527559055119,
+    "public_reward_mean": 0.44685828877005346,
+    "entropy_mean": 0.24523074969768843,
+    "runtime_seconds": 815.2182
+  },
+  "delta_vs_baseline": {
+    "frac_reward_zero_std": -0.1711229946524064,
+    "zero_grad_fraction": -0.13903743315508021,
+    "effective_steps": 26,
+    "public_reward_mean": 0.00935828877005351,
+    "entropy_mean": -0.00287299899055676,
+    "runtime_seconds": 26.6919
+  },
+  "gpu": {
+    "peak_allocated_bytes": 5152582656,
+    "peak_reserved_bytes": 9200205824
+  },
+  "adapter_sha256": "571052fe0e43eaf9a2b1900d3b11dadc2a137ae60e38f8d2ea95c7a96eb5eec2"
+}
