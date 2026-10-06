@@ -1,0 +1,60 @@
+experiment:
+  id: EXP-003
+  name: qwen3-0.6b-mbpp-verifiable-grpo
+
+model:
+  name_or_path: Qwen/Qwen3-0.6B-Base
+  revision: da87bfb608c14b7cf20ba1ce41287e8de496c0cd
+  dtype: bfloat16
+
+data:
+  manifest: data/manifests/mbpp-v1.json
+  train_tasks: data/generated/mbpp-v1/train_tasks.jsonl
+
+initial_policy:
+  sft_adapter: artifacts/exp002/sft-qwen3-0.6b-lora
+  expected_sha256: 7fcb2b0ca7608be980fb4cbae5158241886ac67f3cc2f5b855cf34531c5982f7
+
+reward:
+  type: public_tests_only
+  syntax_weight: 0.10
+  public_test_weight: 0.80
+  all_public_pass_bonus_weight: 0.10
+  executor: docker
+  docker_image: python:3.11-slim
+  timeout_seconds: 5.0
+  memory_limit: 512m
+  max_workers: 4
+  hidden_tests_allowed: false
+
+generation:
+  num_generations: 4
+  max_completion_length: 256
+  temperature: 0.8
+  top_p: 0.95
+  top_k: 0
+
+training:
+  output_dir: artifacts/exp003/grpo-qwen3-0.6b
+  seed: 42
+  num_train_epochs: 1
+  max_steps: -1
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 2
+  learning_rate: 0.000001
+  warmup_ratio: 0.05
+  weight_decay: 0.0
+  lr_scheduler_type: cosine
+  gradient_checkpointing: true
+  logging_steps: 1
+  save_strategy: "no"
+  beta: 0.0
+  loss_type: grpo
+  scale_rewards: group
+  mask_truncated_completions: false
+  log_completions: false
+
+evaluation:
+  validation_tasks: data/generated/mbpp-v1/validation_tasks.jsonl
+  samples_per_task: 4
+  pass_at_k: [1, 4]
