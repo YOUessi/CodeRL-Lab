@@ -10,6 +10,7 @@ from typing import Any, Iterable
 
 DATASET_ID = "google-research-datasets/mbpp"
 DATASET_CONFIG = "full"
+PINNED_REVISION = "4bb6404fdc6cacfda99d4ac4205087b89d32030c"
 EXPECTED_SPLIT_SIZES = {
     "train": 374,
     "validation": 90,
@@ -41,11 +42,7 @@ def _called_function_names(assertion: str) -> list[str]:
 
 
 def infer_entry_point(reference_code: str, assertions: Iterable[str]) -> str:
-    """Infer the benchmark target function without relying on task wording.
-
-    Prefer a function defined by the canonical solution and actually called by
-    an assertion. This avoids choosing wrappers such as set(...) or len(...).
-    """
+    """Infer the benchmark target function without relying on task wording."""
     defined = _function_names(reference_code)
     if not defined:
         raise ValueError("reference code defines no top-level function")
@@ -100,7 +97,6 @@ def build_mbpp_task(
             f"MBPP task {row.get('task_id')} has fewer than two base tests"
         )
 
-    # Always reserve at least one original test as hidden.
     public_count = max(1, min(public_test_count, len(base_tests) - 1))
     public_assertions = base_tests[:public_count]
     hidden_assertions = base_tests[public_count:] + challenge_tests
@@ -110,10 +106,7 @@ def build_mbpp_task(
     starter_code = starter_code_from_reference(reference_code, entry_point)
 
     task_id = f"mbpp_{split}_{int(row['task_id']):04d}"
-    prompt = (
-        str(row["text"]).strip()
-        + f"\n\nRequired function name: {entry_point}"
-    )
+    prompt = str(row["text"]).strip() + f"\n\nRequired function name: {entry_point}"
 
     task = {
         "task_id": task_id,
@@ -270,7 +263,7 @@ def parse_args() -> argparse.Namespace:
         description="Build reproducible MBPP artifacts for CodeRL-Lab"
     )
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--revision", default="main")
+    parser.add_argument("--revision", default=PINNED_REVISION)
     parser.add_argument("--train-public-tests", type=int, default=2)
     parser.add_argument("--eval-public-tests", type=int, default=1)
     parser.add_argument(
