@@ -30,4 +30,7 @@ def test_process_reward_can_rescue_outcome_flat_group() -> None:
     assert out["process_flat_tasks"] == 1
     assert out["flat_tasks_rescued_by_process_reward"] == 1
     assert out["rescued_zero_public_tasks"] == 1
+    assert out["rescued_signal_attribution"]["dependency_variation"] == 1
+    assert out["rescued_signal_attribution"]["runtime_variation"] == 1
+    assert out["rescued_signal_attribution"]["dependency_and_runtime"] == 1
     assert out["mixed_tasks_collapsed_by_process_reward"] == 0
