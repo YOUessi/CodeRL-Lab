@@ -97,3 +97,50 @@ GRPO：hidden-correct dependency complete 100%，hidden-incorrect 77.07%；hidde
 - 审计只使用 train split 公共测试和静态/运行时训练可见信号，不使用 hidden test。
 
 满足前两项任一项、且不违反 mixed-collapse 限制，才进入 2-step GPU smoke 和 187-step 正式训练。
+
+## 全训练集 1.7B SFT 奖励方差审计结果
+
+固定策略：Qwen3-1.7B-Base + EXP-006A SFT adapter。
+374 个 train task × 4 samples = 1496 completions。
+
+生成参数：temperature=0.8，top-p=0.95，max_new_tokens=256，seed=42。
+固定 predictions SHA-256：e679eddfdfb371bbbe0d0c924011069e55a1aceb75884f7633135effa0d2a67b。
+
+生成耗时 580.16 秒；峰值 reserved 3,837,788,160 bytes。
+
+### Flat-group 对照
+
+- outcome flat：208 / 374 = 55.61%
+- process flat：161 / 374 = 43.05%
+- 下降：12.57 个百分点
+- outcome-flat 被救活：47 / 208 = 22.60%
+- mixed→flat：0
+
+因此同时满足预注册门槛：
+
+- flat fraction 至少下降 10 个百分点：满足
+- 或救活至少 20% 旧 flat prompt：满足
+- mixed-collapse 不超过 5%：满足，实际为 0
+
+### 被救活组的信号来源
+
+47 个被救活的 prompt 全部原 public-test reward 为 0。
+
+- dependency variation：28
+- runtime variation：47
+- syntax variation：0
+- runtime-only：19
+- dependency + runtime：28
+- dependency-only：0
+
+这说明第一版 shaping 真正增加组内差异的直接来源是运行阶段差异；依赖完整性主要与 runtime failure 共变。后续若 EXP-004A 有收益，需要谨慎解释，不能把收益单独归因于 dependency 静态项。
+
+### 总体信号
+
+- dependency complete rate：81.15%
+- runtime clean mean：74.13%
+- public pass mean：45.69%
+- outcome reward mean：0.5081
+- process reward mean：0.5449
+
+结论：离线奖励方差审计通过，可以进入 2-step GPU smoke。
