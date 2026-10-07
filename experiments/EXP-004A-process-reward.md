@@ -237,3 +237,83 @@ Smoke adapter SHA-256：f4c2cffe61afa93653a3c102c8c1b430438fecebf40dc54db27eccbe
 峰值 GPU：allocated 5.15GB，reserved 9.20GB；Docker 残留容器 0。
 
 训练效率层面已经通过。当前 n=16 validation 正在运行，只有 hidden-test / Pass@k / execution-stage diagnostics 同时改善，才能宣称 EXP-004A 方法有效。
+
+## 正式 n=16 validation：matched pure GRPO 对照
+
+公平基线使用 EXP-006B 的同一个 1.7B pure GRPO n=16 评测，而不是 EXP-006A 的 4-sample 旧评测。
+
+| 指标 | 纯 GRPO | 过程奖励 GRPO | 变化 |
+|---|---:|---:|---:|
+| Pass@1 | 38.82% | **39.72%** | +0.90 pp |
+| Pass@4 | 56.85% | 56.87% | +0.02 pp |
+| Pass@8 | **63.63%** | 62.37% | -1.26 pp |
+| Pass@16 | **68.89%** | 66.67% | -2.22 pp |
+| hidden mean | 41.32% | **41.56%** | +0.24 pp |
+| solved@16 | **62** | 60 | -2 |
+| 16/16 全正确任务 | 9 | **11** | +2 |
+| 语法失败 | 8 / 1440 | **4 / 1440** | -4 |
+
+### 代码完整性 / 运行时诊断
+
+| 指标 | 纯 GRPO | 过程奖励 GRPO | 变化 |
+|---|---:|---:|---:|
+| dependency incomplete | 202 | **185** | -17 |
+| runtime unclean | 326 | **314** | -12 |
+| NameError | 207 | **198** | -9 |
+| TypeError | 80 | **75** | -5 |
+
+两条 policy 的 hidden-correct 候选 dependency complete 都是 100%；过程奖励主要减少 hidden-incorrect 区域中的依赖/运行时失败。
+
+### Pass@k 配对 bootstrap（20,000次）
+
+过程奖励 - 纯 GRPO：
+
+| 指标 | delta | 95% CI | P(delta>0) |
+|---|---:|---:|---:|
+| Pass@1 | +0.90 pp | [-0.42, +2.29] pp | 0.8947 |
+| Pass@4 | +0.02 pp | [-1.74, +1.79] pp | 0.5100 |
+| Pass@8 | -1.26 pp | [-4.05, +1.43] pp | 0.1811 |
+| Pass@16 | -2.22 pp | [-7.78, +3.33] pp | 0.1485 |
+
+所有区间都跨 0，因此没有证据认为 execution-stage reward 提高了总体 Pass@k。
+
+### 训练效率结论
+
+过程奖励对训练动力学的改善是明确的：
+
+- zero-grad：32.09% → 18.18%，下降 13.90 个百分点；
+- mean frac_reward_zero_std：60.16% → 43.05%，下降 17.11 个百分点；
+- effective optimizer steps：127 → 153，增加 26；
+- 每个有效 step 的 RL completions：11.78 → 9.78；
+- dependency incomplete validation candidates：202 → 185；
+- runtime unclean：326 → 314；
+- 代价是训练时间 815.22s → 841.91s，增加约 26.7s。
+
+因此第一版 execution-stage reward 确实让 RL 更新更密、更少浪费，并轻微改善代码完整性。
+
+### 能力结论
+
+但 matched n=16 validation 显示：
+
+- Pass@1 只有小幅正向点估计；
+- Pass@4 基本不变；
+- Pass@8 / Pass@16 反而轻微下降；
+- solved@16 从 62 降到 60；
+- paired bootstrap 没有任何 Pass@k 显著改善。
+
+所以当前最准确的结论是：
+
+> execution-stage reward v1 成功解决了部分 credit sparsity / flat-group 问题，也减少了一部分依赖与运行时错误，但这些训练效率和代码完整性改善尚未转化成统计可靠的总体能力增益。
+
+这是一条重要负结果：更密的 reward signal 不等于更强的最终 policy。
+
+## 下一步
+
+不继续调权重后在同一 MBPP validation 上刷结果。
+
+下一步先做外部强测试重判：
+
+1. 固定当前 n=16 process-GRPO completions；
+2. 使用官方 EvalPlus / MBPP+ 测试；
+3. 与 EXP-006B pure GRPO 的同一 39 个 MBPP+ 任务做配对比较；
+4. 如果 process reward 在 MBPP+ 仍无改善，则 EXP-004A v1 结束，转向更有针对性的 runtime-repair / dependency-aware data intervention，而不是继续堆 reward 权重。
