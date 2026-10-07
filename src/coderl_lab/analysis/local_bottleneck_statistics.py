@@ -72,6 +72,63 @@ def _cluster_bootstrap(
     }
 
 
+
+def _survival_index(row: dict[str, Any], condition: str) -> float | None:
+    reference_length = int(row.get("reference_token_count", 0))
+    result = row[condition]
+    if bool(result["exact_match_reference"]):
+        return float(reference_length)
+    value = result.get("first_divergence_index")
+    return None if value is None else float(value)
+
+
+def _task_delay_effects(
+    arms: list[dict[str, Any]],
+    condition: str,
+) -> dict[str, float]:
+    task_ids = sorted(set.intersection(*[set(arm["per_task"]) for arm in arms]))
+    out: dict[str, float] = {}
+    for task_id in task_ids:
+        diffs: list[float] = []
+        for arm in arms:
+            row = arm["per_task"][task_id]
+            if not bool(row["eligible"]):
+                continue
+            base = _survival_index(row, "baseline")
+            cand = _survival_index(row, condition)
+            if base is None or cand is None:
+                continue
+            diffs.append(cand - base)
+        if diffs:
+            out[task_id] = mean(diffs)
+    return out
+
+
+def _bootstrap_scalar(
+    values: dict[str, float],
+    *,
+    iterations: int,
+    seed: int,
+) -> dict[str, Any]:
+    ids = sorted(values)
+    vals = [values[t] for t in ids]
+    observed = mean(vals) if vals else 0.0
+    rng = random.Random(seed)
+    draws: list[float] = []
+    n = len(vals)
+    for _ in range(iterations):
+        draws.append(mean(vals[rng.randrange(n)] for _ in range(n)))
+    draws.sort()
+    return {
+        "tasks": n,
+        "observed_mean_delta_tokens": observed,
+        "ci95_low": draws[int(0.025 * iterations)],
+        "ci95_high": draws[min(iterations - 1, int(0.975 * iterations))],
+        "probability_positive": sum(x > 0 for x in draws) / iterations,
+        "iterations": iterations,
+        "seed": seed,
+    }
+
 def summarize(
     arms: list[dict[str, Any]],
     *,
@@ -146,6 +203,15 @@ def summarize(
         for condition in ("low_stabilize", "low_destabilize", "high_stabilize")
     }
 
+    delay_effects = {
+        condition: _task_delay_effects(arms, condition)
+        for condition in (
+            "low_stabilize",
+            "low_destabilize",
+            "high_stabilize",
+        )
+    }
+
     return {
         "arms": len(arms),
         "eligible_tasks": len(task_effects),
@@ -154,6 +220,14 @@ def summarize(
         "intervention_applied_fraction": applied,
         "rescue": rescue,
         "induced_divergence": induced,
+        "first_divergence_shift_tokens": {
+            condition: _bootstrap_scalar(
+                values,
+                iterations=iterations,
+                seed=seed,
+            )
+            for condition, values in delay_effects.items()
+        },
         "task_cluster_bootstrap": {
             "low_stabilize_minus_baseline": _cluster_bootstrap(
                 task_effects,
