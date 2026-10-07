@@ -67,3 +67,56 @@ prompt + chosen + rejected。
 - 每个 chosen 都重新执行 public tests 并全通过。
 
 若数量不足，不扩大到模糊自动修复，而先重新评估实验方向。
+
+## verified import-repair 数据审计
+
+来源：1.7B SFT policy 的 1496 个固定 train rollout。
+
+严格规则：只补标准库 import，除 import 前缀外不改算法；补完后必须重新执行 public tests 并 100% 通过；hidden tests 不参与构建。
+
+结果：
+
+- verified pairs：97；
+- distinct tasks：56；
+- 每任务1对后的正式 v1 数据：56 pairs；
+- pair / source prediction：6.48%；
+- hidden_tests_used：false。
+
+主要修复类型：
+
+- import re：51；
+- import math：16；
+- from collections import Counter：7；
+- import heapq：6；
+- OrderedDict：5；
+- defaultdict：3；
+- statistics / groupby / deque 等少量。
+
+被过滤：
+
+- 无 unresolved names：1216；
+- 补 import 后仍不能全过 public tests：138；
+- unresolved name 非标准库白名单：22；
+- duplicate pair：23。
+
+这说明大多数 runtime failure 不是“补 import 就能修”，v1 只保留最干净的 97 个近邻样本。
+
+正式训练数据进一步按 task 去重：每个任务只保留 original public pass rate 最高的 pair，tie 时取更小 sample_id，得到 56 对。
+
+## 2-step DPO GPU smoke
+
+设置：16 pair、max_steps=2、beta=0.1、sigmoid DPO、SFT adapter 为 policy 初始化，TRL 自动复制冻结 ref adapter。
+
+结果：
+
+- train runtime：4.01 s；
+- grad norm：5.94 / 6.20，非零；
+- peak allocated：4.36 GB；
+- peak reserved：4.69 GB；
+- adapter 保存成功；
+- ref adapter 单独保存于 ref/；
+- Docker 残留：0。
+
+2-step 中 DPO reward margin 仍为 0：第1步 LR=0，第2步日志在有效更新前记录，因此 smoke 只用于工程/显存验收，不作为学习效果证据。
+
+结论：可以进入 56 pair × 3 epoch 正式 DPO。
