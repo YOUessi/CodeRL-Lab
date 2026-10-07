@@ -300,3 +300,80 @@ hidden correctness 不能用于部署时决定 stabilize / destabilize。
 > **SFT reference 的 public-test 结果能否作为 hidden correctness 的可观测 proxy，从而决定什么时候应该 destabilize。**
 
 如果 public-fail subset 能稳定复现 reference-wrong subset 的正向 destabilize effect，才值得进入 verifier-gated bottleneck decoding。
+
+
+# Public-test gating audit
+
+hidden correctness 不能用于部署时决定 intervention sign，因此进一步检查 SFT reference 的 public-test 结果能否作为可观测 proxy。
+
+57 个 eligible task：
+
+- public-fail：36；
+- hidden-wrong：38；
+- public-fail ∩ hidden-wrong：34。
+
+因此：
+
+- public-fail 对 hidden-wrong 的 precision：**94.44%**；
+- recall：**89.47%**。
+
+## public-fail stratum
+
+36 tasks / 144 task-arm pairs：
+
+- baseline correctness：6.25%；
+- low-destabilize：**14.58%**；
+- delta：**+8.33 pp**；
+- 95% CI：**[+0.69,+18.06] pp**；
+- wrong→correct：12；
+- correct→wrong：0。
+
+low-stabilize 在该 stratum 为 0 改善。
+
+## public-pass stratum
+
+21 tasks / 84 pairs：
+
+- baseline correctness：82.14%；
+- low-destabilize：79.76%；
+- delta：-2.38 pp；
+- 95% CI：[-11.90,+5.95] pp。
+
+因此 public tests 能有效区分“更适合打破 SFT trajectory”的任务。
+
+# 离线 public-gated policy
+
+规则：
+
+```text
+if SFT reference public tests fail:
+    choose low-destabilize candidate
+else:
+    keep baseline candidate
+```
+
+在 228 eligible task-arm pairs 上：
+
+- baseline correctness：34.21%；
+- gated correctness：**39.47%**；
+- delta：**+5.26 pp**；
+- 95% CI：**[+0.44,+11.40] pp**；
+- P(delta>0)=0.9842；
+- wrong→correct：12；
+- correct→wrong：0。
+
+这说明 EXP-004I 的 oracle hidden-correctness 分层可以被一个训练/推理时可见的 public-test gate 近似实现。
+
+## EXP-004I 最终结论
+
+1. low-margin bottleneck 对 trajectory identity 有强因果作用；
+2. stabilize reference trajectory 本身不提高 correctness；
+3. 当 SFT reference 错误时，destabilize 能显著解锁正确 alternative trajectory；
+4. public-test failure 对 hidden-wrong 有高 precision / recall；
+5. 基于 public-test 的 offline gate 得到正向 task-cluster bootstrap 区间。
+
+因此下一步进入更严格的 SFT-only 两阶段验证：
+
+> **先运行 SFT greedy + public tests；仅在 public fail 且存在 low-margin bottleneck 时，对 SFT 自己的 bottleneck 做一次 destabilize 重生成。**
+
+这将移除“candidate perturbation adapter”这个中间变量，直接测试 verifier-gated local escape 是否具有可部署价值。
