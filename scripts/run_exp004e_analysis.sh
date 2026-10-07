@@ -50,6 +50,7 @@ done
 
 python -m coderl_lab.analysis.perturbation_dose_response \
   --sft-eval "$SFT_ENHANCED" \
+  --sft-summary "$SFT_SUMMARY" \
   --sft-concentration "$ANALYSIS/sft_success_concentration.json" \
   --analysis-root "$ANALYSIS" \
   --arm "scale025_seed101=$ROOT/eval-validation/scale025_seed101" \
