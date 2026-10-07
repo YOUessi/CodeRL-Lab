@@ -1,0 +1,31 @@
+{
+  "experiment": "EXP-004B-data-and-smoke",
+  "data": {
+    "source_predictions": 1496,
+    "verified_pairs": 97,
+    "distinct_tasks": 56,
+    "one_per_task_pairs": 56,
+    "pair_fraction": 0.06483957219251336,
+    "hidden_tests_used": false,
+    "import_counts": {
+      "import re": 51,
+      "import math": 16,
+      "from collections import Counter": 7,
+      "import heapq": 6,
+      "from collections import OrderedDict": 5,
+      "from collections import defaultdict": 3
+    }
+  },
+  "smoke": {
+    "pairs": 16,
+    "steps": 2,
+    "beta": 0.1,
+    "loss_type": "sigmoid",
+    "train_runtime_seconds": 4.0089,
+    "peak_allocated_bytes": 4362949632,
+    "peak_reserved_bytes": 4687134720,
+    "output_adapter_sha256": "e5bef4e98febdb7ae91586284da8a0c3882a358e3963b5ebf4e0badc928927ee",
+    "gradient_nonzero": true,
+    "reward_margin_interpretation": "2-step smoke is engineering-only; first step lr=0 and logged margins remain zero before effective update."
+  }
+}

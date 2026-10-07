@@ -1,0 +1,36 @@
+experiment:
+  id: EXP-004B-CONTROL
+  name: qwen3-1.7b-randomized-label-dpo-control
+
+model:
+  name_or_path: Qwen/Qwen3-1.7B-Base
+  revision: ea980cb0a6c2ae4b936e82123acc929f1cec04c1
+  dtype: bfloat16
+
+initial_policy:
+  sft_adapter: artifacts/exp006a/sft-qwen3-1.7b-lora
+  expected_sha256: e1ea9a007a3e4213cdeb1ca6b1e12d29adb83594991421757d0d40b9168d0861
+
+data:
+  preferences: artifacts/exp004b/random-label-control/preferences.jsonl
+  source_preferences: artifacts/exp004b/import-pairs/preferences_one_per_task.jsonl
+  label_seed: 42042
+  swap_fraction: 0.5
+
+training:
+  output_dir: artifacts/exp004b/dpo-random-control-qwen3-1.7b
+  seed: 42
+  num_train_epochs: 3
+  max_steps: -1
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 0.0000005
+  warmup_ratio: 0.05
+  weight_decay: 0.0
+  lr_scheduler_type: cosine
+  gradient_checkpointing: true
+  logging_steps: 1
+  save_strategy: "no"
+  beta: 0.1
+  loss_type: sigmoid
+  max_length: 1024

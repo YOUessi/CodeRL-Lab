@@ -1,0 +1,132 @@
+{
+  "experiment": "EXP-004B",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "preference_data": {
+    "source_rollouts": 1496,
+    "verified_pairs": 97,
+    "distinct_tasks": 56,
+    "training_pairs": 56,
+    "repair_type": "minimal_import",
+    "hidden_tests_used": false
+  },
+  "training": {
+    "semantic": {
+      "steps": 21,
+      "runtime_seconds": 35.7073,
+      "train_loss": 0.6734127090090797,
+      "margin_mean": 0.04043025247076349,
+      "accuracy_mean": 0.7619047619047619,
+      "accuracy_last_quarter": 0.9,
+      "adapter_sha256": "860328992b8190b51ec595c08a2d36ebfecd4801db01fd8159d1bf5a0d96d18f"
+    },
+    "random_control": {
+      "pairs": 56,
+      "swapped_pairs": 28,
+      "label_seed": 42042,
+      "steps": 21,
+      "runtime_seconds": 32.5508,
+      "train_loss": 0.6934344172477722,
+      "margin_mean": -0.00006364868854039482,
+      "accuracy_mean": 0.4226190476190476,
+      "accuracy_last_quarter": 0.525,
+      "adapter_sha256": "80c3b2b78d752f33348e65a3393ba9bb142588422c49599081b6e6a54e5fb186"
+    }
+  },
+  "mbpp_n16": {
+    "sft": {
+      "pass1": 0.3729166666666667,
+      "pass4": 0.5425641025641025,
+      "pass8": 0.5967806267806265,
+      "pass16": 0.6333333333333333,
+      "solved": 57
+    },
+    "random": {
+      "pass1": 0.38472222222222224,
+      "pass4": 0.5596398046398047,
+      "pass8": 0.6223120089786756,
+      "pass16": 0.6666666666666666,
+      "solved": 60
+    },
+    "semantic": {
+      "pass1": 0.37777777777777777,
+      "pass4": 0.5623687423687425,
+      "pass8": 0.6349814383147716,
+      "pass16": 0.6888888888888889,
+      "solved": 62
+    },
+    "semantic_minus_random_bootstrap": {
+      "pass1": {
+        "delta": -0.006944444444444444,
+        "ci95_low": -0.02013888888888889,
+        "ci95_high": 0.005555555555555556
+      },
+      "pass4": {
+        "delta": 0.0027289377289377264,
+        "ci95_low": -0.01565934065934066,
+        "ci95_high": 0.02223443223443223
+      },
+      "pass8": {
+        "delta": 0.012669429336096005,
+        "ci95_low": -0.01707070707070707,
+        "ci95_high": 0.04433825433825434
+      },
+      "pass16": {
+        "delta": 0.022222222222222223,
+        "ci95_low": -0.03333333333333333,
+        "ci95_high": 0.07777777777777778
+      }
+    }
+  },
+  "mechanism_audit": {
+    "sft": {
+      "verified_minimal_import_repairs": 79,
+      "distinct_tasks": 17,
+      "dependency_incomplete": 229,
+      "runtime_unclean": 360,
+      "name_error": 239
+    },
+    "semantic": {
+      "verified_minimal_import_repairs": 74,
+      "distinct_tasks": 16,
+      "dependency_incomplete": 229,
+      "runtime_unclean": 351,
+      "name_error": 236
+    },
+    "random": {
+      "verified_minimal_import_repairs": 72,
+      "distinct_tasks": 15,
+      "dependency_incomplete": 224,
+      "runtime_unclean": 354,
+      "name_error": 235
+    }
+  },
+  "mbppplus": {
+    "sft": {
+      "pass1": 0.3974358974358974,
+      "pass4": 0.5489010989010988,
+      "pass8": 0.5990735759966528,
+      "pass16": 0.6153846153846154,
+      "solved": 24
+    },
+    "random": {
+      "pass1": 0.40384615384615385,
+      "pass4": 0.55694561848408,
+      "pass8": 0.6011814396429782,
+      "pass16": 0.6153846153846154,
+      "solved": 24
+    },
+    "semantic": {
+      "pass1": 0.38782051282051283,
+      "pass4": 0.5305860805860806,
+      "pass8": 0.5904289442750982,
+      "pass16": 0.6410256410256411,
+      "solved": 25
+    },
+    "semantic_minus_random_empirical_success": {
+      "delta": -0.016025641025641024,
+      "ci95_low": -0.04006410256410257,
+      "ci95_high": 0.004807692307692308
+    }
+  },
+  "conclusion": "Small DPO updates partially restore SFT multi-sample coverage even with randomized labels. Correct minimal-import preference semantics is learned by semantic DPO but is not established as the main causal driver of Pass@k recovery. The next research target is the deconcentration mechanism of preference optimization itself."
+}
