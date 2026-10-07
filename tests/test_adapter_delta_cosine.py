@@ -1,8 +1,9 @@
 from pathlib import Path
 
 import pytest
-import torch
-from safetensors.torch import save_file
+
+torch = pytest.importorskip("torch")
+save_file = pytest.importorskip("safetensors.torch").save_file
 
 from coderl_lab.analysis.adapter_delta_cosine import (
     analyze_delta_directions,
