@@ -1,0 +1,109 @@
+{
+  "experiment": "EXP-004B-v1",
+  "method": "task-balanced minimal-import repair DPO",
+  "data": {
+    "verified_pairs": 97,
+    "distinct_tasks": 56,
+    "formal_pairs": 56
+  },
+  "training": {
+    "steps": 21,
+    "epochs": 3,
+    "beta": 0.1,
+    "learning_rate": 5e-7,
+    "margin_first_quarter": 0.007624616543762386,
+    "margin_last_quarter": 0.05786203509196639,
+    "preference_accuracy_first_quarter": 0.375,
+    "preference_accuracy_last_quarter": 0.9,
+    "runtime_seconds": 35.7073,
+    "adapter_sha256": "860328992b8190b51ec595c08a2d36ebfecd4801db01fd8159d1bf5a0d96d18f"
+  },
+  "mbpp_n16": {
+    "sft": {
+      "pass1": 0.3729166666666667,
+      "pass4": 0.5425641025641025,
+      "pass8": 0.5967806267806265,
+      "pass16": 0.6333333333333333,
+      "solved": 57
+    },
+    "dpo": {
+      "pass1": 0.37777777777777777,
+      "pass4": 0.5623687423687425,
+      "pass8": 0.6349814383147716,
+      "pass16": 0.6888888888888889,
+      "solved": 62
+    },
+    "bootstrap": {
+      "pass1": {
+        "delta": 0.004861111111111111,
+        "ci95_low": -0.005555555555555556,
+        "ci95_high": 0.01597222222222222
+      },
+      "pass4": {
+        "delta": 0.019804639804639798,
+        "ci95_low": 0.0009951159951159879,
+        "ci95_high": 0.04067155067155067
+      },
+      "pass8": {
+        "delta": 0.03820081153414487,
+        "ci95_low": 0.011059311059311057,
+        "ci95_high": 0.0694630061296728
+      },
+      "pass16": {
+        "delta": 0.05555555555555555,
+        "ci95_low": 0.011111111111111112,
+        "ci95_high": 0.1111111111111111
+      }
+    },
+    "diagnostics": {
+      "dependency_incomplete": {
+        "sft": 229,
+        "dpo": 229
+      },
+      "runtime_unclean": {
+        "sft": 360,
+        "dpo": 351
+      },
+      "name_error": {
+        "sft": 239,
+        "dpo": 236
+      },
+      "unresolved_re": {
+        "sft": 77,
+        "dpo": 74
+      },
+      "unresolved_math": {
+        "sft": 46,
+        "dpo": 48
+      }
+    }
+  },
+  "mbppplus": {
+    "tasks": 39,
+    "sft": {
+      "pass1": 0.3974358974358974,
+      "pass4": 0.5489010989010988,
+      "pass8": 0.5990735759966528,
+      "pass16": 0.6153846153846154,
+      "solved": 24
+    },
+    "dpo": {
+      "pass1": 0.391025641025641,
+      "pass4": 0.5360101437024514,
+      "pass8": 0.5926643157412389,
+      "pass16": 0.6410256410256411,
+      "solved": 25
+    },
+    "empirical_success_bootstrap": {
+      "delta": -0.00641025641025641,
+      "ci95_low": -0.019230769230769232,
+      "ci95_high": 0.00641025641025641
+    },
+    "solved_bootstrap": {
+      "delta": 0.02564102564102564,
+      "ci95_low": 0,
+      "ci95_high": 0.07692307692307693
+    }
+  },
+  "mechanism_note": "Coverage recovery is statistically positive on MBPP n16 but intended import-error metrics barely move and MBPP+ does not show average-success improvement. Random-label DPO control is required."
+}
