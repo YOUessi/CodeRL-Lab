@@ -1,0 +1,29 @@
+{
+  "experiment": "EXP-004B-DPO-training",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "initial_policy": "EXP-006A SFT adapter",
+  "pairs": 56,
+  "distinct_tasks": 56,
+  "epochs": 3,
+  "optimizer_steps": 21,
+  "beta": 0.1,
+  "loss_type": "sigmoid",
+  "learning_rate": 5e-7,
+  "runtime_seconds": 35.7073,
+  "train_loss": 0.6734127090090797,
+  "preference_dynamics": {
+    "margin_first_quarter": 0.007624616543762386,
+    "margin_last_quarter": 0.05786203509196639,
+    "margin_mean": 0.04043025247076349,
+    "accuracy_first_quarter": 0.375,
+    "accuracy_last_quarter": 0.9,
+    "accuracy_mean": 0.7619047619047619,
+    "loss_first_quarter": 0.6895050048828125,
+    "loss_last_quarter": 0.6648563623428345
+  },
+  "gpu": {
+    "peak_allocated_bytes": 4571713536,
+    "peak_reserved_bytes": 5641338880
+  },
+  "output_adapter_sha256": "860328992b8190b51ec595c08a2d36ebfecd4801db01fd8159d1bf5a0d96d18f"
+}
