@@ -158,3 +158,145 @@ low_stabilize == reference
 如果 correctness effect 同样稳定：
 
 才值得进一步研究 bottleneck-aware decoding / training。
+
+
+# 正式 correctness 因果结果
+
+EXP-004H 的四个 intervention arm 已全部使用同一 Docker hidden tests 做 correctness 重判。
+
+主要分析：57 eligible tasks × 4 perturbation arms = 228 task-arm pairs。
+
+## 总体 hidden correctness
+
+| 条件 | hidden correct fraction | 相对 baseline |
+|---|---:|---:|
+| baseline | 34.21% | — |
+| low-stabilize | 33.33% | -0.88 pp |
+| low-destabilize | **38.60%** | +4.39 pp |
+| high-margin stabilize | 34.21% | 0 |
+
+### low-stabilize - baseline
+
+- delta：-0.88 pp；
+- 95% CI：[-2.63, 0]；
+- wrong→correct：0；
+- correct→wrong：2。
+
+因此：
+
+> EXP-004H 中显著的 trajectory rescue 并没有转化为 correctness rescue。
+
+### low-destabilize - baseline
+
+- delta：+4.39 pp；
+- 95% CI：[-1.32,+11.40]；
+- wrong→correct：14；
+- correct→wrong：4。
+
+总体点估计偏正，但总体区间仍跨0。
+
+### high-margin stabilize - baseline
+
+- delta：0；
+- 所有 correctness transition 均为0。
+
+## 按 SFT reference correctness 分层
+
+这是本实验最关键的结果。
+
+### SFT reference 正确
+
+19 tasks / 76 task-arm pairs：
+
+- baseline correct：98.68%；
+- low-stabilize：98.68%；
+- low-destabilize：93.42%。
+
+low-stabilize - baseline：0。
+
+low-destabilize - baseline：
+
+- delta：-5.26 pp；
+- 95% CI：[-14.47,0]。
+
+因此 reference 本身正确时，打破 bottleneck 没有收益，反而有伤害倾向。
+
+### SFT reference 错误
+
+38 tasks / 152 task-arm pairs：
+
+- baseline correct：1.97%；
+- low-stabilize：0.66%；
+- low-destabilize：**11.18%**。
+
+low-stabilize - baseline：
+
+- delta：-1.32 pp；
+- 95% CI：[-3.95,0]。
+
+low-destabilize - baseline：
+
+- delta：**+9.21 pp**；
+- 95% CI：**[+1.97,+18.42]**；
+- P(delta>0)=0.9957。
+
+因此：
+
+> 当 SFT reference trajectory 本身错误时，在其预注册 local low-margin bottleneck 上做反向干预，能够显著增加 hidden-test 正确轨迹出现概率。
+
+## Trajectory rescue 与 correctness rescue 的分离
+
+EXP-004H 中 baseline!=reference 且 low-stabilize==reference 的完整 trajectory rescue pair 共30个：
+
+- reference correct：12；
+- reference wrong：18；
+- correctness rescue：**0**；
+- correctness harm：**2**。
+
+这直接证明：
+
+> **trajectory rescue 不等于 capability/correctness rescue。**
+
+让 candidate 更像 SFT reference 甚至可能把原本正确但不同的 candidate 拉回错误 SFT 轨迹。
+
+## Destabilize-induced divergence 的 correctness 结果
+
+EXP-004H 中 baseline 原本与 SFT 完全一致、但 low-destabilize 新诱发分叉的 pair 共122：
+
+- wrong→correct：10；
+- correct→wrong：1。
+
+因此“离开 SFT trajectory”并不天然是坏事；当 SFT reference 错时，它反而可能是解锁正确轨迹的必要步骤。
+
+## EXP-004I 最终机制结论
+
+EXP-004H 证明 low-margin bottleneck 控制 trajectory identity。
+
+EXP-004I 进一步证明：
+
+1. stabilize bottleneck 能让 candidate 更像 SFT，但不提高 correctness；
+2. 当 SFT reference 正确时，保持其局部决策通常是安全的；
+3. 当 SFT reference 错误时，destabilize 同一个 bottleneck 可以显著提高 correctness；
+4. 因此 local bottleneck 更像是**轨迹分叉闸门**，而不是“正确答案方向”的标记。
+
+更准确的机制是：
+
+```text
+reference SFT 正确
+→ low-margin bottleneck 稳定化通常维持正确轨迹
+
+reference SFT 错误
+→ low-margin bottleneck 稳定化会锁住错误轨迹
+→ destabilize 提供离开错误 attractor / trajectory 的机会
+→ 一部分 alternative trajectory 变为正确
+```
+
+## 下一问题：可观测 gating
+
+hidden correctness 不能用于部署时决定 stabilize / destabilize。
+
+因此下一步不直接做新的 GPU intervention，而先检查：
+
+> **SFT reference 的 public-test 结果能否作为 hidden correctness 的可观测 proxy，从而决定什么时候应该 destabilize。**
+
+如果 public-fail subset 能稳定复现 reference-wrong subset 的正向 destabilize effect，才值得进入 verifier-gated bottleneck decoding。
