@@ -5,9 +5,9 @@
 - 分支：exp/heldout-verifier-gated-bottleneck
 - 数据：MBPP test 500 tasks
 - 规则：完全冻结自 EXP-004J
-- held-out runner：实现中
-- smoke：待运行
-- 正式500题：待运行
+- held-out runner：已实现
+- smoke：已通过
+- 正式500题：运行中
 
 ## 研究目的
 
@@ -130,3 +130,38 @@ gated_low - always_low
 如果无效或负向：
 
 EXP-004J validation 结果应视为开发集特定现象，不继续优化该 decoding rule。
+
+
+## 12-task smoke
+
+代码/数据流 smoke 已完成：
+
+- CPU tests：140/140 通过；
+- runner tasks：12；
+- eligible：5；
+- gate triggered：2；
+- runner 明确记录 hidden_tests_accessed=false；
+- public-pass task 中 gated-low / gated-high 均不改写；
+- always-low 可改写 public-pass task，符合 gate necessity control；
+- baseline hidden correct：8/12；
+- gated-low：8/12；
+- gated-high：8/12；
+- always-low：7/12。
+
+Smoke 只用于工程与无泄漏检查，不用于方法选择。
+
+## 正式 500-task 启动
+
+正式运行提交：
+
+`ec073e974575f83e5234f68b5d8e87a4e7532654`
+
+冻结规则与本文件预注册完全一致。启动前：
+
+- 140/140 CPU tests passed；
+- Tang GPU 正常；
+- Docker 无遗留；
+- PR #26 CPU CI passed；
+- 正式运行中不修改 low/high threshold、bias、gate、window 或 bootstrap 配置。
+
+正式 hidden outcome 只会在 runner/public-only gate/second-pass 全部冻结后统一读取。
