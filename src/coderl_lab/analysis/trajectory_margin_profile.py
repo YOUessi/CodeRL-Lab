@@ -83,7 +83,7 @@ def _load_model(
     *,
     model_name: str,
     revision: str,
-    adapter_path: Path,
+    adapter_path: Path | None,
 ):
     import torch
     from peft import PeftModel
@@ -96,7 +96,10 @@ def _load_model(
         device_map="auto",
         trust_remote_code=True,
     )
-    model = PeftModel.from_pretrained(base, str(adapter_path))
+    if adapter_path is not None:
+        model = PeftModel.from_pretrained(base, str(adapter_path))
+    else:
+        model = base
     model.eval()
     return model
 
@@ -106,8 +109,8 @@ def profile_trajectory_margins(
     tasks_path: Path,
     model_name: str,
     revision: str,
-    adapter_path: Path,
-    greedy_predictions_path: Path,
+    adapter_path: Path | None,
+    greedy_predictions_path: Path | None,
     output_path: Path,
     max_new_tokens: int = 512,
     primary_window: int = 128,
@@ -121,10 +124,14 @@ def profile_trajectory_margins(
         ) from exc
 
     tasks = list(load_tasks(tasks_path).values())
-    stored = {
-        (str(row["task_id"]), int(row["sample_id"])): row
-        for row in load_jsonl(greedy_predictions_path)
-    }
+    stored = (
+        {
+            (str(row["task_id"]), int(row["sample_id"])): row
+            for row in load_jsonl(greedy_predictions_path)
+        }
+        if greedy_predictions_path is not None
+        else {}
+    )
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_name,
@@ -163,10 +170,16 @@ def profile_trajectory_margins(
             )
             stored_row = stored.get((task.task_id, 0))
             raw_matches = (
-                stored_row is not None
-                and str(stored_row.get("raw_completion", "")) == raw_completion
+                None
+                if greedy_predictions_path is None
+                else (
+                    stored_row is not None
+                    and str(stored_row.get("raw_completion", ""))
+                    == raw_completion
+                )
             )
-            raw_match_count += int(raw_matches)
+            if raw_matches is not None:
+                raw_match_count += int(raw_matches)
 
             token_ids = generated_ids.tolist()
             while token_ids and token_ids[-1] in {
@@ -243,11 +256,17 @@ def profile_trajectory_margins(
     result = {
         "model": model_name,
         "revision": revision,
-        "adapter": str(adapter_path),
+        "adapter": str(adapter_path) if adapter_path is not None else None,
         "tasks": len(tasks),
         "primary_window": primary_window,
-        "raw_match_count_vs_exp004f": raw_match_count,
-        "raw_match_fraction_vs_exp004f": raw_match_count / len(tasks),
+        "raw_match_count_vs_reference": (
+            raw_match_count if greedy_predictions_path is not None else None
+        ),
+        "raw_match_fraction_vs_reference": (
+            raw_match_count / len(tasks)
+            if greedy_predictions_path is not None
+            else None
+        ),
         "per_task": rows,
     }
 
@@ -267,8 +286,8 @@ def profile_trajectory_margins(
             {
                 "tasks": result["tasks"],
                 "primary_window": primary_window,
-                "raw_match_fraction_vs_exp004f": result[
-                    "raw_match_fraction_vs_exp004f"
+                "raw_match_fraction_vs_reference": result[
+                    "raw_match_fraction_vs_reference"
                 ],
             },
             ensure_ascii=False,
@@ -283,8 +302,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tasks", type=Path, required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--revision", required=True)
-    parser.add_argument("--adapter", type=Path, required=True)
-    parser.add_argument("--greedy-predictions", type=Path, required=True)
+    parser.add_argument("--adapter", type=Path)
+    parser.add_argument("--greedy-predictions", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--max-new-tokens", type=int, default=512)
     parser.add_argument("--primary-window", type=int, default=128)
