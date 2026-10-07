@@ -15,6 +15,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0",
+  "numpy==2.2.6",
 ]
 data = [
   "datasets==5.1.0",
