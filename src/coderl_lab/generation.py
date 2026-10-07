@@ -70,8 +70,6 @@ def _sample_batch_ranges(
 ) -> list[tuple[int, int]]:
     if num_samples <= 0:
         raise ValueError("num_samples must be positive")
-    if greedy and num_samples != 1:
-        raise ValueError("greedy generation requires num_samples=1")
     batch_size = sample_batch_size or num_samples
     if batch_size <= 0:
         raise ValueError("sample_batch_size must be positive")
@@ -79,6 +77,21 @@ def _sample_batch_ranges(
         (start, min(batch_size, num_samples - start))
         for start in range(0, num_samples, batch_size)
     ]
+
+
+def _sampling_kwargs(
+    *,
+    greedy: bool,
+    temperature: float,
+    top_p: float,
+) -> dict[str, object]:
+    if greedy:
+        return {"do_sample": False}
+    return {
+        "do_sample": True,
+        "temperature": temperature,
+        "top_p": top_p,
+    }
 
 
 def generate_predictions(
@@ -112,6 +125,8 @@ def generate_predictions(
 
     if num_samples <= 0:
         raise ValueError("num_samples must be positive")
+    if greedy and num_samples != 1:
+        raise ValueError("greedy generation requires num_samples=1")
 
     _seed_everything(torch, seed)
     started = time.perf_counter()
@@ -180,9 +195,11 @@ def generate_predictions(
                         outputs = model.generate(
                             **encoded,
                             max_new_tokens=max_new_tokens,
-                            do_sample=not greedy,
-                            temperature=None if greedy else temperature,
-                            top_p=None if greedy else top_p,
+                            **_sampling_kwargs(
+                                greedy=greedy,
+                                temperature=temperature,
+                                top_p=top_p,
+                            ),
                             num_return_sequences=batch_count,
                             pad_token_id=tokenizer.eos_token_id,
                         )
@@ -236,9 +253,11 @@ def generate_predictions(
                         output = model.generate(
                             **encoded,
                             max_new_tokens=max_new_tokens,
-                            do_sample=not greedy,
-                            temperature=None if greedy else temperature,
-                            top_p=None if greedy else top_p,
+                            **_sampling_kwargs(
+                                greedy=greedy,
+                                temperature=temperature,
+                                top_p=top_p,
+                            ),
                             num_return_sequences=1,
                             pad_token_id=tokenizer.eos_token_id,
                         )
