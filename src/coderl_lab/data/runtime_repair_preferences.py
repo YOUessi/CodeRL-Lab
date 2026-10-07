@@ -98,6 +98,34 @@ def apply_import_repair(code: str, import_lines: list[str]) -> str:
     return f"{prefix}\n{code.lstrip()}"
 
 
+
+
+def select_one_pair_per_task(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Keep one deterministic, closest-to-correct pair per task.
+
+    Prefer the rejected candidate with the highest original public pass rate;
+    break ties by the smallest sample_id. This reduces repeated-task weighting
+    while keeping the most local repair example.
+    """
+    best: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        task_id = str(row["task_id"])
+        current = best.get(task_id)
+        score = (
+            float(row.get("original_public_pass_rate", 0.0)),
+            -int(row.get("sample_id", 0)),
+        )
+        if current is None:
+            best[task_id] = row
+            continue
+        current_score = (
+            float(current.get("original_public_pass_rate", 0.0)),
+            -int(current.get("sample_id", 0)),
+        )
+        if score > current_score:
+            best[task_id] = row
+    return [best[k] for k in sorted(best)]
+
 def build_verified_pairs(
     *,
     tasks_path: Path,
@@ -106,6 +134,7 @@ def build_verified_pairs(
     output_path: Path,
     summary_path: Path,
     executor: PythonExecutor,
+    one_per_task_output: Path | None = None,
 ) -> dict[str, Any]:
     tasks = {str(x["task_id"]): x for x in load_jsonl(tasks_path)}
     predictions = {
@@ -191,12 +220,20 @@ def build_verified_pairs(
         for row in pairs:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
+    selected_pairs = select_one_pair_per_task(pairs)
+    if one_per_task_output is not None:
+        one_per_task_output.parent.mkdir(parents=True, exist_ok=True)
+        with one_per_task_output.open("w", encoding="utf-8") as handle:
+            for row in selected_pairs:
+                handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
     task_ids = {str(x["task_id"]) for x in pairs}
     summary = {
         "source_predictions": len(predictions),
         "source_diagnostics": len(diagnostics),
         "verified_pairs": len(pairs),
         "distinct_tasks": len(task_ids),
+        "one_per_task_pairs": len(selected_pairs),
         "pair_fraction_of_predictions": (
             len(pairs) / len(predictions) if predictions else 0.0
         ),
@@ -222,6 +259,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--diagnostics", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--summary", type=Path, required=True)
+    p.add_argument("--one-per-task-output", type=Path)
     p.add_argument("--workers", type=int, default=1)
     p.add_argument("--timeout", type=float, default=5.0)
     p.add_argument("--memory", default="512m")
@@ -244,6 +282,7 @@ def main() -> None:
         output_path=args.output,
         summary_path=args.summary,
         executor=executor,
+        one_per_task_output=args.one_per_task_output,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
