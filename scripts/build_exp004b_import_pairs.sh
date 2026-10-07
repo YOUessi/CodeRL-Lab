@@ -13,6 +13,7 @@ python -m coderl_lab.data.runtime_repair_preferences \
   --predictions "$PREDICTIONS" \
   --diagnostics "$DIAGNOSTICS" \
   --output "$ROOT/preferences.jsonl" \
+  --one-per-task-output "$ROOT/preferences_one_per_task.jsonl" \
   --summary "$ROOT/summary.json" \
   --timeout 5 \
   --memory 512m
