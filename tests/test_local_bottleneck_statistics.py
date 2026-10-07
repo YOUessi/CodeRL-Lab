@@ -43,3 +43,55 @@ def test_summary_detects_rescue_and_induced_divergence() -> None:
     assert out["rescue"]["high_stabilize_rescued"] == 0
     assert out["induced_divergence"]["baseline_matching_pairs"] == 2
     assert out["induced_divergence"]["low_destabilize_induced"] == 1
+
+
+def test_first_divergence_shift_uses_reference_length_for_rescue() -> None:
+    arms = [
+        {
+            "per_task": {
+                "a": {
+                    "task_id": "a",
+                    "eligible": True,
+                    "reference_token_count": 40,
+                    "baseline": {
+                        "exact_match_reference": False,
+                        "first_divergence_index": 10,
+                    },
+                    "low_stabilize": {
+                        "exact_match_reference": True,
+                        "first_divergence_index": None,
+                        "intervention_applied": True,
+                    },
+                    "low_destabilize": {
+                        "exact_match_reference": False,
+                        "first_divergence_index": 8,
+                        "intervention_applied": True,
+                    },
+                    "high_stabilize": {
+                        "exact_match_reference": False,
+                        "first_divergence_index": 12,
+                        "intervention_applied": True,
+                    },
+                }
+            }
+        }
+    ]
+    out = summarize(arms, iterations=50, seed=42)
+    assert (
+        out["first_divergence_shift_tokens"]["low_stabilize"][
+            "observed_mean_delta_tokens"
+        ]
+        == 30
+    )
+    assert (
+        out["first_divergence_shift_tokens"]["low_destabilize"][
+            "observed_mean_delta_tokens"
+        ]
+        == -2
+    )
+    assert (
+        out["first_divergence_shift_tokens"]["high_stabilize"][
+            "observed_mean_delta_tokens"
+        ]
+        == 2
+    )
