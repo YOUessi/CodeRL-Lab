@@ -329,14 +329,69 @@ mixed↔flat 可双向转移
 
 所以 EXP-006A/006B 的“概率重分配 + 输出完整性重塑”并不是原始 MBPP 测试过弱造成的假象。
 
-### 当前优先：EXP-004 过程级可验证奖励
+### EXP-004A：执行阶段可验证奖励 ✅
 
-外部强测试已经复核当前现象。下一步进入训练方法本身：
+第一版过程奖励拆分为：
 
-1. 把代码执行中的中间可验证信号拆出来，而不只给最终 public-test reward；
-2. 优先研究代码完整性/依赖声明错误，例如 EXP-006B 中 re.* 会用但忘记 import re 的现象；
-3. 比较最终结果奖励 vs 过程级奖励对 Pass@1、Pass@k、隐藏测试、零方差组和覆盖的影响；
-4. LiveCodeBench 保留为后续时间更新外部分布验证。
+- 语法正确；
+- 依赖完整性；
+- 运行时干净；
+- 公共测试通过率；
+- 公共测试全通过奖励。
+
+训练预算与 1.7B pure GRPO 完全匹配：187 optimizer steps / 1496 RL completions。
+
+训练效率：
+
+| 指标 | pure GRPO | process GRPO |
+|---|---:|---:|
+| zero-grad fraction | 32.09% | **18.18%** |
+| mean frac_reward_zero_std | 60.16% | **43.05%** |
+| effective steps | 127 | **153** |
+| completions / effective step | 11.78 | **9.78** |
+
+代码完整性：
+
+- dependency incomplete：202 → **185**
+- runtime unclean：326 → **314**
+- syntax failures：8 → **4**
+
+但 matched n=16 validation：
+
+| 指标 | pure GRPO | process GRPO |
+|---|---:|---:|
+| Pass@1 | 38.82% | 39.72% |
+| Pass@4 | 56.85% | 56.87% |
+| Pass@8 | **63.63%** | 62.37% |
+| Pass@16 | **68.89%** | 66.67% |
+| solved@16 | **62** | 60 |
+
+Pass@1/4/8/16 的 paired bootstrap 95% CI 全部跨 0。
+
+MBPP+ 外部强测试同样没有观察到能力增益：
+
+- Plus Pass@1：40.54% → 40.22%
+- Plus Pass@4：54.35% → 54.37%
+- Plus Pass@8：58.51% → 59.06%
+- Plus Pass@16：61.54% → 61.54%
+- solved@16：24 → 24
+
+因此：
+
+> **更密的执行阶段 credit signal 显著减少训练浪费，但没有自动转化成更强的最终 policy。**
+
+### 当前优先：EXP-004B 局部运行时修复偏好学习
+
+不继续调 reward shaping 权重。
+
+下一步针对真实 failure mode 构造近邻偏好对：
+
+- 原始 completion：NameError / missing import / helper omission / runtime failure；
+- chosen completion：只做最小、可验证的局部修复；
+- 保持算法主体尽量不变；
+- 优先使用 DPO / pairwise preference，而不是再次大规模 SFT，以降低覆盖收缩风险。
+
+目标：学习“代码完整性修复”，而不是再次改变整个解法分布。
 
 ## 快速开始
 
@@ -416,7 +471,8 @@ Tang（RTX 4090 Laptop GPU，16 GB）仅作为 GPU 执行节点：需要 CUDA、
 - [x] EXP-003：纯 GRPO + 最终结果奖励
 - [x] EXP-005A：离线能力边界筛选 + 同大小随机控制
 - [x] EXP-005B：在线策略依赖动态采样
-- [ ] EXP-004：过程级可验证奖励
+- [x] EXP-004A：执行阶段可验证奖励
+- [ ] EXP-004B：局部运行时修复偏好学习
 - [x] EXP-006A：1.7B Base / SFT / GRPO 规模复现
 - [x] EXP-006B：大 k 能力边界 / 支持集保持
 - [ ] EXP-007：奖励投机与隐藏测试鲁棒性
