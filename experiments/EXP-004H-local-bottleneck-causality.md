@@ -259,3 +259,147 @@ low-stabilize rescue > high-stabilize rescue
 Smoke 证明：干预位置与 prefix-alignment 逻辑正确，允许进入正式 4-arm × 90-task 因果实验。
 
 正式分析除 exact rescue 外，增加 first-divergence survival index：若完整匹配则记为 reference token length，否则使用首次 divergence index；报告 stabilize/destabilize 相对 baseline 推迟或提前的 token 数。
+
+
+# 正式四臂因果结果
+
+四个预注册 perturbation arm 已全部完成：
+
+- 0.25× seed101；
+- 0.5× seed202；
+- 1× seed202；
+- 2× seed303。
+
+主要分析只使用 57 个存在 reference first128 margin≤0.05 bottleneck 的 eligible task，并以 task 为 bootstrap cluster。
+
+## Exact greedy trajectory match
+
+在 eligible task × 4 arms 共 228 个 pair 上：
+
+| 条件 | exact match to SFT |
+|---|---:|
+| baseline candidate | 65.79% |
+| low-margin stabilize (+0.25) | **78.95%** |
+| low-margin destabilize (-0.25) | **12.28%** |
+| high-margin stabilize control (+0.25) | 65.79% |
+
+干预实际应用率均为 97.81%。
+
+## Rescue
+
+baseline 已经分叉的 pair：78。
+
+- low-margin stabilize 完整 rescue：30 / 78 = **38.46%**；
+- high-margin control rescue：0 / 78 = **0%**。
+
+这排除了“任意位置给 reference token +0.25 都能 rescue”的解释。
+
+## Induced divergence
+
+baseline 原本与 SFT 一致的 pair：150。
+
+- low-margin destabilize 新诱发分叉：122 / 150 = **81.33%**。
+
+## First-divergence survival shift
+
+按 task-cluster bootstrap（20,000 次，seed=42）：
+
+### low-margin stabilize
+
+- 首次分叉 survival index 平均后移：**+8.92 token**；
+- 95% CI：[+2.86,+18.70]；
+- P(delta>0)=1.0。
+
+### low-margin destabilize
+
+- 平均提前：**-37.20 token**；
+- 95% CI：[-59.15,-21.85]；
+- P(delta>0)=0。
+
+### high-margin stabilize control
+
+- delta = 0；
+- 95% CI = [0,0]。
+
+## 主要 task-cluster bootstrap
+
+### low-stabilize - baseline
+
+- exact-match delta：**+13.16 pp**；
+- 95% CI：**[+7.46,+19.74] pp**；
+- P(delta>0)=1.0。
+
+### high-stabilize - baseline
+
+- delta：0；
+- 95% CI：[0,0]。
+
+### low-stabilize - high-margin control
+
+- delta：**+13.16 pp**；
+- 95% CI：**[+7.46,+19.74] pp**；
+- P(delta>0)=1.0。
+
+### low-destabilize - baseline
+
+- delta：**-53.51 pp**；
+- 95% CI：**[-62.72,-44.30] pp**。
+
+## EXP-004H 最终因果结论
+
+EXP-004G 只证明 low-margin density 能预测 susceptibility；EXP-004H 进一步给出直接干预证据：
+
+1. 在同一 candidate policy 上，只对 reference-defined low-margin token 加 +0.25，就显著提高完整 greedy 轨迹保持率；
+2. 相同幅度、相同方向的 high-margin control 完全没有 rescue；
+3. 在同一个 low-margin 位置反向减 -0.25，会大量诱发新分叉并显著提前 first divergence；
+4. 结果在四个 perturbation arms 上聚合后仍有稳定 task-cluster bootstrap 区间。
+
+因此当前最符合证据的描述是：
+
+> **reference SFT trajectory 内的局部 near-tie / low-margin token 决策点，对 tiny-parameter-perturbation-induced greedy trajectory divergence 具有因果作用。**
+
+这将 EXP-004F/004G 的机制链条从相关推进为：
+
+```text
+tiny parameter perturbation
+→ 某些 reference trajectory 上存在 sparse low-margin bottleneck
+→ 极小 logit 变化可翻转该处 argmax
+→ prefix feedback
+→ deterministic autoregressive cascade
+→ stochastic sampling 再额外放大
+```
+
+## 结论边界
+
+当前只证明：
+
+- Qwen3-1.7B SFT；
+- MBPP validation；
+- deterministic greedy；
+- reference-defined first128 margin≤0.05 bottleneck；
+- +/−0.25 单点 logit bias；
+
+下的局部因果作用。
+
+当前**没有**证明：
+
+- bottleneck stabilize 一定提高代码正确率；
+- bottleneck 本身代表“能力”；
+- 所有模型/任务/解码方式都存在同样效应；
+- 让轨迹更像 SFT 一定是好事。
+
+## 下一研究问题
+
+现在不应继续证明“low-margin 会导致 divergence”，这已经得到强因果证据。
+
+下一步转向：
+
+> **局部 bottleneck 干预是否会改变真实 task correctness / high-k coverage，还是只改变 trajectory identity？**
+
+优先实验：
+
+1. 对 low-stabilize / destabilize / high-control 的完整代码做 hidden-test correctness；
+2. 区分 rescue-to-SFT 与 rescue-to-correct；
+3. 检查原本错误的 SFT trajectory 被 stabilize 后是否反而锁死错误答案；
+4. 检查 destabilize 是否有时“解锁”正确轨迹；
+5. 将 trajectory causality 与 capability / correctness causality 分开。
