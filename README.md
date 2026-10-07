@@ -380,18 +380,49 @@ MBPP+ 外部强测试同样没有观察到能力增益：
 
 > **更密的执行阶段 credit signal 显著减少训练浪费，但没有自动转化成更强的最终 policy。**
 
-### 当前优先：EXP-004B 局部运行时修复偏好学习
+### EXP-004B：局部运行时修复偏好学习（DPO） ✅
 
-不继续调 reward shaping 权重。
+从 1.7B SFT 的 1496 个固定 train rollout 中，严格构造只补标准库 import、补完后 public tests 100% 通过的近邻偏好对：
 
-下一步针对真实 failure mode 构造近邻偏好对：
+- verified pairs：97；
+- distinct tasks：56；
+- 正式训练每任务只保留 1 对：56 pairs；
+- hidden tests used：false。
 
-- 原始 completion：NameError / missing import / helper omission / runtime failure；
-- chosen completion：只做最小、可验证的局部修复；
-- 保持算法主体尽量不变；
-- 优先使用 DPO / pairwise preference，而不是再次大规模 SFT，以降低覆盖收缩风险。
+Semantic repair DPO（21 steps）在 MBPP n=16 上：
 
-目标：学习“代码完整性修复”，而不是再次改变整个解法分布。
+| Policy | Pass@1 | Pass@4 | Pass@8 | Pass@16 | solved@16 |
+|---|---:|---:|---:|---:|---:|
+| SFT | 37.29% | 54.26% | 59.68% | 63.33% | 57 |
+| Random-label DPO | **38.47%** | 55.96% | 62.23% | 66.67% | 60 |
+| Semantic repair DPO | 37.78% | **56.24%** | **63.50%** | **68.89%** | **62** |
+
+关键控制结果：
+
+- Random-label DPO 相对 SFT 的 Pass@8：+2.55 pp，95% CI [+0.50,+4.97]；
+- Pass@16：+3.33 pp，95% CI [0,+7.78]；
+- Semantic DPO 相对 Random-label DPO 的 Pass@1/4/8/16 bootstrap 区间全部跨0；
+- Semantic DPO 虽然明确学会了正确 preference margin，但 dependency/NameError 改善很小；
+- MBPP+ 也没有证明 semantic repair DPO 的平均成功率优于 random control。
+
+因此当前机制证据更支持：
+
+> **小规模 DPO 更新本身会部分缓解 SFT 的概率集中，恢复多样本覆盖；正确的 import-repair 语义不是当前覆盖恢复的主要可识别因果来源。**
+
+### 当前优先：DPO 去集中机制
+
+下一步不再扩大 import-repair 数据，也不继续调 beta / learning rate。
+
+要拆开四种可能机制：
+
+1. 成对对比目标本身是否把概率从高频模式重新分配到低概率轨迹；
+2. random-label / reversed-label DPO 是否都产生类似覆盖恢复；
+3. reference-policy / beta 约束是否是去集中的关键；
+4. no-op / zero-gradient 控制能否排除“只是训练与重新保存 adapter 的数值扰动”。
+
+核心目标从“修 import”转成：
+
+> **解释为什么 DPO 能恢复 SFT 在多样本采样下丢失的覆盖，以及这种恢复是否可预测、可控制。**
 
 ## 快速开始
 
@@ -472,7 +503,7 @@ Tang（RTX 4090 Laptop GPU，16 GB）仅作为 GPU 执行节点：需要 CUDA、
 - [x] EXP-005A：离线能力边界筛选 + 同大小随机控制
 - [x] EXP-005B：在线策略依赖动态采样
 - [x] EXP-004A：执行阶段可验证奖励
-- [ ] EXP-004B：局部运行时修复偏好学习
+- [x] EXP-004B：局部运行时修复偏好学习
 - [x] EXP-006A：1.7B Base / SFT / GRPO 规模复现
 - [x] EXP-006B：大 k 能力边界 / 支持集保持
 - [ ] EXP-007：奖励投机与隐藏测试鲁棒性
