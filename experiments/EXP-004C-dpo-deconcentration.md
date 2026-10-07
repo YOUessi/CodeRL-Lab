@@ -193,3 +193,158 @@ Pass@k 相对 SFT：
 56 / 56 prompt 完全相同；56 / 56 chosen/rejected 精确互换；候选文本集合逐对完全一致。
 
 因此 Reverse-100 唯一变化是偏好方向。
+
+
+# EXP-004C 正式结果
+
+## 统一 n=16 结果
+
+| Arm | Pass@1 | Pass@4 | Pass@8 | Pass@16 | solved@16 | hidden mean |
+|---|---:|---:|---:|---:|---:|---:|
+| SFT | 37.29% | 54.26% | 59.68% | 63.33% | 57 | 39.34% |
+| Semantic DPO | 37.78% | 56.24% | **63.50%** | **68.89%** | **62** | 39.79% |
+| Random-50 DPO | **38.47%** | 55.96% | 62.23% | 66.67% | 60 | **40.59%** |
+| No-op, dropout=.05 | **38.89%** | **56.33%** | 62.14% | 66.67% | 60 | **40.90%** |
+| No-op, dropout=0 | 37.36% | 54.87% | 61.08% | 65.56% | 59 | 39.41% |
+| Zero-LR No-op | 37.29% | 54.26% | 59.68% | 63.33% | 57 | 39.34% |
+| Reverse-100 DPO | 37.29% | 55.27% | 61.77% | **67.78%** | 61 | 39.34% |
+
+## 固定种子行为一致性
+
+相对 SFT 的 1440 个 completion：
+
+| Arm | exact match | changed rows | changed tasks |
+|---|---:|---:|---:|
+| Zero-LR | **100.00%** | 0 | 0 |
+| No-op .05 | 69.51% | 439 | 85 |
+| No-op 0 | 70.07% | 431 | 86 |
+| Random-50 | 69.44% | 440 | 87 |
+| Semantic | 68.54% | 453 | 87 |
+| Reverse-100 | 69.79% | 435 | 85 |
+
+Zero-LR adapter 与原 SFT：
+
+- SHA-256 完全相同；
+- 392/392 tensor exact equality；
+- 1440/1440 completion 完全相同；
+- Pass@k 完全相同。
+
+因此固定 seed 的生成链路本身是确定性的。约 30% 的输出变化来自真实参数扰动。
+
+## No-op 残余梯度
+
+chosen == rejected 的三条控制中，DPO 日志仍记录到非零 grad norm：
+
+- No-op .05：mean grad norm ≈ 0.01344；
+- No-op 0：≈ 0.01359；
+- Zero-LR：≈ 0.01300。
+
+三者 reward margin 都为 0。
+
+区别只在参数更新：
+
+- Zero-LR：lr=0，adapter 完全不变；
+- No-op .05 / 0：lr>0，残余梯度积累成约 1.8e-4 相对 L2 的漂移。
+
+因此当前 TRL/DPO 数值实现对 chosen==rejected 并非数值上严格零梯度。
+
+## 参数更新方向
+
+相对 SFT adapter 的 delta L2：
+
+- Semantic：0.01451；
+- Reverse-100：0.01445；
+- Random-50：0.00759；
+- No-op .05：0.00620；
+- No-op 0：0.00603。
+
+关键余弦：
+
+- Semantic vs Reverse-100：**-0.9964**；
+- Semantic vs No-op .05：0.0068；
+- Semantic vs No-op 0：-0.0013；
+- Random-50 vs No-op .05：0.0178；
+- No-op .05 vs No-op 0：0.0354。
+
+所以 Semantic 与 Reverse 几乎严格沿相反方向更新；No-op 残余更新则与两者近乎正交。
+
+## Reverse-100 的关键现象
+
+Reverse-100 相对 SFT：
+
+- Pass@1：完全不变；
+- hidden mean：完全不变；
+- hidden-correct candidate 总数：**537 → 537，完全不变**；
+- zero-correct tasks：33 → **29**；
+- solved@16：57 → **61**；
+- Pass@16：63.33% → **67.78%**。
+
+Pass@16 的 paired bootstrap：
+
+- delta：+4.44 pp；
+- 95% CI：**[+1.11,+8.89] pp**；
+- P(delta>0)=0.9824。
+
+这意味着 Reverse 并没有创造更多正确候选，而是把同样数量的成功质量重新分配到了更多任务。
+
+## 成功质量集中度
+
+以每题 hidden-correct 候选数作为 success mass：
+
+| Arm | total correct | zero tasks | HHI | effective task count |
+|---|---:|---:|---:|---:|
+| SFT | 537 | 33 | 0.02297 | 43.54 |
+| Semantic | 544 | 28 | 0.02238 | 44.69 |
+| Random-50 | 554 | 30 | 0.02227 | 44.90 |
+| No-op .05 | 560 | 30 | **0.02203** | **45.38** |
+| No-op 0 | 538 | 31 | 0.02273 | 43.99 |
+| Zero-LR | 537 | 33 | 0.02297 | 43.54 |
+| Reverse-100 | 537 | **29** | 0.02261 | 44.22 |
+
+因此当前最合适的“去集中”定义不是 exact-output entropy，而是：
+
+> 正确候选概率质量在任务之间的集中度下降，使相同或相近的总成功质量覆盖更多任务。
+
+## exact-output diversity 并非统一上升
+
+相对 SFT 的 empirical completion entropy delta：
+
+- Semantic：+0.0111 nats；
+- No-op .05：+0.0084；
+- Reverse-100：+0.0042；
+- No-op 0：-0.0043；
+- Random-50：-0.0084；
+- Zero-LR：0。
+
+Random-50 即使 exact-output entropy 略下降，Pass@8/16 仍改善。因此覆盖恢复不能简单解释成“输出字符串更加多样”。
+
+## EXP-004C 结论
+
+当前证据排除了几个简单解释：
+
+1. 不是生成运行间随机性：Zero-LR 1440/1440 完全复现；
+2. 不是保存/加载扰动：Zero-LR adapter 与 SFT 逐值相同；
+3. 不要求正确 preference direction：Reverse-100 也提高 Pass@16；
+4. 不是简单的全局输出熵增加：Random-50 entropy 下降但高 k 覆盖改善；
+5. No-op 残余更新与 Semantic/Reverse 方向近乎正交，也能改变覆盖。
+
+最符合当前数据的机制是：
+
+> SFT policy 位于一个对局部参数扰动非常敏感的概率分布区域。很小的 DPO/数值更新会重排若干低概率正确轨迹在不同任务上的概率质量，从而改变多样本覆盖；正确偏好语义会决定具体移动方向，但“覆盖恢复”本身并不要求正确语义方向。
+
+## 下一因果问题
+
+还剩最后一个关键替代解释：
+
+> 是否任何同量级的随机参数扰动都能产生类似覆盖变化？
+
+下一步进入 matched-norm random perturbation control：
+
+- 从 SFT adapter 出发；
+- 按 No-op .05 的每 tensor delta norm 匹配随机噪声幅度；
+- 随机化方向；
+- 多个随机 seed；
+- 不经过 DPO 训练；
+- 同一 n=16 固定生成与 Pass@k 评测。
+
+如果随机噪声也稳定恢复高 k 覆盖，则“DPO 去集中”应改写为局部参数敏感性现象；如果随机噪声不稳定，而 DPO/No-op 残余更新稳定，则说明更新结构仍然重要。
