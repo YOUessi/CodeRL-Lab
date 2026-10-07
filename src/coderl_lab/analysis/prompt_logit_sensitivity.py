@@ -125,6 +125,7 @@ def compare_prompt_logits(
     reference_adapter: Path,
     candidate_adapter: Path,
     output_path: Path | None,
+    reference_cache_path: Path | None = None,
     max_tasks: int | None = None,
     dtype_name: str = "bfloat16",
 ) -> dict[str, Any]:
@@ -150,21 +151,60 @@ def compare_prompt_logits(
         trust_remote_code=True,
     )
 
-    reference_model = _load_model(
-        model_name=model_name,
-        revision=revision,
-        adapter_path=reference_adapter,
-        dtype_name=dtype_name,
-    )
-    reference_logits = _prompt_logits(
-        model=reference_model,
-        tokenizer=tokenizer,
-        tasks=tasks,
-    )
-    del reference_model
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    reference_logits: dict[str, Any]
+    if reference_cache_path is not None and reference_cache_path.exists():
+        cache = torch.load(reference_cache_path, map_location="cpu")
+        expected = {
+            "model": model_name,
+            "revision": revision,
+            "reference_adapter": str(reference_adapter),
+            "task_ids": [task.task_id for task in tasks],
+            "dtype": dtype_name,
+        }
+        metadata = dict(cache["metadata"])
+        if metadata != expected:
+            raise ValueError(
+                "reference logit cache metadata mismatch: "
+                f"expected={expected}, got={metadata}"
+            )
+        stacked = cache["logits"]
+        reference_logits = {
+            task_id: stacked[index]
+            for index, task_id in enumerate(expected["task_ids"])
+        }
+    else:
+        reference_model = _load_model(
+            model_name=model_name,
+            revision=revision,
+            adapter_path=reference_adapter,
+            dtype_name=dtype_name,
+        )
+        reference_logits = _prompt_logits(
+            model=reference_model,
+            tokenizer=tokenizer,
+            tasks=tasks,
+        )
+        if reference_cache_path is not None:
+            reference_cache_path.parent.mkdir(parents=True, exist_ok=True)
+            torch.save(
+                {
+                    "metadata": {
+                        "model": model_name,
+                        "revision": revision,
+                        "reference_adapter": str(reference_adapter),
+                        "task_ids": [task.task_id for task in tasks],
+                        "dtype": dtype_name,
+                    },
+                    "logits": torch.stack(
+                        [reference_logits[task.task_id] for task in tasks]
+                    ),
+                },
+                reference_cache_path,
+            )
+        del reference_model
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     candidate_model = _load_model(
         model_name=model_name,
@@ -239,6 +279,9 @@ def compare_prompt_logits(
         "revision": revision,
         "reference_adapter": str(reference_adapter),
         "candidate_adapter": str(candidate_adapter),
+        "reference_cache": (
+            str(reference_cache_path) if reference_cache_path else None
+        ),
         "dtype": dtype_name,
         "summary": summary,
         "per_task": rows,
@@ -262,6 +305,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reference-adapter", type=Path, required=True)
     parser.add_argument("--candidate-adapter", type=Path, required=True)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--reference-cache", type=Path)
     parser.add_argument("--max-tasks", type=int)
     parser.add_argument(
         "--dtype",
@@ -280,6 +324,7 @@ def main() -> None:
         reference_adapter=args.reference_adapter,
         candidate_adapter=args.candidate_adapter,
         output_path=args.output,
+        reference_cache_path=args.reference_cache,
         max_tasks=args.max_tasks,
         dtype_name=args.dtype,
     )
