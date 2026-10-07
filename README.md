@@ -409,20 +409,64 @@ Semantic repair DPO（21 steps）在 MBPP n=16 上：
 
 > **小规模 DPO 更新本身会部分缓解 SFT 的概率集中，恢复多样本覆盖；正确的 import-repair 语义不是当前覆盖恢复的主要可识别因果来源。**
 
-### 当前优先：DPO 去集中机制
+### EXP-004C：DPO 去集中机制 ✅
 
-下一步不再扩大 import-repair 数据，也不继续调 beta / learning rate。
+Semantic / Random-50 / Reverse-100 / No-op / Zero-LR 多臂控制表明：
 
-要拆开四种可能机制：
+- 正确偏好方向不是高 k 覆盖恢复的必要条件；
+- No-op 在非零学习率下仍产生约 1.8e-4 relative L2 的微小 adapter 漂移；
+- Zero-LR 则与 SFT adapter 逐 tensor 完全相同；
+- Reverse-100 虽然把偏好方向完全反转，Pass@16 仍从 63.33% 升到 67.78%；
+- fixed-seed 输出变化约 30%，说明极小权重变化会放大到明显行为变化。
 
-1. 成对对比目标本身是否把概率从高频模式重新分配到低概率轨迹；
-2. random-label / reversed-label DPO 是否都产生类似覆盖恢复；
-3. reference-policy / beta 约束是否是去集中的关键；
-4. no-op / zero-gradient 控制能否排除“只是训练与重新保存 adapter 的数值扰动”。
+### EXP-004D：Matched-Norm 随机参数扰动 ✅
 
-核心目标从“修 import”转成：
+不经过 DPO / preference / optimizer，只给 SFT adapter 注入与 No-op DPO 同量级的随机方向扰动。
 
-> **解释为什么 DPO 能恢复 SFT 在多样本采样下丢失的覆盖，以及这种恢复是否可预测、可控制。**
+三个近乎正交 seed 均提高高 k 覆盖：
+
+- 平均 ΔPass@4：+1.20 pp；
+- 平均 ΔPass@8：+2.05 pp；
+- 平均 ΔPass@16：+3.70 pp；
+- solved@16 平均 +3.33；
+- success HHI 下降、effective task count 上升。
+
+因此 DPO 特有更新结构不是该去集中效应的必要条件。
+
+### EXP-004E：扰动幅度剂量—响应 ✅
+
+固定三个随机方向，只改变扰动尺度：
+
+| Scale | 平均 ΔPass@4 | 平均 ΔPass@8 | 平均 ΔPass@16 |
+|---|---:|---:|---:|
+| 0.25× | +1.45 pp | +2.17 pp | +3.33 pp |
+| 0.5× | **+2.41 pp** | **+3.61 pp** | **+5.19 pp** |
+| 1× | +1.20 pp | +2.05 pp | +3.70 pp |
+| 2× | +1.98 pp | +3.26 pp | +4.81 pp |
+
+关键结论：
+
+- 0.25× 已足以触发明显高 k 覆盖恢复；
+- 0.5× 当前点估计最强，但 0.5× 与 2× 没有可靠差异；
+- 0.5×→1× 的 Pass@8 反而显著下降；
+- 1×→2× 的 Pass@8 又显著回升；
+- fixed-seed exact completion match 在所有非零 scale 都约 68%–70%，从 0.25× 起就接近饱和。
+
+所以当前不是简单“扰动越大，覆盖越好”的剂量关系，而更像：
+
+> 很小参数扰动就进入一个局部高敏感区；随机采样会把微小条件分布变化放大成 autoregressive trajectory 分叉。
+
+### 当前优先：采样放大效应 / logit 敏感性
+
+下一步不继续增加 4× / 8× perturbation scale。
+
+优先区分：
+
+1. greedy decoding 是否稳定；
+2. token-level logits / KL 到底改变多少；
+3. top-logit margin 与采样分叉的关系；
+4. temperature 改变时 fixed-seed behavior drift 是否系统变化；
+5. 当前所谓“局部参数敏感性”到底来自模型分布变化，还是 sampling amplification。
 
 ## 快速开始
 
@@ -504,6 +548,10 @@ Tang（RTX 4090 Laptop GPU，16 GB）仅作为 GPU 执行节点：需要 CUDA、
 - [x] EXP-005B：在线策略依赖动态采样
 - [x] EXP-004A：执行阶段可验证奖励
 - [x] EXP-004B：局部运行时修复偏好学习
+- [x] EXP-004C：DPO 去集中机制
+- [x] EXP-004D：Matched-Norm 随机参数扰动
+- [x] EXP-004E：扰动幅度剂量—响应
+- [ ] EXP-004F：采样放大效应 / logit 敏感性
 - [x] EXP-006A：1.7B Base / SFT / GRPO 规模复现
 - [x] EXP-006B：大 k 能力边界 / 支持集保持
 - [ ] EXP-007：奖励投机与隐藏测试鲁棒性
