@@ -120,3 +120,40 @@ prompt + chosen + rejected。
 2-step 中 DPO reward margin 仍为 0：第1步 LR=0，第2步日志在有效更新前记录，因此 smoke 只用于工程/显存验收，不作为学习效果证据。
 
 结论：可以进入 56 pair × 3 epoch 正式 DPO。
+
+## 正式 DPO 训练结果
+
+正式数据：每个任务只保留 1 个最接近正确的 verified pair，共 56 pair / 56 tasks。
+
+训练：
+
+- 初始化：EXP-006A 1.7B SFT adapter；
+- beta=0.1；
+- sigmoid DPO；
+- learning rate=5e-7；
+- micro batch=1；
+- gradient accumulation=8；
+- 3 epoch；
+- 21 optimizer steps。
+
+结果：
+
+- train runtime：35.71 s；
+- train loss：0.6734；
+- peak allocated：4.57 GB；
+- peak reserved：5.64 GB；
+- output adapter SHA-256：860328992b8190b51ec595c08a2d36ebfecd4801db01fd8159d1bf5a0d96d18f。
+
+### DPO 学习信号
+
+前25% → 后25%：
+
+- reward margin：0.0076 → 0.0579；
+- preference accuracy：37.5% → 90.0%；
+- DPO loss：0.6895 → 0.6649。
+
+最后 5 个 step 的 preference accuracy 分别为 1.0、0.625、0.875、1.0、1.0。
+
+因此 DPO 已经明确提高 chosen（最小 import 修复）相对 rejected（原 runtime-failure completion）的偏好，不是仅仅完成了训练流程。
+
+当前 90题 × 16 validation 正在运行。最终只有 dependency/runtime 错误下降且 Pass@k 不被明显破坏，才能认为 EXP-004B v1 有效。
