@@ -1,0 +1,106 @@
+{
+  "experiment": "EXP-004F",
+  "mechanism": "deterministic autoregressive amplification + additional stochastic amplification",
+  "phase_ab": {
+    "prompt_top1_agreement_all_arms": 1,
+    "prompt_kl_mean_range": [
+      0.000963158751758581,
+      0.0014555910646448765
+    ],
+    "prompt_tv_mean_range": [
+      0.006755032239577001,
+      0.010603959001764451
+    ],
+    "stochastic_changed_fraction_by_scale": {
+      "0.25": 0.3145833333333333,
+      "0.5": 0.3092592592592593,
+      "1.0": 0.30162037037037037,
+      "2.0": 0.30370370370370375
+    },
+    "greedy_changed_fraction_by_scale": {
+      "0.25": 0.2740740740740741,
+      "0.5": 0.23333333333333336,
+      "1.0": 0.2111111111111111,
+      "2.0": 0.26666666666666666
+    }
+  },
+  "first_divergence": {
+    "representative_arms": [
+      "scale025_seed101",
+      "scale050_seed202",
+      "scale100_seed202",
+      "scale200_seed303"
+    ],
+    "mean_divergent_tasks_per_arm": 24.5,
+    "mean_divergence_index": 25.334658762290342,
+    "median_of_arm_medians": 17,
+    "fraction_within_10_tokens": 0.2017619168112589,
+    "fraction_within_50_tokens": 0.8624264989396568,
+    "mean_kl": 0.004333830218712028,
+    "mean_tv": 0.030478183016609206,
+    "mean_reference_top1_margin": 0.04068692950528698,
+    "event_stats": {
+      "reference_margin_zero_fraction": 0.5612,
+      "reference_margin_le_0_05_fraction": 0.602,
+      "reference_margin_le_0_10_fraction": 0.7857,
+      "kl_le_1e_3_fraction": 0.3673,
+      "kl_le_1e_2_fraction": 0.949,
+      "tv_le_0_01_fraction": 0.4082,
+      "tv_le_0_05_fraction": 0.6224
+    }
+  },
+  "temperature_sweep": {
+    "greedy_changed_fraction": 0.2638888888888889,
+    "0.2": {
+      "changed_fraction": 0.29930555555555555,
+      "pass1_mean": 0.41180555555555554,
+      "pass4_mean": 0.49722222222222223
+    },
+    "0.5": {
+      "changed_fraction": 0.30625,
+      "pass1_mean": 0.40208333333333335,
+      "pass4_mean": 0.5416666666666667
+    },
+    "0.8": {
+      "changed_fraction": 0.3215277777777778,
+      "pass1_mean": 0.35416666666666663,
+      "pass4_mean": 0.5416666666666666
+    },
+    "1.0": {
+      "changed_fraction": 0.3354166666666667,
+      "pass1_mean": 0.32013888888888886,
+      "pass4_mean": 0.5444444444444445
+    },
+    "paired_contrasts": {
+      "0.2_to_0.5": {
+        "delta": 0.006944444444444444,
+        "ci95": [
+          -0.04097222222222222,
+          0.05486111111111111
+        ]
+      },
+      "0.5_to_0.8": {
+        "delta": 0.015277777777777777,
+        "ci95": [
+          -0.030555555555555555,
+          0.059722222222222225
+        ]
+      },
+      "0.8_to_1.0": {
+        "delta": 0.013888888888888888,
+        "ci95": [
+          -0.03819444444444445,
+          0.06527777777777778
+        ]
+      },
+      "0.2_to_1.0": {
+        "delta": 0.03611111111111111,
+        "ci95": [
+          -0.016666666666666666,
+          0.08819444444444445
+        ]
+      }
+    }
+  },
+  "conclusion": "Prompt-end distributions remain extremely close with 100% top1 agreement, but deterministic greedy trajectories diverge on roughly one quarter of tasks because autoregressive generation encounters low-margin decision boundaries. Stochastic sampling adds further drift whose point estimate increases with temperature, but even temperature 0.2 retains substantial divergence."
+}

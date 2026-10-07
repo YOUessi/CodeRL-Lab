@@ -79,6 +79,21 @@ def _sample_batch_ranges(
     ]
 
 
+def _sampling_kwargs(
+    *,
+    greedy: bool,
+    temperature: float,
+    top_p: float,
+) -> dict[str, object]:
+    if greedy:
+        return {"do_sample": False}
+    return {
+        "do_sample": True,
+        "temperature": temperature,
+        "top_p": top_p,
+    }
+
+
 def generate_predictions(
     *,
     tasks_path: Path,
@@ -96,6 +111,7 @@ def generate_predictions(
     batch_samples: bool = False,
     sample_batch_size: int | None = None,
     task_seed_map_path: Path | None = None,
+    greedy: bool = False,
 ) -> dict:
     try:
         import torch
@@ -109,6 +125,8 @@ def generate_predictions(
 
     if num_samples <= 0:
         raise ValueError("num_samples must be positive")
+    if greedy and num_samples != 1:
+        raise ValueError("greedy generation requires num_samples=1")
 
     _seed_everything(torch, seed)
     started = time.perf_counter()
@@ -177,9 +195,11 @@ def generate_predictions(
                         outputs = model.generate(
                             **encoded,
                             max_new_tokens=max_new_tokens,
-                            do_sample=True,
-                            temperature=temperature,
-                            top_p=top_p,
+                            **_sampling_kwargs(
+                                greedy=greedy,
+                                temperature=temperature,
+                                top_p=top_p,
+                            ),
                             num_return_sequences=batch_count,
                             pad_token_id=tokenizer.eos_token_id,
                         )
@@ -233,9 +253,11 @@ def generate_predictions(
                         output = model.generate(
                             **encoded,
                             max_new_tokens=max_new_tokens,
-                            do_sample=True,
-                            temperature=temperature,
-                            top_p=top_p,
+                            **_sampling_kwargs(
+                                greedy=greedy,
+                                temperature=temperature,
+                                top_p=top_p,
+                            ),
                             num_return_sequences=1,
                             pad_token_id=tokenizer.eos_token_id,
                         )
@@ -290,6 +312,7 @@ def generate_predictions(
         "max_new_tokens": max_new_tokens,
         "temperature": temperature,
         "top_p": top_p,
+        "greedy": greedy,
         "base_seed": seed,
         "elapsed_seconds": elapsed,
         "torch_version": torch.__version__,
@@ -354,6 +377,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--top-p", type=float, default=0.95)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--greedy",
+        action="store_true",
+        help="Use deterministic greedy decoding. Requires --num-samples 1.",
+    )
     return parser.parse_args()
 
 
@@ -375,6 +403,7 @@ def main() -> None:
         temperature=args.temperature,
         top_p=args.top_p,
         seed=args.seed,
+        greedy=args.greedy,
     )
 
 

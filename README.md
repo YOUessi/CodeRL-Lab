@@ -456,17 +456,37 @@ Semantic / Random-50 / Reverse-100 / No-op / Zero-LR 多臂控制表明：
 
 > 很小参数扰动就进入一个局部高敏感区；随机采样会把微小条件分布变化放大成 autoregressive trajectory 分叉。
 
-### 当前优先：采样放大效应 / logit 敏感性
+### EXP-004F：自回归 / 随机采样放大机制 ✅
 
-下一步不继续增加 4× / 8× perturbation scale。
+12 个 matched-perturbation arm 的 prompt-end logit 与 greedy 正式分析已经完成，四代表 arm 的 temperature sweep 也已完成。
 
-优先区分：
+关键结果：
 
-1. greedy decoding 是否稳定；
-2. token-level logits / KL 到底改变多少；
-3. top-logit margin 与采样分叉的关系；
-4. temperature 改变时 fixed-seed behavior drift 是否系统变化；
-5. 当前所谓“局部参数敏感性”到底来自模型分布变化，还是 sampling amplification。
+- prompt 起点 top1 agreement：12/12 arm = 100%；
+- prompt-end KL ≈ 1e-3，TV ≈ 0.7%–1.1%；
+- 但 greedy trajectory 仍有约 20%–34% task 分叉；
+- 四代表 arm 的 greedy changed fraction 平均 26.39%；
+- temperature=0.2 / 0.5 / 0.8 / 1.0 的 changed fraction 均值分别为 29.93% / 30.63% / 32.15% / 33.54%；
+- 首次 greedy 分叉约 86% 发生在前50 token；
+- 约 56% 首次分叉 reference top1 margin = 0，约79% margin ≤ 0.10。
+
+因此机制更符合：
+
+> **deterministic autoregressive amplification + additional stochastic amplification**
+
+而不是单纯 sampling amplification。
+
+### 当前优先：低 margin 决策点 / trajectory susceptibility
+
+下一步不继续扫 temperature 或 perturbation scale。
+
+优先研究：
+
+1. 哪些 task / token 具有低 margin 决策点；
+2. margin profile 是否预测 perturbation-induced trajectory divergence；
+3. Base / SFT / DPO / random perturbation 的 margin 分布有何差异；
+4. SFT 是否系统性把部分轨迹推向更脆弱的决策边界；
+5. 能否定义 trajectory susceptibility 指标，预测哪些任务最容易被极小参数扰动“解锁/丢失”。
 
 ## 快速开始
 
@@ -551,7 +571,7 @@ Tang（RTX 4090 Laptop GPU，16 GB）仅作为 GPU 执行节点：需要 CUDA、
 - [x] EXP-004C：DPO 去集中机制
 - [x] EXP-004D：Matched-Norm 随机参数扰动
 - [x] EXP-004E：扰动幅度剂量—响应
-- [ ] EXP-004F：采样放大效应 / logit 敏感性
+- [x] EXP-004F：自回归 / 随机采样放大机制
 - [x] EXP-006A：1.7B Base / SFT / GRPO 规模复现
 - [x] EXP-006B：大 k 能力边界 / 支持集保持
 - [ ] EXP-007：奖励投机与隐藏测试鲁棒性
