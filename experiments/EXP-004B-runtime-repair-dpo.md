@@ -157,3 +157,82 @@ prompt + chosen + rejected。
 因此 DPO 已经明确提高 chosen（最小 import 修复）相对 rejected（原 runtime-failure completion）的偏好，不是仅仅完成了训练流程。
 
 当前 90题 × 16 validation 正在运行。最终只有 dependency/runtime 错误下降且 Pass@k 不被明显破坏，才能认为 EXP-004B v1 有效。
+
+## v1 正式 validation 结果
+
+90题 × 16 候选，主对照为同一 1.7B SFT 初始化。
+
+| 指标 | SFT | Repair DPO | 变化 |
+|---|---:|---:|---:|
+| Pass@1 | 37.29% | 37.78% | +0.49 pp |
+| Pass@4 | 54.26% | **56.24%** | +1.98 pp |
+| Pass@8 | 59.68% | **63.50%** | +3.82 pp |
+| Pass@16 | 63.33% | **68.89%** | +5.56 pp |
+| hidden mean | 39.34% | 39.79% | +0.45 pp |
+| solved@16 | 57 | **62** | +5 |
+| 16/16全正确 | 9 | 10 | +1 |
+| syntax failures | 4 | 7 | +3 |
+
+配对 bootstrap（20,000次）：
+
+- Pass@1：+0.49 pp，95% CI [-0.56,+1.60]，跨0；
+- Pass@4：+1.98 pp，95% CI [+0.10,+4.07]；
+- Pass@8：+3.82 pp，95% CI [+1.11,+6.95]；
+- Pass@16：+5.56 pp，95% CI [+1.11,+11.11]。
+
+因此在原 MBPP n=16 上，多样本覆盖提升具有配对统计证据。
+
+### 但目标 failure mode 改善很小
+
+| 诊断 | SFT | Repair DPO | 变化 |
+|---|---:|---:|---:|
+| dependency incomplete | 229 | 229 | 0 |
+| runtime unclean | 360 | 351 | -9 |
+| NameError | 239 | 236 | -3 |
+| unresolved re | 77 | 74 | -3 |
+| unresolved math | 46 | 48 | +2 |
+
+所以不能把 Pass@k 提升解释为“大量 missing import 已被修好”。
+
+### 支持集变化
+
+SFT → DPO：
+
+- solved@16：57 → 62；
+- 新增 5 题；
+- 丢失 0 题；
+- Jaccard = 0.9194。
+
+Repair DPO 与 pure GRPO 的 solved@16 都是 62，支持集 Jaccard=0.9375。
+Repair DPO - pure GRPO 的 Pass@1/4/8/16 bootstrap 全部跨0。
+
+这提示 Repair DPO 的分布行为非常接近 pure GRPO，而不只是一个局部 import 修复器。
+
+## MBPP+ 外部强测试
+
+39 个严格重叠任务 × 16 候选：
+
+| 指标 | SFT | Repair DPO | 变化 |
+|---|---:|---:|---:|
+| Plus Pass@1 | 39.74% | 39.10% | -0.64 pp |
+| Plus Pass@4 | 54.89% | 53.60% | -1.29 pp |
+| Plus Pass@8 | 59.91% | 59.27% | -0.64 pp |
+| Plus Pass@16 | 61.54% | 64.10% | +2.56 pp |
+| solved@16 | 24 | 25 | +1 |
+
+Plus empirical success delta：-0.64 pp，95% CI [-1.92,+0.64]，跨0。
+Plus solved@16 delta：+1题，95% CI [0,+3题]，没有可靠提升证据。
+
+因此：原 MBPP n=16 的覆盖恢复很明显，但更强 MBPP+ 没有复现同等幅度的平均成功率提升。
+
+## v1 机制问题
+
+当前不能判断覆盖恢复来自：
+
+A. 最小 import 修复偏好的语义；
+还是
+B. 任意小规模 DPO 更新都会缓解 SFT 的概率集中。
+
+因此在结束 EXP-004B 前必须加入随机化偏好标签控制臂。
+
+控制原则：完全复用同 56 对 prompt/chosen/rejected 文本，只随机翻转一半 chosen/rejected 标签；训练预算、beta、学习率、epoch、seed 之外全部一致。
