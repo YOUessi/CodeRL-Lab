@@ -6,10 +6,10 @@
 - greedy generation mode：已实现
 - prompt-end logit sensitivity：已实现
 - shared reference-logit cache：已实现
-- CPU tests：待跑
-- 3-task smoke：待跑
-- 90-task 正式 greedy：待跑
-- 90-task prompt-logit analysis：待跑
+- CPU tests：已通过
+- 3-task smoke：已通过
+- 90-task 正式 greedy：已完成
+- 90-task prompt-logit analysis：已完成
 
 ## 研究动机
 
@@ -253,3 +253,128 @@ greedy Phase A 作为 temperature→0 的确定性参照。
 1. 若 temperature 越高，candidate-vs-SFT changed fraction 系统上升，则 stochastic sampling amplification 得到直接支持；
 2. 若 0.2 已接近 0.8/1.0，则 stochastic temperature 不是主要剩余因素，自回归决策边界占主导；
 3. 不根据结果调整代表 arm 或 temperature。
+
+# Phase C 正式结果：Temperature sweep
+
+固定四个代表 arm：
+
+- 0.25× seed101
+- 0.5× seed202
+- 1× seed202
+- 2× seed303
+
+固定 generation seed=42、top_p=0.95、每题 4 samples，分别比较 temperature=0.2 / 0.5 / 0.8 / 1.0 与相同 temperature 的 SFT reference。
+
+## fixed-seed trajectory drift
+
+四 arm 平均 changed fraction：
+
+| 解码条件 | changed fraction |
+|---|---:|
+| Greedy | **26.39%** |
+| T=0.2 | 29.93% |
+| T=0.5 | 30.63% |
+| T=0.8 | 32.15% |
+| T=1.0 | **33.54%** |
+
+点估计随 temperature 上升，但低温 0.2 本身已经有接近 30% 的 fixed-seed trajectory drift。
+
+任务级 paired bootstrap：
+
+- T=0.2 → 0.5：+0.69 pp，95% CI [-4.10,+5.49]；
+- T=0.5 → 0.8：+1.53 pp，95% CI [-3.06,+5.97]；
+- T=0.8 → 1.0：+1.39 pp，95% CI [-3.82,+6.53]；
+- T=0.2 → 0.8：+2.22 pp，95% CI [-3.06,+7.43]；
+- T=0.2 → 1.0：+3.61 pp，95% CI [-1.67,+8.82]。
+
+方向上支持 temperature 越高随机采样额外放大越强，但当前 90-task × 4-sample 规模下差异区间仍跨 0。
+
+## 与 greedy 的关系
+
+Greedy 四代表 arm 平均 changed fraction = 26.39%。
+
+相对 greedy 的点估计：
+
+- T=0.2：+3.54 pp；
+- T=0.5：+4.24 pp；
+- T=0.8：+5.76 pp；
+- T=1.0：+7.15 pp。
+
+因此随机 sampling 的确增加额外轨迹分叉，但并不是主要起点：即使完全 deterministic greedy，tiny parameter perturbation 仍已经让约四分之一任务走向不同轨迹。
+
+# 首次 greedy 分叉聚合
+
+预注册四个代表 arm 共分析 98 个首次分叉事件。
+
+聚合：
+
+- 平均 divergent tasks / arm：24.5 / 90；
+- 首次分叉位置 arm mean：约 25.33 token；
+- arm median 的中位数：17 token；
+- 约 20.18% 在前 10 token；
+- 约 86.24% 在前 50 token；
+- first-divergence mean KL：约 0.00433；
+- mean TV：约 0.03048；
+- reference top1 margin mean：约 0.04069。
+
+更细统计：
+
+- 56.12% 的首次分叉事件 reference top1 margin = 0；
+- 60.20% margin ≤ 0.05；
+- 78.57% margin ≤ 0.10；
+- 36.73% KL ≤ 1e-3；
+- 94.90% KL ≤ 1e-2；
+- 40.82% TV ≤ 1%；
+- 62.24% TV ≤ 5%。
+
+甚至存在 KL≈1e-6、TV≈1e-5 的首次 argmax 翻转。
+
+# EXP-004F 最终机制结论
+
+当前证据不再支持“只有 stochastic sampling 才会放大 tiny perturbation”。
+
+更符合数据的是：
+
+```text
+tiny local parameter perturbation
+→ prompt 起点 next-token 分布仅微小变化，top1 仍 100% 一致
+→ 自回归过程中不断遇到 low-margin / tie token decision boundary
+→ 某个 argmax 被极小 logit 变化翻转
+→ prefix 改变
+→ 后续条件分布重新计算
+→ deterministic trajectory 级联分叉
+→ stochastic sampling 再叠加额外放大
+```
+
+因此机制应描述为：
+
+> **deterministic autoregressive amplification + additional stochastic amplification**
+
+而不是单纯 sampling amplification。
+
+## 对 EXP-004C/D/E 的统一解释
+
+这可以解释此前多个看似矛盾的现象：
+
+1. No-op / Random-label / Reverse-label DPO 都能恢复高 k 覆盖；
+2. 与 DPO 更新方向近乎正交的随机 matched-norm 参数扰动也能恢复覆盖；
+3. 0.25× 扰动就足以引起约 30% fixed-seed stochastic trajectory 变化；
+4. 扰动幅度从 0.25×→2× 时行为漂移并不线性增长；
+5. prompt 起点分布实际上几乎没有发生大规模类别翻转；
+6. 真正放大点位于后续 autoregressive 低 margin 决策边界。
+
+所以更准确的结论是：
+
+> SFT adapter 位于一个包含大量低 margin 自回归决策边界的局部区域。极小参数变化只需在后续某个近 tie token 上翻转 argmax，就能通过 prefix feedback 产生完整轨迹级的大差异，并在 stochastic sampling 下进一步扩大。
+
+## 下一步
+
+EXP-004F 已经把“参数扰动 → 行为分叉”的主要放大链条定位到低 margin autoregressive token decision boundary。
+
+下一实验不再继续扫 temperature 或 perturbation scale，而应直接研究：
+
+- 哪些 token / task 更容易成为低 margin 决策点；
+- margin 是否能预测 perturbation susceptibility；
+- SFT 是否系统性降低某些任务轨迹上的决策 margin；
+- Base / SFT / DPO / random perturbation 的 margin profile 有何差异；
+- 能否定义 trajectory susceptibility 指标，预测哪些任务最容易被极小参数扰动“解锁/丢失”。
