@@ -1,0 +1,101 @@
+{
+  "experiment": "EXP-004J",
+  "model": "Qwen/Qwen3-1.7B-Base + EXP-006A SFT adapter",
+  "tasks": 90,
+  "reference_reproduction": {
+    "matched": 90,
+    "total": 90
+  },
+  "eligible_tasks": 57,
+  "gate_triggered_tasks": 36,
+  "conditions": {
+    "baseline": {
+      "correct_tasks": 36,
+      "accuracy": 0.4
+    },
+    "gated_low": {
+      "correct_tasks": 39,
+      "accuracy": 0.43333333333333335,
+      "delta": 0.03333333333333333,
+      "wrong_to_correct": 3,
+      "correct_to_wrong": 0
+    },
+    "gated_high": {
+      "correct_tasks": 36,
+      "accuracy": 0.4,
+      "delta": 0,
+      "wrong_to_correct": 0,
+      "correct_to_wrong": 0
+    },
+    "always_low": {
+      "correct_tasks": 38,
+      "accuracy": 0.4222222222222222,
+      "delta": 0.022222222222222223,
+      "wrong_to_correct": 4,
+      "correct_to_wrong": 2
+    }
+  },
+  "bootstrap": {
+    "gated_low_minus_baseline": {
+      "delta": 0.03333333333333333,
+      "ci95": [
+        0,
+        0.07777777777777778
+      ],
+      "probability_positive": 0.954
+    },
+    "gated_high_minus_baseline": {
+      "delta": 0,
+      "ci95": [
+        0,
+        0
+      ],
+      "probability_positive": 0
+    },
+    "always_low_minus_baseline": {
+      "delta": 0.022222222222222223,
+      "ci95": [
+        -0.03333333333333333,
+        0.07777777777777778
+      ],
+      "probability_positive": 0.7375
+    },
+    "gated_low_minus_high": {
+      "delta": 0.03333333333333333,
+      "ci95": [
+        0,
+        0.07777777777777778
+      ],
+      "probability_positive": 0.954
+    },
+    "gated_low_minus_always": {
+      "delta": 0.011111111111111112,
+      "ci95": [
+        -0.022222222222222223,
+        0.044444444444444446
+      ],
+      "probability_positive": 0.60485
+    }
+  },
+  "gate_subset": {
+    "tasks": 36,
+    "baseline_accuracy": 0.05555555555555555,
+    "gated_low_accuracy": 0.1388888888888889,
+    "gated_high_accuracy": 0.05555555555555555,
+    "gated_low_delta": 0.08333333333333333,
+    "ci95": [
+      0,
+      0.19444444444444445
+    ],
+    "wrong_to_correct": 3,
+    "correct_to_wrong": 0
+  },
+  "public_pass_protection": {
+    "tasks": 37,
+    "gated_low_changed": 0,
+    "gated_high_changed": 0,
+    "always_low_changed": 21
+  },
+  "preregistered_primary_success": false,
+  "conclusion": "SFT-only public-gated low-margin destabilization shows a positive, position-specific, no-observed-harm correctness effect on the repeatedly-used 90-task validation set, but the preregistered 95% CI lower bound is exactly zero. Freeze the rule and replicate on held-out MBPP test tasks before making a capability-improvement claim."
+}
