@@ -1,0 +1,88 @@
+{
+  "experiment": "EXP-004H",
+  "model": "Qwen/Qwen3-1.7B-Base + EXP-006A SFT reference",
+  "arms": [
+    "scale025_seed101",
+    "scale050_seed202",
+    "scale100_seed202",
+    "scale200_seed303"
+  ],
+  "eligible_tasks": 57,
+  "eligible_task_arm_pairs": 228,
+  "exact_match_fraction": {
+    "baseline": 0.6578947368421053,
+    "low_stabilize": 0.7894736842105263,
+    "low_destabilize": 0.12280701754385964,
+    "high_stabilize": 0.6578947368421053
+  },
+  "rescue": {
+    "baseline_divergent_pairs": 78,
+    "low_stabilize_rescued": 30,
+    "low_rescue_fraction": 0.38461538461538464,
+    "high_stabilize_rescued": 0,
+    "high_rescue_fraction": 0
+  },
+  "induced_divergence": {
+    "baseline_matching_pairs": 150,
+    "low_destabilize_induced": 122,
+    "induced_fraction": 0.8133333333333334
+  },
+  "first_divergence_shift_tokens": {
+    "low_stabilize": {
+      "mean": 8.916666666666666,
+      "ci95": [
+        2.8552631578947367,
+        18.69736842105263
+      ]
+    },
+    "low_destabilize": {
+      "mean": -37.19736842105263,
+      "ci95": [
+        -59.15350877192982,
+        -21.846491228070175
+      ]
+    },
+    "high_stabilize": {
+      "mean": 0,
+      "ci95": [
+        0,
+        0
+      ]
+    }
+  },
+  "task_cluster_bootstrap": {
+    "low_stabilize_minus_baseline": {
+      "delta": 0.13157894736842105,
+      "ci95": [
+        0.07456140350877193,
+        0.19736842105263158
+      ],
+      "probability_positive": 1
+    },
+    "high_stabilize_minus_baseline": {
+      "delta": 0,
+      "ci95": [
+        0,
+        0
+      ],
+      "probability_positive": 0
+    },
+    "low_stabilize_minus_high_control": {
+      "delta": 0.13157894736842105,
+      "ci95": [
+        0.07456140350877193,
+        0.19736842105263158
+      ],
+      "probability_positive": 1
+    },
+    "low_destabilize_minus_baseline": {
+      "delta": -0.5350877192982456,
+      "ci95": [
+        -0.6271929824561403,
+        -0.44298245614035087
+      ],
+      "probability_positive": 0
+    }
+  },
+  "conclusion": "Local reference-defined low-margin token decisions have a causal effect on perturbation-induced greedy trajectory divergence: stabilizing them rescues trajectories, destabilizing them induces divergence, while matched high-margin controls do not."
+}
