@@ -1,0 +1,90 @@
+{
+  "experiment": "EXP-004A",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "matched_baseline": "EXP-006B 1.7B pure GRPO n16",
+  "training": {
+    "optimizer_steps": 187,
+    "rl_completions": 1496,
+    "baseline_zero_grad_fraction": 0.32085561497326204,
+    "process_zero_grad_fraction": 0.18181818181818182,
+    "zero_grad_fraction_delta": -0.13903743315508021,
+    "baseline_frac_reward_zero_std": 0.6016042780748663,
+    "process_frac_reward_zero_std": 0.4304812834224599,
+    "frac_reward_zero_std_delta": -0.17112299465240638,
+    "baseline_effective_steps": 127,
+    "process_effective_steps": 153,
+    "baseline_completions_per_effective_step": 11.779527559055119,
+    "process_completions_per_effective_step": 9.777777777777779,
+    "baseline_runtime_seconds": 815.2182,
+    "process_runtime_seconds": 841.9101,
+    "process_dependency_complete_mean": 0.8335561497326203,
+    "process_runtime_clean_mean": 0.7690508021390374,
+    "process_adapter_sha256": "571052fe0e43eaf9a2b1900d3b11dadc2a137ae60e38f8d2ea95c7a96eb5eec2"
+  },
+  "validation": {
+    "tasks": 90,
+    "samples_per_task": 16,
+    "baseline": {
+      "pass_at_1": 0.38819444444444445,
+      "pass_at_4": 0.5684920634920636,
+      "pass_at_8": 0.636317879651213,
+      "pass_at_16": 0.6888888888888889,
+      "hidden_mean": 0.4131944444444444,
+      "solved_tasks": 62,
+      "all16_tasks": 9,
+      "syntax_failures": 8,
+      "dependency_incomplete": 202,
+      "runtime_unclean": 326
+    },
+    "process": {
+      "pass_at_1": 0.3972222222222222,
+      "pass_at_4": 0.5686630036630037,
+      "pass_at_8": 0.6237347837347836,
+      "pass_at_16": 0.6666666666666666,
+      "hidden_mean": 0.415625,
+      "solved_tasks": 60,
+      "all16_tasks": 11,
+      "syntax_failures": 4,
+      "dependency_incomplete": 185,
+      "runtime_unclean": 314
+    },
+    "delta": {
+      "pass_at_1": 0.009027777777777746,
+      "pass_at_4": 0.00017094017094010372,
+      "pass_at_8": -0.012583095916429365,
+      "pass_at_16": -0.022222222222222254,
+      "hidden_mean": 0.0024305555555556024,
+      "solved_tasks": -2,
+      "syntax_failures": -4,
+      "dependency_incomplete": -17,
+      "runtime_unclean": -12
+    }
+  },
+  "passk_bootstrap": {
+    "pass_at_1": {
+      "delta": 0.009027777777777777,
+      "ci95_low": -0.004166666666666667,
+      "ci95_high": 0.022916666666666665,
+      "probability_positive": 0.89465
+    },
+    "pass_at_4": {
+      "delta": 0.0001709401709401728,
+      "ci95_low": -0.017356532356532357,
+      "ci95_high": 0.017875457875457877,
+      "probability_positive": 0.50995
+    },
+    "pass_at_8": {
+      "delta": -0.012583095916429251,
+      "ci95_low": -0.04052490719157386,
+      "ci95_high": 0.014293360960027627,
+      "probability_positive": 0.18105
+    },
+    "pass_at_16": {
+      "delta": -0.022222222222222223,
+      "ci95_low": -0.07777777777777778,
+      "ci95_high": 0.03333333333333333,
+      "probability_positive": 0.1485
+    }
+  },
+  "conclusion": "Execution-stage reward v1 materially improves gradient efficiency and modestly reduces dependency/runtime failures, but does not produce statistically reliable Pass@k gains on matched n16 validation."
+}
