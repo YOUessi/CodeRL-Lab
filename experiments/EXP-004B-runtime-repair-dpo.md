@@ -236,3 +236,39 @@ B. 任意小规模 DPO 更新都会缓解 SFT 的概率集中。
 因此在结束 EXP-004B 前必须加入随机化偏好标签控制臂。
 
 控制原则：完全复用同 56 对 prompt/chosen/rejected 文本，只随机翻转一半 chosen/rejected 标签；训练预算、beta、学习率、epoch、seed 之外全部一致。
+
+## 随机化偏好标签控制臂：预注册设计
+
+目的：区分两种解释。
+
+A. 覆盖恢复来自“最小 import 修复”的正确偏好语义；
+B. 任何一次小规模 DPO 更新都能缓解 SFT 的概率集中。
+
+控制数据完全复用正式 56 对 prompt / candidate 文本，只随机翻转 28 / 56 对的 chosen / rejected 方向。
+
+固定：
+
+- 文本完全相同；
+- task 集完全相同；
+- 56 pairs；
+- 3 epoch；
+- 21 optimizer steps；
+- beta=0.1；
+- learning rate=5e-7；
+- training seed=42；
+- 同一个 SFT adapter 初始化；
+- label randomization seed=42042；
+- 其它训练和 validation 参数完全一致。
+
+主比较：
+
+1. semantic repair DPO vs SFT；
+2. randomized-label DPO vs SFT；
+3. semantic repair DPO vs randomized-label DPO。
+
+预注册解释标准：
+
+- 若 semantic DPO 明显优于 random control，支持修复偏好语义本身有效；
+- 若两者都相近地恢复 Pass@k，说明主要效应来自小规模 DPO 更新 / 分布解集中，而不是 import-repair 语义；
+- 若 random control 更差且 semantic DPO 在 MBPP+ 仍不改善，则只能说语义偏好帮助原分布覆盖恢复，不能说提高鲁棒代码能力；
+- 不因控制结果再调 beta、learning rate 或 pair 数量。
