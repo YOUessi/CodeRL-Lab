@@ -1,4 +1,4 @@
-from coderl_lab.generation import _sample_batch_ranges, extract_python_code
+from coderl_lab.generation import _sample_batch_ranges, _sampling_kwargs, extract_python_code
 
 
 def test_extracts_fenced_python() -> None:
@@ -26,3 +26,23 @@ def test_sample_batch_ranges_chunks_large_k() -> None:
 
 def test_sample_batch_ranges_handles_tail() -> None:
     assert _sample_batch_ranges(34, 16) == [(0, 16), (16, 16), (32, 2)]
+
+
+def test_greedy_sampling_kwargs_disable_sampling_controls() -> None:
+    assert _sampling_kwargs(
+        greedy=True,
+        temperature=0.8,
+        top_p=0.95,
+    ) == {"do_sample": False}
+
+
+def test_stochastic_sampling_kwargs_preserve_controls() -> None:
+    assert _sampling_kwargs(
+        greedy=False,
+        temperature=0.8,
+        top_p=0.95,
+    ) == {
+        "do_sample": True,
+        "temperature": 0.8,
+        "top_p": 0.95,
+    }
