@@ -484,3 +484,29 @@ Semantic - Random 的 Plus empirical success delta：-1.60 pp，95% CI [-4.01, +
 4. 需要加入 no-op / zero-gradient 控制，排除“只是重新保存 adapter / 数值扰动”这种解释。
 
 只有把这些机制拆开后，再决定是否值得形成新的训练方法。
+
+## 随机标签控制的补充统计
+
+Random-label DPO 相对 SFT 的 paired bootstrap：
+
+- Pass@1：+1.18 pp，95% CI [-0.07,+2.43]；
+- Pass@4：+1.71 pp，95% CI [-0.01,+3.59]；
+- Pass@8：+2.55 pp，95% CI [+0.50,+4.97]；
+- Pass@16：+3.33 pp，95% CI [0,+7.78]。
+
+因此随机标签控制本身也能可靠恢复一部分多样本覆盖，尤其在 k=8 / k=16。
+
+Semantic repair DPO 相对 Random-label DPO：
+
+- Pass@1：-0.69 pp，95% CI [-2.01,+0.56]；
+- Pass@4：+0.27 pp，95% CI [-1.57,+2.22]；
+- Pass@8：+1.27 pp，95% CI [-1.71,+4.43]；
+- Pass@16：+2.22 pp，95% CI [-3.33,+7.78]。
+
+全部跨0。
+
+这进一步支持：
+
+> 多样本覆盖恢复的主要可识别机制并不是“正确 import-repair 语义被学到”，而是小规模 DPO 更新本身改变了 SFT policy 的概率集中状态。
+
+EXP-004B 在这里结束。下一步不再追加 repair pair，而研究 DPO 更新为什么会产生去集中效应。
