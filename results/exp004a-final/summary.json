@@ -86,5 +86,48 @@
       "probability_positive": 0.1485
     }
   },
-  "conclusion": "Execution-stage reward v1 materially improves gradient efficiency and modestly reduces dependency/runtime failures, but does not produce statistically reliable Pass@k gains on matched n16 validation."
+  "conclusion": "Execution-stage reward v1 materially improves gradient efficiency and modestly reduces dependency/runtime failures, but does not produce statistically reliable Pass@k gains on matched n16 validation.",
+  "mbppplus_external": {
+    "tasks": 39,
+    "samples_per_task": 16,
+    "baseline_pure_grpo": {
+      "plus_pass_at_1": 0.40544871794871795,
+      "plus_pass_at_4": 0.543491124260355,
+      "plus_pass_at_8": 0.5850616619847389,
+      "plus_pass_at_16": 0.6153846153846154,
+      "plus_solved_tasks": 24,
+      "mean_plus_success_rate": 0.40544871794871795,
+      "mean_robustness_gap": 0.09935897435897435
+    },
+    "process_grpo": {
+      "plus_pass_at_1": 0.40224358974358976,
+      "plus_pass_at_4": 0.5437165398703859,
+      "plus_pass_at_8": 0.5906102444563983,
+      "plus_pass_at_16": 0.6153846153846154,
+      "plus_solved_tasks": 24,
+      "mean_plus_success_rate": 0.40224358974358976,
+      "mean_robustness_gap": 0.09455128205128205
+    },
+    "paired_bootstrap": {
+      "plus_empirical_success_rate": {
+        "delta": -0.003205128205128205,
+        "ci95_low": -0.017628205128205128,
+        "ci95_high": 0.009615384615384616,
+        "probability_positive": 0.29795
+      },
+      "plus_solved_at_16": {
+        "delta": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "probability_positive": 0
+      },
+      "robustness_gap": {
+        "delta": -0.004807692307692308,
+        "ci95_low": -0.019230769230769232,
+        "ci95_high": 0.008012820512820512,
+        "probability_positive": 0.2121
+      }
+    }
+  },
+  "final_conclusion": "Execution-stage reward v1 materially improves gradient efficiency and modestly improves code completeness, but neither matched MBPP n16 nor official MBPP+ provides statistically reliable capability gains. End v1 and move to targeted local repair preference learning."
 }
