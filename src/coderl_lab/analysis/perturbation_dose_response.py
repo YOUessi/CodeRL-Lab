@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import random
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -31,6 +33,54 @@ def _stats(values: list[float]) -> dict[str, float]:
     }
 
 
+
+def _pass_at_k(n: int, c: int, k: int) -> float:
+    if c <= 0:
+        return 0.0
+    if n - c < k:
+        return 1.0
+    return 1.0 - math.comb(n - c, k) / math.comb(n, k)
+
+
+def _task_passk(summary: dict[str, Any], k: int) -> dict[str, float]:
+    return {
+        str(task_id): _pass_at_k(
+            int(row["samples"]),
+            int(row["correct"]),
+            k,
+        )
+        for task_id, row in summary["per_task"].items()
+    }
+
+
+def _cluster_bootstrap(
+    diffs: list[float],
+    *,
+    iterations: int = 20000,
+    seed: int = 42,
+) -> dict[str, float | int]:
+    observed = mean(diffs)
+    rng = random.Random(seed)
+    n = len(diffs)
+    values: list[float] = []
+    for _ in range(iterations):
+        values.append(
+            sum(diffs[rng.randrange(n)] for _ in range(n)) / n
+        )
+    values.sort()
+    return {
+        "tasks": n,
+        "observed_mean_delta": observed,
+        "ci95_low": values[int(0.025 * iterations)],
+        "ci95_high": values[min(iterations - 1, int(0.975 * iterations))],
+        "bootstrap_probability_positive": (
+            sum(value > 0 for value in values) / iterations
+        ),
+        "iterations": iterations,
+        "seed": seed,
+    }
+
+
 def parse_arm(value: str) -> tuple[str, Path]:
     if "=" not in value:
         raise ValueError("arm must be NAME=DIR")
@@ -50,6 +100,7 @@ def scale_and_seed(name: str) -> tuple[float, int]:
 def summarize(
     *,
     sft_eval: dict[str, Any],
+    sft_summary: dict[str, Any],
     sft_concentration: dict[str, Any],
     analysis_root: Path,
     arm_dirs: dict[str, Path],
@@ -60,6 +111,7 @@ def summarize(
     for name, eval_dir in sorted(arm_dirs.items()):
         scale, seed = scale_and_seed(name)
         eval_summary = _load(eval_dir / "evaluation" / "enhanced_summary.json")
+        raw_summary = _load(eval_dir / "evaluation" / "summary.json")
         analysis_dir = analysis_root / name
         behavior = _load(analysis_dir / "behavior_vs_sft.json")
         concentration = _load(analysis_dir / "success_concentration.json")
@@ -103,6 +155,7 @@ def summarize(
                 - float(sft_concentration["effective_task_count_from_hhi"])
             ),
             "bootstrap_vs_sft": bootstrap,
+            "_raw_summary": raw_summary,
         }
         arms[name] = row
         grouped[scale].append(row)
@@ -144,6 +197,31 @@ def summarize(
             ),
         }
 
+    sft_task_pass = {
+        k: _task_passk(sft_summary, k)
+        for k in (1, 4, 8, 16)
+    }
+    for scale, rows in sorted(grouped.items()):
+        cluster: dict[str, Any] = {}
+        for k in (1, 4, 8, 16):
+            ids = sorted(sft_task_pass[k])
+            arm_maps = [
+                _task_passk(row["_raw_summary"], k)
+                for row in rows
+            ]
+            diffs: list[float] = []
+            for task_id in ids:
+                seed_deltas = [
+                    arm_map[task_id] - sft_task_pass[k][task_id]
+                    for arm_map in arm_maps
+                ]
+                diffs.append(sum(seed_deltas) / len(seed_deltas))
+            cluster[f"pass@{k}"] = _cluster_bootstrap(diffs)
+        scale_summary[str(scale)]["task_cluster_bootstrap"] = cluster
+
+    for row in arms.values():
+        row.pop("_raw_summary", None)
+
     pass16_curve = [
         {
             "scale": float(info["scale"]),
@@ -172,6 +250,7 @@ def summarize(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--sft-eval", type=Path, required=True)
+    parser.add_argument("--sft-summary", type=Path, required=True)
     parser.add_argument("--sft-concentration", type=Path, required=True)
     parser.add_argument("--analysis-root", type=Path, required=True)
     parser.add_argument("--arm", action="append", required=True)
@@ -183,6 +262,7 @@ def main() -> None:
     args = parse_args()
     result = summarize(
         sft_eval=_load(args.sft_eval),
+        sft_summary=_load(args.sft_summary),
         sft_concentration=_load(args.sft_concentration),
         analysis_root=args.analysis_root,
         arm_dirs=dict(parse_arm(item) for item in args.arm),
