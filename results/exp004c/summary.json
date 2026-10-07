@@ -1,0 +1,111 @@
+{
+  "experiment": "EXP-004C",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "evaluation": {
+    "tasks": 90,
+    "samples_per_task": 16
+  },
+  "arms": {
+    "sft": {
+      "pass1": 0.3729166666666667,
+      "pass4": 0.5425641025641025,
+      "pass8": 0.5967806267806265,
+      "pass16": 0.6333333333333333,
+      "solved": 57,
+      "total_correct": 537,
+      "exact_vs_sft": 1,
+      "delta_l2": 0
+    },
+    "semantic": {
+      "pass1": 0.37777777777777777,
+      "pass4": 0.5623687423687425,
+      "pass8": 0.6349814383147716,
+      "pass16": 0.6888888888888889,
+      "solved": 62,
+      "total_correct": 544,
+      "exact_vs_sft": 0.6854166666666667,
+      "delta_l2": 0.014514698944087292
+    },
+    "random50": {
+      "pass1": 0.38472222222222224,
+      "pass4": 0.5596398046398047,
+      "pass8": 0.6223120089786756,
+      "pass16": 0.6666666666666666,
+      "solved": 60,
+      "total_correct": 554,
+      "exact_vs_sft": 0.6944444444444444,
+      "delta_l2": 0.007590334698539861
+    },
+    "noop05": {
+      "pass1": 0.3888888888888889,
+      "pass4": 0.5633394383394382,
+      "pass8": 0.6214270914270912,
+      "pass16": 0.6666666666666666,
+      "solved": 60,
+      "total_correct": 560,
+      "exact_vs_sft": 0.6951388888888889,
+      "delta_l2": 0.006200807170745428
+    },
+    "noop0": {
+      "pass1": 0.3736111111111111,
+      "pass4": 0.5486996336996337,
+      "pass8": 0.6107614607614607,
+      "pass16": 0.6555555555555556,
+      "solved": 59,
+      "total_correct": 538,
+      "exact_vs_sft": 0.7006944444444444,
+      "delta_l2": 0.006032570397697922
+    },
+    "zero_lr": {
+      "pass1": 0.3729166666666667,
+      "pass4": 0.5425641025641025,
+      "pass8": 0.5967806267806265,
+      "pass16": 0.6333333333333333,
+      "solved": 57,
+      "total_correct": 537,
+      "exact_vs_sft": 1,
+      "delta_l2": 0
+    },
+    "reverse100": {
+      "pass1": 0.3729166666666667,
+      "pass4": 0.5526923076923078,
+      "pass8": 0.6177052577052576,
+      "pass16": 0.6777777777777778,
+      "solved": 61,
+      "total_correct": 537,
+      "exact_vs_sft": 0.6979166666666666,
+      "delta_l2": 0.014451384689414199
+    }
+  },
+  "reverse_vs_sft_bootstrap": {
+    "pass1": {
+      "delta": 0,
+      "ci95_low": -0.010416666666666666,
+      "ci95_high": 0.010416666666666666
+    },
+    "pass4": {
+      "delta": 0.010128205128205123,
+      "ci95_low": -0.007148962148962156,
+      "ci95_high": 0.027808302808302807
+    },
+    "pass8": {
+      "delta": 0.020924630924630924,
+      "ci95_low": -0.0026633859967193337,
+      "ci95_high": 0.04733920400587067
+    },
+    "pass16": {
+      "delta": 0.044444444444444446,
+      "ci95_low": 0.011111111111111112,
+      "ci95_high": 0.08888888888888889
+    }
+  },
+  "parameter_direction_cosine": {
+    "semantic_reverse": -0.9963909874709104,
+    "semantic_random50": -0.1577365881482456,
+    "semantic_noop05": 0.006760843309029133,
+    "semantic_noop0": -0.0012853824456239384,
+    "random50_noop05": 0.017785226305241934,
+    "noop05_noop0": 0.03538244081913982
+  },
+  "conclusion": "Nonzero tiny updates redistribute correct-sample mass across tasks. Correct preference direction is not necessary for high-k coverage recovery, and exact-output entropy need not increase. Zero-lr exact replication rules out serialization and generation nondeterminism."
+}
