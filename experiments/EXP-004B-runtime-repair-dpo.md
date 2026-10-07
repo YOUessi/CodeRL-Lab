@@ -401,3 +401,112 @@ B. 任何一次小规模 DPO 更新都能缓解 SFT 的概率集中。
 4. continued-SFT 同预算控制，区分 DPO objective 与“任何 LoRA 更新”；
 5. 对比 adapter update norm、生成熵、exact-completion diversity、Pass@k 支持集变化；
 6. 再决定是否形成论文方向。
+
+## 随机化偏好标签控制结果
+
+控制臂完全复用正式 56 对 prompt / candidate 文本，只随机翻转 28 / 56 对 chosen / rejected 标签。
+
+训练预算保持：21 steps、3 epoch、beta=0.1、learning rate=5e-7、相同 SFT adapter 初始化。
+
+### 训练
+
+| 指标 | Semantic repair DPO | Random-label DPO |
+|---|---:|---:|
+| train loss | 0.6734 | 0.6934 |
+| mean reward margin | 0.0404 | -0.00006 |
+| mean preference accuracy | 76.19% | 42.26% |
+| last-quarter accuracy | 90.0% | 52.5% |
+
+语义 DPO 明确学到了正确 chosen/rejected 偏好；随机标签控制没有学出稳定 margin。
+
+### MBPP n=16
+
+| Policy | Pass@1 | Pass@4 | Pass@8 | Pass@16 | solved@16 |
+|---|---:|---:|---:|---:|---:|
+| SFT | 37.29% | 54.26% | 59.68% | 63.33% | 57 |
+| Random-label DPO | **38.47%** | 55.96% | 62.23% | 66.67% | 60 |
+| Semantic repair DPO | 37.78% | **56.24%** | **63.50%** | **68.89%** | **62** |
+
+Semantic - Random 的 paired bootstrap：
+
+- Pass@1：-0.69 pp，95% CI [-2.01, +0.56]；
+- Pass@4：+0.27 pp，95% CI [-1.57, +2.22]；
+- Pass@8：+1.27 pp，95% CI [-1.71, +4.43]；
+- Pass@16：+2.22 pp，95% CI [-3.33, +7.78]。
+
+全部跨0。
+
+所以当前没有证据证明 semantic import-repair DPO 的覆盖恢复显著优于随机标签 DPO。
+
+### Failure-mode audit
+
+| 指标 | SFT | Random-label DPO | Semantic DPO |
+|---|---:|---:|---:|
+| dependency incomplete | 229 | **224** | 229 |
+| runtime unclean | 360 | 354 | **351** |
+| NameError | 239 | **235** | 236 |
+| verified minimal-import repairs | **79** | 72 | 74 |
+| distinct repairable tasks | **17** | 15 | 16 |
+
+语义 DPO 并没有显著增加真正可被最小 import 修复的候选，甚至 verified repair count 低于 SFT。
+
+### MBPP+
+
+| Policy | Plus Pass@1 | Plus Pass@4 | Plus Pass@8 | Plus Pass@16 | solved@16 |
+|---|---:|---:|---:|---:|---:|
+| SFT | 39.74% | 54.89% | 59.91% | 61.54% | 24 |
+| Random-label DPO | **40.38%** | **55.69%** | **60.12%** | 61.54% | 24 |
+| Semantic DPO | 38.78% | 53.06% | 59.04% | **64.10%** | **25** |
+
+Semantic - Random 的 Plus empirical success delta：-1.60 pp，95% CI [-4.01, +0.48]，跨0。
+
+## EXP-004B 最终机制结论
+
+当前证据不支持：
+
+> Pass@k 恢复主要是因为模型学会了最小 import 修复语义。
+
+更符合数据的是：
+
+> 小规模 DPO 本身就会重新排列 SFT policy 中候选轨迹的相对概率，并部分缓解 SFT 的分布集中；正确 repair 语义确实被学到，但不是当前覆盖恢复的主要可识别因果来源。
+
+这与 EXP-006A/006B 的主线一致：后训练首先改变的是能力轨迹的概率分布，而不是简单增加/删除算法支持集。
+
+## 下一步研究问题
+
+不再扩大 import-repair pair，也不继续微调 DPO 超参数。
+
+下一步专门研究 DPO 的去集中机制：
+
+1. 随机标签 DPO 相对 SFT 的覆盖恢复是否本身具有统计证据；
+2. 全反转标签、随机标签、正确标签是否产生相近的熵/覆盖变化；
+3. DPO 更新到底是在提高低概率轨迹、压低高概率模式，还是仅产生参数噪声；
+4. 需要加入 no-op / zero-gradient 控制，排除“只是重新保存 adapter / 数值扰动”这种解释。
+
+只有把这些机制拆开后，再决定是否值得形成新的训练方法。
+
+## 随机标签控制的补充统计
+
+Random-label DPO 相对 SFT 的 paired bootstrap：
+
+- Pass@1：+1.18 pp，95% CI [-0.07,+2.43]；
+- Pass@4：+1.71 pp，95% CI [-0.01,+3.59]；
+- Pass@8：+2.55 pp，95% CI [+0.50,+4.97]；
+- Pass@16：+3.33 pp，95% CI [0,+7.78]。
+
+因此随机标签控制本身也能可靠恢复一部分多样本覆盖，尤其在 k=8 / k=16。
+
+Semantic repair DPO 相对 Random-label DPO：
+
+- Pass@1：-0.69 pp，95% CI [-2.01,+0.56]；
+- Pass@4：+0.27 pp，95% CI [-1.57,+2.22]；
+- Pass@8：+1.27 pp，95% CI [-1.71,+4.43]；
+- Pass@16：+2.22 pp，95% CI [-3.33,+7.78]。
+
+全部跨0。
+
+这进一步支持：
+
+> 多样本覆盖恢复的主要可识别机制并不是“正确 import-repair 语义被学到”，而是小规模 DPO 更新本身改变了 SFT policy 的概率集中状态。
+
+EXP-004B 在这里结束。下一步不再追加 repair pair，而研究 DPO 更新为什么会产生去集中效应。
