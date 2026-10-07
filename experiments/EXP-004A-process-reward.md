@@ -317,3 +317,64 @@ Smoke adapter SHA-256：f4c2cffe61afa93653a3c102c8c1b430438fecebf40dc54db27eccbe
 2. 使用官方 EvalPlus / MBPP+ 测试；
 3. 与 EXP-006B pure GRPO 的同一 39 个 MBPP+ 任务做配对比较；
 4. 如果 process reward 在 MBPP+ 仍无改善，则 EXP-004A v1 结束，转向更有针对性的 runtime-repair / dependency-aware data intervention，而不是继续堆 reward 权重。
+
+## MBPP+ / EvalPlus 外部强测试
+
+不重新生成输出，直接使用当前 process-GRPO 的固定 n=16 validation completions。
+与 EXP-006C pure GRPO 使用相同 39 个可映射 MBPP+ 任务、每题16候选、EvalPlus官方测试。
+
+| 指标 | 纯 GRPO | 过程奖励 GRPO | 变化 |
+|---|---:|---:|---:|
+| Plus Pass@1 | 40.54% | 40.22% | -0.32 pp |
+| Plus Pass@4 | 54.35% | 54.37% | +0.02 pp |
+| Plus Pass@8 | 58.51% | 59.06% | +0.55 pp |
+| Plus Pass@16 | 61.54% | 61.54% | 0 |
+| Plus solved@16 | 24 / 39 | 24 / 39 | 0 |
+| mean robustness gap | 9.94% | 9.46% | -0.48 pp |
+
+配对 bootstrap：
+
+- Plus empirical success delta：-0.32 pp；95% CI [-1.76, +0.96] pp；
+- Plus solved@16 delta：0；
+- robustness gap delta：-0.48 pp；95% CI [-1.92, +0.80] pp。
+
+外部强测试仍没有 process reward 带来能力增益的证据。
+
+## EXP-004A v1 最终结论
+
+第一版 execution-stage reward 得到了三个明确结果：
+
+1. 训练信号利用率改善成立：
+   - zero-grad 32.09% → 18.18%；
+   - mean frac_reward_zero_std 60.16% → 43.05%；
+   - effective steps 127 → 153。
+
+2. 代码完整性改善成立但幅度有限：
+   - dependency incomplete 202 → 185；
+   - runtime unclean 326 → 314；
+   - syntax failures 8 → 4。
+
+3. 总体能力增益不成立：
+   - MBPP n=16 的 Pass@1/4/8/16 bootstrap 全部跨0；
+   - solved@16 62 → 60；
+   - MBPP+ Plus Pass@k 基本不变；
+   - 外部 Plus empirical success 的 bootstrap 区间跨0。
+
+因此：
+
+> 更密、更细的执行阶段 reward 确实减少了训练浪费，但“更密的 credit signal”并不会自动转化成更强的最终 policy。
+
+这意味着继续调 reward 权重的研究价值已经很低。
+
+## 下一步：EXP-004B 局部运行时修复偏好学习
+
+下一阶段不再调整 reward shaping，而直接针对已观察到的真实 failure mode：
+
+- missing import；
+- NameError；
+- TypeError / helper omission；
+- 逻辑大体正确但程序不完整。
+
+核心思想：从模型自己的失败候选中构造“原始失败代码 vs 最小可验证修复代码”的近邻偏好对，只学习局部代码完整性修复，而尽量不改变算法主体和探索分布。
+
+优先考虑 DPO / pairwise preference，而不是再次大规模 SFT，以减少 EXP-006A 已观察到的 SFT 覆盖收缩风险。
