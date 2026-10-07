@@ -373,3 +373,25 @@ SFT-Base 的 low-margin-fraction delta vs SFT perturbation susceptibility：
 - 这些 bottleneck token 是否在不同 perturbation seed/scale 间重复出现；
 - 对 bottleneck 附近做极小 logit/margin 干预，是否能改变 trajectory susceptibility；
 - 从“相关预测”推进到“局部决策边界的因果干预”。
+
+
+## 工程问题：CPU CI 缺少 NumPy 依赖
+
+Phase B 结果写回后，PR #22 的 CPU unit tests 在测试收集阶段失败。
+
+错误：
+
+`ModuleNotFoundError: No module named 'numpy'`
+
+原因：
+
+- susceptibility_statistics.py 使用 NumPy；
+- Tang 的 model/data 环境已经间接安装 NumPy；
+- GitHub CPU CI 只安装 `.[dev]`；
+- dev optional dependencies 原先只有 pytest，因此本地通过但 CI 收集失败。
+
+修复：
+
+- 在 `pyproject.toml [project.optional-dependencies].dev` 增加 `numpy==2.2.6`；
+- 版本与 Tang 当前实验环境保持一致；
+- 重新跑 Tang 全量 pytest 和 GitHub CI。
