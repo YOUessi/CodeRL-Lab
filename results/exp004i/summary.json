@@ -70,5 +70,36 @@
     "wrong_to_correct": 10,
     "correct_to_wrong": 1
   },
-  "conclusion": "Local low-margin bottlenecks causally control trajectory identity, but stabilizing toward the SFT reference does not improve correctness. When the SFT reference is wrong, destabilizing the bottleneck significantly increases hidden-test correctness."
+  "conclusion": "Local low-margin bottlenecks causally control trajectory identity, but stabilizing toward the SFT reference does not improve correctness. When the SFT reference is wrong, destabilizing the bottleneck significantly increases hidden-test correctness.",
+  "public_gate": {
+    "eligible_tasks": 57,
+    "public_fail_tasks": 36,
+    "hidden_wrong_tasks": 38,
+    "public_fail_precision_for_hidden_wrong": 0.9444444444444444,
+    "public_fail_recall_of_hidden_wrong": 0.8947368421052632,
+    "public_fail_low_destabilize": {
+      "baseline_correct_fraction": 0.0625,
+      "low_destabilize_correct_fraction": 0.14583333333333334,
+      "delta": 0.08333333333333333,
+      "ci95": [
+        0.006944444444444444,
+        0.18055555555555555
+      ],
+      "wrong_to_correct": 12,
+      "correct_to_wrong": 0
+    },
+    "offline_gated_policy": {
+      "baseline_correct_fraction": 0.34210526315789475,
+      "gated_correct_fraction": 0.39473684210526316,
+      "delta": 0.05263157894736842,
+      "ci95": [
+        0.0043859649122807015,
+        0.11403508771929824
+      ],
+      "probability_positive": 0.9842,
+      "wrong_to_correct": 12,
+      "correct_to_wrong": 0
+    }
+  },
+  "final_conclusion": "Low-margin destabilization improves correctness specifically when the SFT reference is wrong. Public-test failure is a high-precision observable proxy for that condition, and an offline public-gated policy yields a positive task-cluster bootstrap interval."
 }
