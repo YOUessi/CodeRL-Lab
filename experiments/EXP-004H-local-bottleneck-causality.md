@@ -235,3 +235,27 @@ low-stabilize rescue > high-stabilize rescue
 - 所有 decoding regime；
 - 模型“能力”本体。
 
+
+
+## 4-task GPU smoke
+
+- CPU tests：133/133 passed；
+- SFT reference reproduction：4/4；
+- candidate baseline reproduction：4/4；
+- eligible tasks：2/4。
+
+关键 smoke：mbpp_validation_0512
+
+- reference first low-margin position：token 17；
+- margin = 0；
+- baseline candidate first divergence：17；
+- low-stabilize +0.25 在 token17 成功应用；
+- 首次 divergence 被推迟到 token21；
+- high-margin control（token16，margin≈0.997）没有改变 baseline divergence；
+- low-destabilize 也没有产生额外延迟。
+
+另一个 eligible task 0511 的 baseline 在 token65 已提前分叉，而第一个 low-margin target 在 token101，因此 intervention_applied=false；按预注册规则不强制把轨迹拉回 reference。
+
+Smoke 证明：干预位置与 prefix-alignment 逻辑正确，允许进入正式 4-arm × 90-task 因果实验。
+
+正式分析除 exact rescue 外，增加 first-divergence survival index：若完整匹配则记为 reference token length，否则使用首次 divergence index；报告 stabilize/destabilize 相对 baseline 推迟或提前的 token 数。
