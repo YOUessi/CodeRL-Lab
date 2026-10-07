@@ -128,5 +128,58 @@
       "ci95_high": 0.004807692307692308
     }
   },
-  "conclusion": "Small DPO updates partially restore SFT multi-sample coverage even with randomized labels. Correct minimal-import preference semantics is learned by semantic DPO but is not established as the main causal driver of Pass@k recovery. The next research target is the deconcentration mechanism of preference optimization itself."
+  "conclusion": "Small DPO updates partially restore SFT multi-sample coverage even with randomized labels. Correct minimal-import preference semantics is learned by semantic DPO but is not established as the main causal driver of Pass@k recovery. The next research target is the deconcentration mechanism of preference optimization itself.",
+  "random_vs_sft_bootstrap": {
+    "pass@1": {
+      "delta": 0.011805555555555555,
+      "ci95_low": -0.0006944444444444445,
+      "ci95_high": 0.024305555555555556,
+      "probability_positive": 0.9633
+    },
+    "pass@4": {
+      "delta": 0.017075702075702075,
+      "ci95_low": -0.00011599511599512175,
+      "ci95_high": 0.03586080586080586,
+      "probability_positive": 0.97365
+    },
+    "pass@8": {
+      "delta": 0.025531382198048864,
+      "ci95_low": 0.004969351636018299,
+      "ci95_high": 0.049740136406803075,
+      "probability_positive": 0.99565
+    },
+    "pass@16": {
+      "delta": 0.03333333333333333,
+      "ci95_low": 0,
+      "ci95_high": 0.07777777777777778,
+      "probability_positive": 0.95395
+    }
+  },
+  "semantic_vs_random_bootstrap": {
+    "pass@1": {
+      "delta": -0.006944444444444444,
+      "ci95_low": -0.02013888888888889,
+      "ci95_high": 0.005555555555555556,
+      "probability_positive": 0.13055
+    },
+    "pass@4": {
+      "delta": 0.0027289377289377264,
+      "ci95_low": -0.01565934065934066,
+      "ci95_high": 0.02223443223443223,
+      "probability_positive": 0.59865
+    },
+    "pass@8": {
+      "delta": 0.012669429336096005,
+      "ci95_low": -0.01707070707070707,
+      "ci95_high": 0.04433825433825434,
+      "probability_positive": 0.78755
+    },
+    "pass@16": {
+      "delta": 0.022222222222222223,
+      "ci95_low": -0.03333333333333333,
+      "ci95_high": 0.07777777777777778,
+      "probability_positive": 0.7301
+    }
+  },
+  "final_mechanism_conclusion": "Random-label DPO itself recovers significant multi-sample coverage relative to SFT at k=8 and k=16, while semantic repair DPO is not significantly better than the randomized-label control. Coverage recovery is therefore more consistent with a generic DPO deconcentration effect than with learned import-repair semantics."
 }
