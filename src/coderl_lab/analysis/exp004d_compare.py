@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 from pathlib import Path
 from statistics import mean, pstdev
 from typing import Any
@@ -33,7 +32,7 @@ def summarize(
     arms: dict[str, Any] = {}
     for name, root in arm_dirs.items():
         eval_summary = _load(root / "evaluation" / "enhanced_summary.json")
-        analysis_root = root.parent.parent.parent / "analysis" / name
+        analysis_root = root.parents[1] / "analysis" / name
         behavior = _load(analysis_root / "behavior_vs_sft.json")
         concentration = _load(analysis_root / "success_concentration.json")
         bootstrap = _load(analysis_root / "passk_vs_sft.json")
