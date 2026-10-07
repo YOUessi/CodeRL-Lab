@@ -19,6 +19,8 @@ METRICS = (
     "reward/public_mean",
     "reward/syntax_mean",
     "reward/public_all_pass_mean",
+    "reward/dependency_complete_mean",
+    "reward/runtime_clean_mean",
 )
 
 

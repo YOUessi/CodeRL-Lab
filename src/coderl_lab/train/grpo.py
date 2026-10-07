@@ -14,7 +14,12 @@ import yaml
 
 from coderl_lab.execution import PythonExecutor
 from coderl_lab.generation import build_prompt, extract_python_code
-from coderl_lab.reward import compute_training_reward
+from coderl_lab.reward import (
+    analyze_dependency_completeness,
+    compute_execution_stage_reward,
+    compute_runtime_clean_rate,
+    compute_training_reward,
+)
 from coderl_lab.sampling.online import OnlineAdaptiveRepeatSampler, OnlineBoundaryState
 from coderl_lab.schema import TestCase
 
@@ -127,6 +132,8 @@ class VerifiableCodeReward:
         max_workers: int = 1,
         sampling_state: OnlineBoundaryState | None = None,
         num_generations: int | None = None,
+        reward_type: str = "public_tests_only",
+        reward_weights: dict[str, Any] | None = None,
     ) -> None:
         self.executor = PythonExecutor(
             mode="docker",
@@ -137,6 +144,10 @@ class VerifiableCodeReward:
         if max_workers <= 0:
             raise ValueError("max_workers must be positive")
         self.max_workers = max_workers
+        self.reward_type = reward_type
+        self.reward_weights = dict(reward_weights or {})
+        if self.reward_type not in {"public_tests_only", "execution_stage_v1"}:
+            raise ValueError(f"unsupported reward type: {self.reward_type}")
         self.sampling_state = sampling_state
         self.num_generations = num_generations
         if self.sampling_state is not None and (
@@ -152,8 +163,13 @@ class VerifiableCodeReward:
         entry_point: str,
         tests: list[dict[str, Any]],
         setup_code: str,
-    ) -> tuple[float, float, float, float]:
+    ) -> tuple[float, float, float, float, float, float]:
         code = extract_python_code(str(raw), str(entry_point))
+        dependency = analyze_dependency_completeness(
+            code,
+            entry_point=str(entry_point),
+            setup_code=str(setup_code),
+        )
         cases = tuple(TestCase.from_dict(x) for x in tests)
         report = self.executor.run(
             code,
@@ -161,15 +177,64 @@ class VerifiableCodeReward:
             cases=cases,
             setup_code=str(setup_code),
         )
-        reward = compute_training_reward(
-            syntax_ok=report.syntax_ok,
-            public_pass_rate=report.pass_rate,
-        )
+        runtime_clean_rate = compute_runtime_clean_rate(report.cases)
+
+        if self.reward_type == "public_tests_only":
+            reward = compute_training_reward(
+                syntax_ok=report.syntax_ok,
+                public_pass_rate=report.pass_rate,
+                syntax_weight=float(
+                    self.reward_weights.get("syntax_weight", 0.10)
+                ),
+                public_test_weight=float(
+                    self.reward_weights.get("public_test_weight", 0.80)
+                ),
+                all_public_pass_bonus_weight=float(
+                    self.reward_weights.get(
+                        "all_public_pass_bonus_weight", 0.10
+                    )
+                ),
+            )
+            total = float(reward.total)
+            syntax = float(reward.syntax)
+            public_pass_rate = float(reward.public_pass_rate)
+            all_public = float(reward.all_public_pass_bonus)
+        else:
+            reward = compute_execution_stage_reward(
+                syntax_ok=report.syntax_ok,
+                dependency_complete=dependency.complete,
+                runtime_clean_rate=runtime_clean_rate,
+                public_pass_rate=report.pass_rate,
+                syntax_weight=float(
+                    self.reward_weights.get("syntax_weight", 0.05)
+                ),
+                dependency_weight=float(
+                    self.reward_weights.get("dependency_weight", 0.10)
+                ),
+                runtime_clean_weight=float(
+                    self.reward_weights.get("runtime_clean_weight", 0.10)
+                ),
+                public_test_weight=float(
+                    self.reward_weights.get("public_test_weight", 0.65)
+                ),
+                all_public_pass_bonus_weight=float(
+                    self.reward_weights.get(
+                        "all_public_pass_bonus_weight", 0.10
+                    )
+                ),
+            )
+            total = float(reward.total)
+            syntax = float(reward.syntax)
+            public_pass_rate = float(reward.public_pass_rate)
+            all_public = float(reward.all_public_pass_bonus)
+
         return (
-            float(reward.total),
-            float(reward.syntax),
-            float(reward.public_pass_rate),
-            float(reward.all_public_pass_bonus),
+            total,
+            syntax,
+            public_pass_rate,
+            all_public,
+            1.0 if dependency.complete else 0.0,
+            float(runtime_clean_rate),
         )
 
     def __call__(
@@ -223,6 +288,8 @@ class VerifiableCodeReward:
         syntax_values = [x[1] for x in scored]
         pass_rates = [x[2] for x in scored]
         all_pass_values = [x[3] for x in scored]
+        dependency_values = [x[4] for x in scored]
+        runtime_clean_values = [x[5] for x in scored]
 
         online_batch_stats = None
         if self.sampling_state is not None:
@@ -238,6 +305,14 @@ class VerifiableCodeReward:
             log_metric(
                 "reward/public_all_pass_mean",
                 sum(all_pass_values) / len(all_pass_values),
+            )
+            log_metric(
+                "reward/dependency_complete_mean",
+                sum(dependency_values) / len(dependency_values),
+            )
+            log_metric(
+                "reward/runtime_clean_mean",
+                sum(runtime_clean_values) / len(runtime_clean_values),
             )
             if online_batch_stats is not None:
                 log_metric(
@@ -258,6 +333,8 @@ class VerifiableCodeReward:
         if log_extra is not None:
             log_extra("task_id", list(task_id or []))
             log_extra("public_pass_rate", pass_rates)
+            log_extra("dependency_complete", dependency_values)
+            log_extra("runtime_clean_rate", runtime_clean_values)
 
         return rewards
 
@@ -457,6 +534,8 @@ def run_grpo(
         max_workers=int(reward_cfg.get("max_workers", 1)),
         sampling_state=online_state,
         num_generations=num_generations if online_enabled else None,
+        reward_type=str(reward_cfg.get("type", "public_tests_only")),
+        reward_weights=reward_cfg,
     )
 
     if online_enabled:
@@ -564,6 +643,8 @@ def run_grpo(
         "loss_type": args.loss_type,
         "beta": args.beta,
         "scale_rewards": args.scale_rewards,
+        "reward_type": reward_func.reward_type,
+        "reward_weights": reward_func.reward_weights,
         "generation_batch_size": args.generation_batch_size,
         "steps_per_generation": args.steps_per_generation,
         "global_step": trainer.state.global_step,

@@ -1,0 +1,48 @@
+{
+  "experiment": "EXP-004A-offline-reward-audit",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "model_revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "sft_adapter_sha256": "e1ea9a007a3e4213cdeb1ca6b1e12d29adb83594991421757d0d40b9168d0861",
+  "tasks": 374,
+  "samples_per_task": 4,
+  "completions": 1496,
+  "generation": {
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "max_new_tokens": 256,
+    "seed": 42,
+    "predictions_sha256": "e679eddfdfb371bbbe0d0c924011069e55a1aceb75884f7633135effa0d2a67b",
+    "elapsed_seconds": 580.1609554169991,
+    "peak_reserved_bytes": 3837788160
+  },
+  "audit": {
+    "outcome_flat_tasks": 208,
+    "outcome_flat_fraction": 0.5561497326203209,
+    "process_flat_tasks": 161,
+    "process_flat_fraction": 0.4304812834224599,
+    "flat_fraction_delta": -0.125668449197861,
+    "flat_tasks_rescued": 47,
+    "rescue_fraction_of_outcome_flat": 0.22596153846153846,
+    "rescued_zero_public_tasks": 47,
+    "mixed_tasks_collapsed": 0,
+    "attribution": {
+      "dependency_variation": 28,
+      "runtime_variation": 47,
+      "syntax_variation": 0,
+      "dependency_only": 0,
+      "runtime_only": 19,
+      "dependency_and_runtime": 28
+    },
+    "dependency_complete_rate": 0.8114973262032086,
+    "runtime_clean_mean": 0.7413101604278075,
+    "public_pass_mean": 0.45688502673796794,
+    "outcome_reward_mean": 0.5080882352941246,
+    "process_reward_mean": 0.5448696524064145
+  },
+  "preregistered_gate": {
+    "flat_fraction_drop_ge_0_10": true,
+    "rescue_fraction_ge_0_20": true,
+    "mixed_collapse_le_0_05": true,
+    "passed": true
+  }
+}
