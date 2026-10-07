@@ -49,6 +49,31 @@ def compute_warmup_steps(
     return max(1, math.ceil(total_steps * warmup_ratio))
 
 
+def override_lora_dropout(model, value: float) -> dict[str, Any]:
+    """Override only PEFT LoRA dropout modules.
+
+    This is used for EXP-004C causal controls. It leaves all other model
+    dropout untouched and records the previous probabilities.
+    """
+    if not 0.0 <= value <= 1.0:
+        raise ValueError("LoRA dropout override must be in [0, 1]")
+    changed: list[dict[str, Any]] = []
+    for name, module in model.named_modules():
+        if "lora_dropout" not in name:
+            continue
+        if not hasattr(module, "p"):
+            continue
+        old = float(module.p)
+        module.p = float(value)
+        changed.append({"name": name, "old": old, "new": float(value)})
+    return {
+        "requested": float(value),
+        "modules_changed": len(changed),
+        "previous_values": sorted({row["old"] for row in changed}),
+        "modules": changed,
+    }
+
+
 def prepare_rows(
     path: Path,
     *,
@@ -159,6 +184,14 @@ def run_dpo(
         is_trainable=True,
     )
 
+    adapter_dropout_override = train_cfg.get("adapter_dropout_override")
+    dropout_override_summary = None
+    if adapter_dropout_override is not None:
+        dropout_override_summary = override_lora_dropout(
+            model,
+            float(adapter_dropout_override),
+        )
+
     epochs = float(train_cfg.get("num_train_epochs", 3.0))
     requested_max_steps = (
         int(max_steps)
@@ -251,6 +284,7 @@ def run_dpo(
         "seed": seed,
         "beta": args.beta,
         "loss_type": args.loss_type,
+        "adapter_dropout_override": dropout_override_summary,
         "global_step": trainer.state.global_step,
         "trainer_max_steps": trainer.state.max_steps,
         "final_epoch": trainer.state.epoch,
