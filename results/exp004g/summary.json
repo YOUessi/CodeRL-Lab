@@ -1,0 +1,156 @@
+{
+  "experiment": "EXP-004G",
+  "phase": "A",
+  "tasks": 90,
+  "sft_greedy_reproduction": {
+    "matched": 90,
+    "total": 90,
+    "fraction": 1
+  },
+  "mean_greedy_divergence_rate": 0.2537037037037037,
+  "primary": {
+    "predictor": "first128 probability margin fraction <= 0.05",
+    "outcome": "12-arm greedy divergence rate",
+    "spearman_rho": 0.31660702433780985,
+    "ci95": [
+      0.1114549247351394,
+      0.4990771096363025
+    ],
+    "probability_positive": 0.9989,
+    "supported": true
+  },
+  "length_adjusted_ols": {
+    "low_margin_standardized_coefficient": 0.10328557972572844,
+    "ci95": [
+      0.03734037066813695,
+      0.16372896212626414
+    ],
+    "probability_positive": 0.9994,
+    "log_length_standardized_coefficient": 0.0631038364534121
+  },
+  "quartiles": {
+    "bottom_outcome_mean": 0.17045454545454544,
+    "top_outcome_mean": 0.3939393939393939,
+    "top_minus_bottom": 0.22348484848484848
+  },
+  "secondary": {
+    "low_margin_fraction_0_01": {
+      "rho": 0.28658501533772324,
+      "ci95": [
+        0.07461850322769573,
+        0.4786178868584044
+      ]
+    },
+    "low_margin_fraction_0_10": {
+      "rho": 0.3430350788760621,
+      "ci95": [
+        0.14154325521931466,
+        0.5255498455669241
+      ]
+    },
+    "tie_fraction": {
+      "rho": 0.28494598024267886,
+      "ci95": [
+        0.07266571239577864,
+        0.4781147599234312
+      ]
+    },
+    "min_margin": {
+      "rho": -0.2795890311407188,
+      "ci95": [
+        -0.45942449927099405,
+        -0.0739021694248275
+      ]
+    }
+  },
+  "by_scale": {
+    "0.25": {
+      "rho": 0.2769965945297769,
+      "ci95": [
+        0.06719521153694315,
+        0.46620203659046194
+      ]
+    },
+    "0.5": {
+      "rho": 0.29427060822610646,
+      "ci95": [
+        0.08125715442825268,
+        0.4903726648329407
+      ]
+    },
+    "1.0": {
+      "rho": 0.35996153329461356,
+      "ci95": [
+        0.15754507332517803,
+        0.5427766445924512
+      ]
+    },
+    "2.0": {
+      "rho": 0.29553993873141027,
+      "ci95": [
+        0.09360828277863101,
+        0.48088935969334645
+      ]
+    }
+  },
+  "phase_b": {
+    "primary_shift": {
+      "feature": "first128 probability margin fraction <= 0.05",
+      "base_mean": 0.0357648951812383,
+      "sft_mean": 0.022917516339297287,
+      "delta_sft_minus_base": -0.012847378841941011,
+      "ci95_low": -0.019123309538670263,
+      "ci95_high": -0.006441283885881388,
+      "tasks_increased": 30,
+      "tasks_decreased": 57,
+      "tasks_equal": 3,
+      "simple_hypothesis_supported": false
+    },
+    "low_margin_fraction_0_10": {
+      "base_mean": 0.0649223260422127,
+      "sft_mean": 0.036549390921346146,
+      "delta": -0.02837293512086654,
+      "ci95": [
+        -0.038343745306298416,
+        -0.018483481728997185
+      ]
+    },
+    "min_margin": {
+      "base_mean": 0.00524732226298915,
+      "sft_mean": 0.05116204222043355,
+      "delta": 0.0459147199574444,
+      "ci95": [
+        0.02931233773628871,
+        0.06565754369418651
+      ]
+    },
+    "p10_margin": {
+      "base_mean": 0.23666525829997329,
+      "sft_mean": 0.408308460538586,
+      "delta": 0.1716432022386127,
+      "ci95": [
+        0.12142881971908112,
+        0.22170332105478474
+      ]
+    },
+    "completion_length": {
+      "base_mean": 464.6,
+      "sft_mean": 69.66666666666667,
+      "delta": -394.93333333333334,
+      "ci95": [
+        -421.8666666666667,
+        -365.27777777777777
+      ]
+    },
+    "low_margin_shift_vs_susceptibility": {
+      "spearman_rho": 0.21740796744485202,
+      "ci95": [
+        -0.004985084353341377,
+        0.4222907026407013
+      ],
+      "probability_positive": 0.97235
+    },
+    "conclusion": "SFT does not globally lower autoregressive decision margins. It produces much shorter and, on average, higher-margin greedy trajectories. Perturbation susceptibility is instead predicted by sparse local low-margin bottlenecks within the SFT trajectory."
+  },
+  "final_conclusion": "Phase A shows local low-margin density predicts perturbation susceptibility; Phase B rejects the simple hypothesis that SFT globally increases low-margin exposure. Susceptibility is better explained by sparse local bottleneck decision points than by globally lower margins."
+}

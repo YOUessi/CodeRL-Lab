@@ -476,17 +476,44 @@ Semantic / Random-50 / Reverse-100 / No-op / Zero-LR 多臂控制表明：
 
 而不是单纯 sampling amplification。
 
-### 当前优先：低 margin 决策点 / trajectory susceptibility
+### EXP-004G：Trajectory Susceptibility / 低 Margin 决策边界 ✅
 
-下一步不继续扫 temperature 或 perturbation scale。
+Phase A：
+
+- SFT greedy 前128 token 中 `margin≤0.05` 的比例可以预测 12-arm perturbation divergence；
+- Spearman ρ = **0.3166**；
+- 95% bootstrap CI = **[0.1115,0.4991]**；
+- 控制输出长度后 low-margin coefficient 仍为正，95% CI **[0.0373,0.1637]**；
+- predictor top quartile 的平均 divergence = 39.39%，bottom quartile = 17.05%。
+
+所以 local low-margin density 可以在不知道扰动结果前，事先预测 task susceptibility。
+
+Phase B 同时反驳了一个简单解释：
+
+> SFT 并没有全局把轨迹推向更低 margin。
+
+Base vs SFT：
+
+- first128 `margin≤0.05`：3.58% → **2.29%**；
+- delta = **-1.28 pp**，95% CI **[-1.91,-0.64]**；
+- p10 margin：0.237 → **0.408**；
+- min margin：0.005 → **0.051**；
+- greedy mean length：464.6 → **69.7 token**。
+
+因此更准确的机制是：
+
+> SFT 整体生成更短、更高 margin 的轨迹，但其轨迹内部仍存在少量 local near-tie bottleneck；这些稀疏瓶颈，而不是全局低 confidence，决定了 perturbation susceptibility。
+
+### 当前优先：local bottleneck 因果干预
+
+下一步不再尝试证明“全局 margin 恶化”。
 
 优先研究：
 
-1. 哪些 task / token 具有低 margin 决策点；
-2. margin profile 是否预测 perturbation-induced trajectory divergence；
-3. Base / SFT / DPO / random perturbation 的 margin 分布有何差异；
-4. SFT 是否系统性把部分轨迹推向更脆弱的决策边界；
-5. 能否定义 trajectory susceptibility 指标，预测哪些任务最容易被极小参数扰动“解锁/丢失”。
+1. high-susceptibility task 的 bottleneck token 是否跨 perturbation seed / scale 重复出现；
+2. 仅对 bottleneck 附近做受控 logit/margin 干预，是否能够改变 greedy trajectory；
+3. 低 susceptibility task 上相同强度干预是否明显更难改变轨迹；
+4. 从“margin profile 能预测脆弱性”推进到“局部决策边界对分叉具有因果作用”。
 
 ## 快速开始
 
@@ -572,6 +599,7 @@ Tang（RTX 4090 Laptop GPU，16 GB）仅作为 GPU 执行节点：需要 CUDA、
 - [x] EXP-004D：Matched-Norm 随机参数扰动
 - [x] EXP-004E：扰动幅度剂量—响应
 - [x] EXP-004F：自回归 / 随机采样放大机制
+- [x] EXP-004G：Trajectory susceptibility / 低 Margin 决策边界
 - [x] EXP-006A：1.7B Base / SFT / GRPO 规模复现
 - [x] EXP-006B：大 k 能力边界 / 支持集保持
 - [ ] EXP-007：奖励投机与隐藏测试鲁棒性
