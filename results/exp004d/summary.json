@@ -1,0 +1,98 @@
+{
+  "experiment": "EXP-004D",
+  "control": "matched-norm random parameter perturbation",
+  "model": "Qwen/Qwen3-1.7B-Base + EXP-006A SFT adapter",
+  "reference_delta": "EXP-004C No-op dropout=0.05 minus SFT",
+  "reference_global_delta_l2": 0.006200807119671076,
+  "seeds": [
+    101,
+    202,
+    303
+  ],
+  "geometry": {
+    "seed101_delta_l2": 0.006200812263377898,
+    "seed202_delta_l2": 0.00620081204259733,
+    "seed303_delta_l2": 0.0062008118320803565,
+    "cosine_noop05_seed101": -0.00011973022711049073,
+    "cosine_noop05_seed202": -0.000025035622622107195,
+    "cosine_noop05_seed303": -0.00016922643845820079
+  },
+  "sft_reference": {
+    "pass_at_1": 0.3729166666666667,
+    "pass_at_4": 0.5425641025641025,
+    "pass_at_8": 0.5967806267806265,
+    "pass_at_16": 0.6333333333333333,
+    "solved_tasks": 57,
+    "success_hhi": 0.02296710117939168,
+    "effective_task_count": 43.54054054054055
+  },
+  "arms": {
+    "seed101": {
+      "pass_at_1": 0.37430555555555556,
+      "pass_at_4": 0.5483150183150183,
+      "pass_at_8": 0.6130113096779762,
+      "pass_at_16": 0.6666666666666666,
+      "solved_tasks": 60,
+      "exact_match_fraction_vs_sft": 0.6979166666666666,
+      "success_hhi": 0.022783206721717183,
+      "effective_task_count": 43.891977640126925
+    },
+    "seed202": {
+      "pass_at_1": 0.38472222222222224,
+      "pass_at_4": 0.5588522588522588,
+      "pass_at_8": 0.6210368643701976,
+      "pass_at_16": 0.6777777777777778,
+      "solved_tasks": 61,
+      "exact_match_fraction_vs_sft": 0.6888888888888889,
+      "success_hhi": 0.022155899334019732,
+      "effective_task_count": 45.13470588235294
+    },
+    "seed303": {
+      "pass_at_1": 0.37569444444444444,
+      "pass_at_4": 0.5566422466422467,
+      "pass_at_8": 0.6177915911249243,
+      "pass_at_16": 0.6666666666666666,
+      "solved_tasks": 60,
+      "exact_match_fraction_vs_sft": 0.7083333333333334,
+      "success_hhi": 0.022375897307990614,
+      "effective_task_count": 44.6909451824706
+    }
+  },
+  "aggregate": {
+    "pass_at_1_delta_mean": 0.005324074074074074,
+    "pass_at_4_delta_mean": 0.0120390720390721,
+    "pass_at_8_delta_mean": 0.02049929494373955,
+    "pass_at_16_delta_mean": 0.037037037037037056,
+    "solved_delta_mean": 3.3333333333333335,
+    "success_hhi_delta_mean": -0.0005287667248158358,
+    "effective_task_count_delta_mean": 1.0320023611096072,
+    "exact_match_fraction_mean": 0.6983796296296296
+  },
+  "task_cluster_bootstrap": {
+    "pass_at_1": {
+      "delta": 0.005324074074074075,
+      "ci95_low": -0.0023148148148148143,
+      "ci95_high": 0.013194444444444444,
+      "probability_positive": 0.9154
+    },
+    "pass_at_4": {
+      "delta": 0.012039072039072035,
+      "ci95_low": 0.001721611721611717,
+      "ci95_high": 0.023099308099308092,
+      "probability_positive": 0.98955
+    },
+    "pass_at_8": {
+      "delta": 0.020499294943739386,
+      "ci95_low": 0.005364470920026478,
+      "ci95_high": 0.03752539641428532,
+      "probability_positive": 0.99805
+    },
+    "pass_at_16": {
+      "delta": 0.037037037037037035,
+      "ci95_low": 0.011111111111111112,
+      "ci95_high": 0.07037037037037036,
+      "probability_positive": 0.99775
+    }
+  },
+  "conclusion": "Three independent random directions with per-tensor norms matched to the No-op DPO perturbation all increase high-k coverage and spread success mass across more tasks. DPO-specific update direction is not necessary for the observed deconcentration effect; the SFT adapter is locally sensitive to tiny perturbations."
+}
