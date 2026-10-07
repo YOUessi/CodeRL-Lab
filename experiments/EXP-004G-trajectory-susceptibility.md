@@ -150,3 +150,121 @@ divergence_rate
 - docs/daily/2026-10-08.md
 
 失败、性能问题、重新运行和负结果均记录。
+
+
+# Phase A 正式结果：SFT margin profile 可以预测 perturbation susceptibility
+
+## 复现检查
+
+SFT greedy trajectory margin profiler 重新生成 90 个 validation task：
+
+- 与 EXP-004F 正式 SFT greedy raw completion：**90 / 90 完全一致**；
+- 因此 margin profile 与 12-arm susceptibility label 严格对齐。
+
+12 个 matched-perturbation greedy arm 的平均 task divergence rate：**25.37%**，task 范围 0%–100%。
+
+## 预注册主要检验
+
+主要 predictor：前 min(128, completion length) token 中 probability top1-top2 margin ≤ 0.05 的比例。
+
+主要 outcome：12-arm greedy divergence rate。
+
+Spearman：
+
+- ρ = **0.3166**；
+- 95% bootstrap CI = **[0.1115, 0.4991]**；
+- P(ρ>0) = 0.9989。
+
+预注册主要假设通过。
+
+## 长度控制
+
+回归：
+
+divergence_rate ~ standardized(low-margin fraction) + standardized(log1p(token count))
+
+结果：
+
+- low-margin coefficient = **+0.1033**；
+- 95% bootstrap CI = **[+0.0373,+0.1637]**；
+- P(coef>0) = 0.9994；
+- length coefficient = +0.0631。
+
+因此 predictor 不能简单解释为“输出越长，遇到分叉机会越多”。
+
+## Quartile 对照
+
+按主要 predictor 排序：
+
+- bottom quartile 平均 low-margin fraction = 0；
+- bottom quartile 平均 divergence rate = **17.05%**；
+- top quartile 平均 low-margin fraction = 5.87%；
+- top quartile 平均 divergence rate = **39.39%**；
+- top - bottom = **+22.35 个百分点**。
+
+## 次要 margin 指标
+
+| Predictor | Spearman ρ | 95% CI |
+|---|---:|---:|
+| margin≤0.01 fraction | +0.2866 | [+0.0746,+0.4786] |
+| margin≤0.05 fraction | **+0.3166** | **[+0.1115,+0.4991]** |
+| margin≤0.10 fraction | +0.3430 | [+0.1415,+0.5255] |
+| tie fraction | +0.2849 | [+0.0727,+0.4781] |
+| p10 margin | -0.0918 | [-0.3159,+0.1361] |
+| median margin | +0.0654 | [-0.1542,+0.2785] |
+| min margin | **-0.2796** | **[-0.4594,-0.0739]** |
+
+“低 margin 出现频率”比单个 p10/median 更有预测力；min margin 越小则 susceptibility 越高。
+
+## 跨 perturbation scale 复现
+
+主要 predictor 对每个 scale 的 divergence rate：
+
+| Scale | ρ | 95% CI |
+|---|---:|---:|
+| 0.25× | +0.2770 | [+0.0672,+0.4662] |
+| 0.5× | +0.2943 | [+0.0813,+0.4904] |
+| 1× | **+0.3600** | **[+0.1575,+0.5428]** |
+| 2× | +0.2955 | [+0.0936,+0.4809] |
+
+四个尺度全部正相关且 bootstrap CI >0。
+
+## Phase A 结论
+
+> SFT greedy 轨迹中 low-margin token 的密度，可以在不知道 perturbation 结果的情况下预测 task-level trajectory susceptibility。
+
+这把 EXP-004F 的机制从“事后解释首次分叉”推进到了“事前预测哪些任务更脆弱”。
+
+# Phase B 预注册：Base vs SFT margin profile
+
+Phase A 已满足预注册成功标准，因此进入 Phase B。
+
+问题：
+
+> SFT 是否系统性改变 task 的 low-margin exposure，使模型更靠近局部自回归决策边界？
+
+设计：
+
+- 同 90 个 MBPP validation task；
+- Base 使用自己的 deterministic greedy trajectory；
+- SFT 使用自己的 deterministic greedy trajectory；
+- 两者都计算前128 token probability margin profile；
+- 不要求 token-level 路径对齐，只做 task-level paired profile 比较。
+
+主要量：
+
+- first128 fraction(margin≤0.05)。
+
+主要比较：
+
+- paired SFT - Base task difference；
+- 20,000 task bootstrap；
+- 双向解释：CI>0 支持 SFT 增加 low-margin exposure；CI<0 则反驳这一简单解释。
+
+次要：
+
+- tie fraction；
+- margin≤0.01 / ≤0.10；
+- min / p10 margin；
+- completion length；
+- SFT-Base low-margin delta 与 SFT perturbation susceptibility 的 Spearman。
