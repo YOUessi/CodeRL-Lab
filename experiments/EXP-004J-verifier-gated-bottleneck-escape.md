@@ -184,3 +184,102 @@ Smoke 结论：
 - GPU 串行，不并发第二个生成任务。
 
 正式 runner 已在 Tang 启动，完成后自动进入 Docker hidden-test evaluation 与 20,000 次 paired bootstrap。
+
+
+# 正式 90-task 结果
+
+正式 runner 完成：
+
+- SFT reference reproduction：90/90；
+- eligible tasks：57/90；
+- public-fail + low-margin gate triggered：36/90；
+- high-margin control available：57/90；
+- GPU / Docker 结束后无残留任务。
+
+## 全 90 题 hidden correctness
+
+| 条件 | correct | accuracy | 相对 baseline |
+|---|---:|---:|---:|
+| SFT baseline | 36/90 | 40.00% | — |
+| gated low-destabilize | **39/90** | **43.33%** | +3.33 pp |
+| gated high-destabilize | 36/90 | 40.00% | 0 |
+| always low-destabilize | 38/90 | 42.22% | +2.22 pp |
+
+### gated-low - baseline
+
+- observed delta：+3.33 pp；
+- 95% task bootstrap CI：**[0,+7.78] pp**；
+- P(delta>0)=0.954；
+- wrong→correct：3；
+- correct→wrong：0。
+
+因此点估计为正，且没有观察到 correctness harm，但**没有严格通过预注册的“95% CI 下界 >0”强成功标准**，因为下界等于0。
+
+### gated-high - baseline
+
+- delta：0；
+- 95% CI：[0,0]；
+- wrong→correct=0；
+- correct→wrong=0。
+
+相同 gate、相同 -0.25 bias，只把干预位置改到 high-margin token 后效果完全消失，支持位置特异性。
+
+### always-low - baseline
+
+- +2.22 pp；
+- 95% CI：[-3.33,+7.78] pp；
+- wrong→correct：4；
+- correct→wrong：2。
+
+无 gate 的 low-destabilize 虽然也能解锁部分正确轨迹，但会伤害原本正确的任务。
+
+## Gate-triggered 36 题
+
+- baseline：2/36 = 5.56%；
+- gated-low：5/36 = 13.89%；
+- gated-high：2/36 = 5.56%；
+- gated-low delta：+8.33 pp；
+- 95% CI：[0,+19.44] pp；
+- wrong→correct：3；
+- correct→wrong：0。
+
+同样是正向、无观察到伤害，但当前样本量下 CI 下界为0。
+
+## Public-pass 保护
+
+baseline public tests 全通过的任务：37。
+
+- gated-low changed：0/37；
+- gated-high changed：0/37；
+- always-low changed：21/37。
+
+因此 public gate 达到了预期的安全作用：
+
+> 对 verifier 已认可的 SFT output 不进行 escape，避免无必要扰动。
+
+## EXP-004J 结论
+
+当前证据支持以下**有限**结论：
+
+1. SFT-only verifier-gated low-margin escape 可以产生正向 correctness 点估计；
+2. 观察到 3 个 wrong→correct、0 个 correct→wrong；
+3. high-margin control 完全无效，说明不是任意二次解码或任意 -0.25 bias 都有效；
+4. public gate 能避免对 public-pass 任务的无谓改写；
+5. 但是 primary 95% CI 下界为0，因此不能在当前90题上宣称可靠总体提升。
+
+这90题已经被 EXP-006A/B、004F-I 多次用于机制开发，继续在同一 validation 上调整阈值/bias 会增加研究者自由度和过拟合风险。
+
+## 下一步：冻结规则，做 held-out replication
+
+不再调整：
+
+- low threshold = 0.05；
+- high threshold = 0.20；
+- bias = -0.25；
+- primary window = 128；
+- public fail gate；
+- deterministic greedy。
+
+直接在此前未参与方法设计的 MBPP test split 500 tasks 上复现。
+
+只有 held-out test 仍显示 gated-low > baseline，才能把 EXP-004J 从机制 proof-of-concept 推进为更可信的 decoding intervention 结果。
