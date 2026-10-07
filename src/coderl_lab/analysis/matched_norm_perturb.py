@@ -18,7 +18,11 @@ def create_matched_norm_perturbation(
     reference_adapter_dir: Path,
     output_dir: Path,
     seed: int,
+    scale: float = 1.0,
 ) -> dict[str, Any]:
+    if scale < 0:
+        raise ValueError("scale must be non-negative")
+
     try:
         import torch
         from safetensors import safe_open
@@ -61,7 +65,8 @@ def create_matched_norm_perturbation(
 
             base_f = base.float()
             ref_delta = ref.float() - base_f
-            target_norm = float(torch.linalg.vector_norm(ref_delta).item())
+            reference_norm = float(torch.linalg.vector_norm(ref_delta).item())
+            target_norm = reference_norm * scale
 
             if target_norm == 0.0:
                 perturb = torch.zeros_like(base_f)
@@ -92,6 +97,7 @@ def create_matched_norm_perturbation(
             tensor_rows.append(
                 {
                     "tensor": key,
+                    "reference_delta_l2": reference_norm,
                     "target_delta_l2": target_norm,
                     "actual_delta_l2": actual_norm,
                     "absolute_norm_error": abs(actual_norm - target_norm),
@@ -111,6 +117,7 @@ def create_matched_norm_perturbation(
 
     result = {
         "seed": seed,
+        "scale": scale,
         "base_adapter": str(base_adapter_dir),
         "reference_adapter": str(reference_adapter_dir),
         "output_dir": str(output_dir),
@@ -143,6 +150,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reference-adapter", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--scale", type=float, default=1.0)
     return parser.parse_args()
 
 
@@ -153,6 +161,7 @@ def main() -> None:
         reference_adapter_dir=args.reference_adapter,
         output_dir=args.output_dir,
         seed=args.seed,
+        scale=args.scale,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
