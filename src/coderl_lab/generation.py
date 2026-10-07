@@ -70,6 +70,8 @@ def _sample_batch_ranges(
 ) -> list[tuple[int, int]]:
     if num_samples <= 0:
         raise ValueError("num_samples must be positive")
+    if greedy and num_samples != 1:
+        raise ValueError("greedy generation requires num_samples=1")
     batch_size = sample_batch_size or num_samples
     if batch_size <= 0:
         raise ValueError("sample_batch_size must be positive")
@@ -96,6 +98,7 @@ def generate_predictions(
     batch_samples: bool = False,
     sample_batch_size: int | None = None,
     task_seed_map_path: Path | None = None,
+    greedy: bool = False,
 ) -> dict:
     try:
         import torch
@@ -177,9 +180,9 @@ def generate_predictions(
                         outputs = model.generate(
                             **encoded,
                             max_new_tokens=max_new_tokens,
-                            do_sample=True,
-                            temperature=temperature,
-                            top_p=top_p,
+                            do_sample=not greedy,
+                            temperature=None if greedy else temperature,
+                            top_p=None if greedy else top_p,
                             num_return_sequences=batch_count,
                             pad_token_id=tokenizer.eos_token_id,
                         )
@@ -233,9 +236,9 @@ def generate_predictions(
                         output = model.generate(
                             **encoded,
                             max_new_tokens=max_new_tokens,
-                            do_sample=True,
-                            temperature=temperature,
-                            top_p=top_p,
+                            do_sample=not greedy,
+                            temperature=None if greedy else temperature,
+                            top_p=None if greedy else top_p,
                             num_return_sequences=1,
                             pad_token_id=tokenizer.eos_token_id,
                         )
@@ -290,6 +293,7 @@ def generate_predictions(
         "max_new_tokens": max_new_tokens,
         "temperature": temperature,
         "top_p": top_p,
+        "greedy": greedy,
         "base_seed": seed,
         "elapsed_seconds": elapsed,
         "torch_version": torch.__version__,
@@ -354,6 +358,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--top-p", type=float, default=0.95)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--greedy",
+        action="store_true",
+        help="Use deterministic greedy decoding. Requires --num-samples 1.",
+    )
     return parser.parse_args()
 
 
@@ -375,6 +384,7 @@ def main() -> None:
         temperature=args.temperature,
         top_p=args.top_p,
         seed=args.seed,
+        greedy=args.greedy,
     )
 
 
