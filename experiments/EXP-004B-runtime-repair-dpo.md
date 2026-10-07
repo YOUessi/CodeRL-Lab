@@ -272,3 +272,132 @@ B. 任何一次小规模 DPO 更新都能缓解 SFT 的概率集中。
 - 若两者都相近地恢复 Pass@k，说明主要效应来自小规模 DPO 更新 / 分布解集中，而不是 import-repair 语义；
 - 若 random control 更差且 semantic DPO 在 MBPP+ 仍不改善，则只能说语义偏好帮助原分布覆盖恢复，不能说提高鲁棒代码能力；
 - 不因控制结果再调 beta、learning rate 或 pair 数量。
+
+## 随机标签 DPO 控制实验
+
+为了区分“正确 repair preference 语义”与“任意小规模 DPO 更新”的作用，构造随机标签负控制：
+
+- 完全复用 56 对 prompt / candidate 文本；
+- 28 / 56 对 chosen / rejected 随机翻转；
+- label seed=42042；
+- training seed=42；
+- 其它超参数与语义 DPO 完全相同；
+- 文本 multiset 和 prompt 逐对保持不变。
+
+### 随机标签 DPO 训练
+
+- 21 optimizer steps；
+- runtime：32.55 s；
+- train loss：0.69343；
+- output adapter SHA-256：80c3b2b78d752f33348e65a3393ba9bb142588422c49599081b6e6a54e5fb186。
+
+语义 DPO 与随机 DPO 的训练信号明显不同：
+
+| 指标 | 语义 DPO | 随机标签 DPO |
+|---|---:|---:|
+| margin mean | 0.04043 | ≈0 (-0.000064) |
+| margin first→last quarter | 0.0076→0.0579 | 0.0036→0.0036 |
+| preference accuracy mean | 76.19% | 42.26% |
+| accuracy first→last quarter | 37.5%→90.0% | 35.0%→52.5% |
+| train loss | 0.6734 | 0.6934 |
+
+因此随机标签控制确实破坏了系统性 preference 方向，没有偷偷学到与语义 DPO 相同的偏好。
+
+## 随机标签 DPO：MBPP n=16
+
+| 模型 | Pass@1 | Pass@4 | Pass@8 | Pass@16 | solved@16 |
+|---|---:|---:|---:|---:|---:|
+| SFT | 37.29% | 54.26% | 59.68% | 63.33% | 57 |
+| 随机标签 DPO | **38.47%** | 55.96% | 62.23% | 66.67% | 60 |
+| 语义 repair DPO | 37.78% | **56.24%** | **63.50%** | **68.89%** | **62** |
+
+### 随机标签 DPO - SFT paired bootstrap
+
+- Pass@1：+1.18 pp，95% CI [-0.07,+2.43]；
+- Pass@4：+1.71 pp，95% CI [-0.01,+3.59]；
+- Pass@8：**+2.55 pp，95% CI [+0.50,+4.97]**；
+- Pass@16：+3.33 pp，95% CI [0,+7.78]。
+
+即使偏好标签随机化，仍然能恢复一部分 SFT 的多样本覆盖。
+
+### 语义 DPO - 随机标签 DPO
+
+- Pass@1：-0.69 pp，95% CI [-2.01,+0.56]；
+- Pass@4：+0.27 pp，95% CI [-1.57,+2.22]；
+- Pass@8：+1.27 pp，95% CI [-1.71,+4.43]；
+- Pass@16：+2.22 pp，95% CI [-3.33,+7.78]。
+
+全部置信区间跨 0。
+
+所以没有统计证据证明正确 import-repair preference 语义比随机标签 DPO 更能恢复 MBPP 覆盖。
+
+## 目标 failure mode 机制审计
+
+对固定 validation 输出，只使用公共测试，统计“仅补标准库 import 就能让公共测试100%通过”的候选：
+
+| 模型 | verified repairable candidates | distinct tasks | repairable / public failures |
+|---|---:|---:|---:|
+| SFT | 79 | 17 | 8.93% |
+| 语义 DPO | 74 | 16 | 8.36% |
+| 随机标签 DPO | **72** | **15** | **8.25%** |
+
+整体 diagnostics：
+
+| 指标 | SFT | 语义 DPO | 随机 DPO |
+|---|---:|---:|---:|
+| dependency incomplete | 229 | 229 | **224** |
+| runtime unclean | 360 | **351** | 354 |
+| NameError | 239 | 236 | **235** |
+| unresolved re | 77 | **74** | 79 |
+
+语义 DPO 并没有显著优于随机标签控制地消除它专门训练的最小 import failure；部分指标随机控制反而略好。
+
+因此原 MBPP 的 Pass@k 恢复不能归因于“模型真正学会 import 修复”。
+
+## MBPP+ 外部强测试：标签控制
+
+| 模型 | Plus Pass@1 | Pass@4 | Pass@8 | Pass@16 | solved@16 |
+|---|---:|---:|---:|---:|---:|
+| SFT | 39.74% | 54.89% | 59.91% | 61.54% | 24 |
+| 随机标签 DPO | **40.38%** | **55.69%** | **60.12%** | 61.54% | 24 |
+| 语义 DPO | 38.78% | 53.06% | 59.04% | **64.10%** | **25** |
+
+随机标签 DPO - SFT：Plus empirical success +0.64 pp，95% CI [-1.12,+2.72]，跨0。
+
+语义 DPO - 随机标签 DPO：Plus empirical success -1.60 pp，95% CI [-4.01,+0.48]，跨0；solved@16 +1题，95% CI [0,+3题]。
+
+外部强测试同样没有证明语义 repair preference 明显优于随机标签 DPO。
+
+## EXP-004B v1 最终因果结论
+
+当前证据支持以下分解：
+
+1. **小规模 DPO 更新效应存在。**
+   即使 50% 标签随机翻转、训练 margin≈0，DPO 仍能部分恢复 SFT 后的多样本覆盖。
+
+2. **正确偏好语义确实被语义 DPO 学到了。**
+   语义 DPO 的 preference accuracy 后段达到90%，margin 明显为正；随机控制没有。
+
+3. **但“学到 import 修复语义”不是当前 Pass@k 恢复的主要因果解释。**
+   语义 DPO 相对随机控制没有统计可靠的 Pass@k 优势，目标 repairable failure 也没有被更明显消除。
+
+4. **外部 MBPP+ 没有显示语义 DPO 的平均鲁棒能力增益。**
+
+因此更准确的研究问题变成：
+
+> 为什么一个很小、甚至随机标签的 DPO 更新，会部分解除 SFT 后的概率集中并恢复多样本覆盖？
+
+这个现象比继续做 import-repair 本身更值得研究。
+
+## 下一步：EXP-004C DPO 去集中化机制
+
+不再扩展自动修复规则。
+
+下一阶段优先做因果控制：
+
+1. 多个随机标签 seed，确认随机 DPO 覆盖恢复是否稳定；
+2. no-op DPO（chosen == rejected）验证纯训练流水线本身不会改变模型；
+3. 全反转标签 DPO，测试偏好方向是否重要；
+4. continued-SFT 同预算控制，区分 DPO objective 与“任何 LoRA 更新”；
+5. 对比 adapter update norm、生成熵、exact-completion diversity、Pass@k 支持集变化；
+6. 再决定是否形成论文方向。
