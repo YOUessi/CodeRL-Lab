@@ -142,3 +142,45 @@ hidden tests 在此阶段不参与任何决策。
 - 所有代码与记录先进入 GitHub；
 - 当日过程写入 docs/daily/2026-10-08.md；
 - 失败和负结果同样保留。
+
+
+## 4-task GPU smoke
+
+代码与测试：
+
+- 139/139 CPU tests passed；
+- SFT reference reproduction：4/4；
+- eligible tasks：2/4；
+- gate triggered：2/4；
+- high-margin control available：2/4。
+
+Smoke tasks 中：
+
+- mbpp_validation_0511：public fail，low bottleneck token101，low-destabilize 正常应用并改变 greedy trajectory；high-margin token100 的 -0.25 被应用但完整输出保持 baseline；
+- mbpp_validation_0512：public fail，low bottleneck token17，low-destabilize 正常应用并改变 trajectory；high-margin token16 的 -0.25 不改变完整输出；
+- 0513 / 0514：无 low-margin bottleneck，因此 gate 不触发，所有 gated 输出保持 baseline。
+
+4 个 smoke task 的 hidden correctness 都为0，因此 smoke 只验证工程逻辑，不作为有效性结论。
+
+Smoke 结论：
+
+- reference reproduction 正常；
+- public gate 正常；
+- low/high position 干预逻辑正常；
+- public-pass/no-bottleneck 情况不会被误改写；
+- 允许进入正式 90-task。
+
+## 正式 90-task 运行
+
+正式参数保持预注册不变：
+
+- low threshold=0.05；
+- high threshold=0.20；
+- bias=-0.25；
+- deterministic greedy；
+- max_new_tokens=512；
+- public tests 只用于 gate；
+- hidden tests 只做最终 outcome；
+- GPU 串行，不并发第二个生成任务。
+
+正式 runner 已在 Tang 启动，完成后自动进入 Docker hidden-test evaluation 与 20,000 次 paired bootstrap。
