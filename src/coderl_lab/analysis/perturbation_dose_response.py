@@ -219,6 +219,38 @@ def summarize(
             cluster[f"pass@{k}"] = _cluster_bootstrap(diffs)
         scale_summary[str(scale)]["task_cluster_bootstrap"] = cluster
 
+    pairwise_scale_contrasts: dict[str, Any] = {}
+    scale_pairs = [
+        (0.25, 0.5),
+        (0.5, 1.0),
+        (1.0, 2.0),
+        (0.5, 2.0),
+    ]
+    rows_by_scale_seed = {
+        (float(row["scale"]), int(row["seed"])): row
+        for row in arms.values()
+    }
+    for low, high in scale_pairs:
+        key = f"{low:g}_to_{high:g}"
+        pairwise_scale_contrasts[key] = {}
+        for k in (1, 4, 8, 16):
+            per_seed_maps = []
+            for seed in (101, 202, 303):
+                low_row = rows_by_scale_seed[(low, seed)]
+                high_row = rows_by_scale_seed[(high, seed)]
+                low_map = _task_passk(low_row["_raw_summary"], k)
+                high_map = _task_passk(high_row["_raw_summary"], k)
+                per_seed_maps.append((low_map, high_map))
+            ids = sorted(per_seed_maps[0][0])
+            diffs = []
+            for task_id in ids:
+                seed_diffs = [
+                    high_map[task_id] - low_map[task_id]
+                    for low_map, high_map in per_seed_maps
+                ]
+                diffs.append(sum(seed_diffs) / len(seed_diffs))
+            pairwise_scale_contrasts[key][f"pass@{k}"] = _cluster_bootstrap(diffs)
+
     for row in arms.values():
         row.pop("_raw_summary", None)
 
@@ -243,6 +275,7 @@ def summarize(
         },
         "arms": arms,
         "by_scale": scale_summary,
+        "pairwise_scale_contrasts": pairwise_scale_contrasts,
         "pass16_curve": pass16_curve,
     }
 
