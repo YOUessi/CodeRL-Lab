@@ -85,7 +85,7 @@ bash scripts/run_posttrain_a_qlora.sh
 - [x] CI 相关 CPU / 真实数据构建流程通过。
 - [x] 真实 H4 源数据下载与 full-scan manifest 固定（GitHub Actions #37725387735）。
 - [x] 真实 CUDA 上的 QLoRA 2-step smoke。
-- [ ] 两臂完整训练、验证 loss、显存和速度比较（007A 已完成，007B 已启动）。
+- [x] 两臂完整训练、验证 loss 和显存比较已完成。**速度差异因不同保存频率/硬件条件不做归因。**
 - [ ] 从新 SFT checkpoint 开展 2048 对 UltraFeedback DPO 正式训练。
 - [ ] 继续扩展奖励模型、PPO/RLHF；这些不是本实验已完成的内容。
 
@@ -141,3 +141,25 @@ TRAIN-007A 正式4096-example NF4 QLoRA SFT 已通过 GPU 独占、训练/验证
 这个模型已完成真实训练，但尚不能仅凭 train/eval loss 声称泛化能力优于原始 Base。TRL 数据过滤后有效样本数仍需另行审计；BF16 LoRA 的匹配正式运行已经开始，未产生最终结果。
 
 **DPO 正式训练准备：** TRAIN-007C 的 2048/256 偏好输入、源版本/manifest SHA、训练/验证不相交、正式 SFT Adapter SHA 等实际检查已通过；DPO GPU optimizer 尚未开始运行，不能算作已完成。
+
+
+## 2026-10-08 22:08：TRAIN-007B 全规模 BF16 LoRA 正式完成，配对分析器校验通过
+
+原始 TRAIN-007B 第一次在146/252步停止且无检查点，本次重新从第0步执行、仅保存政策改为每32步检查点。真正的最终 **252 optimizer steps / 完整4096输入训练、256独立验证** 已完成；不把第一次中断损失拼接进正式数据。
+
+| 固定协议指标 | TRAIN-007A NF4 QLoRA | TRAIN-007B BF16 LoRA |
+| --- | ---: | ---: |
+| 训练输入 | 4096 | 4096 |
+| 验证输入 | 256 | 256 |
+| 优化步数 | 252 | 252 |
+| Train loss | 1.1474928844 | 1.1081803801 |
+| Heldout eval loss | 1.1399177313 | **1.1074359417** |
+| 峰值预留GPU显存 | 3,938,451,456 B | 5,303,697,408 B |
+| Adapter SHA | `d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d` | `fa706dbc715a7c4203edd952ec22134a004eb8ff4d40114065bfccb17ed72e59` |
+
+- NF4 显存相对 BF16 节约约 **25.74%**，差异是单次实际峰值显存，不代表所有批量大小或硬件。
+- BF16 在这次单种子、同数据、同优化预算的验证 loss 降低约 **0.03248**；不能声称任务正确率、偏好质量统计显著变好。
+- 两个训练参数匹配；因暂停而改变了 BF16 的 **save_strategy**（epoch→每32步，最多4份）。该存储频率没有改变优化器数学参数，但训练 wallclock 的差异仍不满足可严格比较的硬件独占/相同保存开销条件。
+- 训练与验证 SHA 经代码核验相同，实际训练和验证模型均保存为可SHA校验的 Adapter。
+- 分析器 `src/coderl_lab/analysis/posttrain_sft_formal_compare.py` 在 Tang 真实执行，11项专项测试通过。机器可读对照：[results/train007a-vs-007b-formal/summary.json](../results/train007a-vs-007b-formal/summary.json)。
+- 这份结果支持完成了真实 SFT 微调与 BF16/NF4 工程对照，不等于完成了 DPO、奖励模型或 PPO/RLHF。后者各有独立待执行任务。
