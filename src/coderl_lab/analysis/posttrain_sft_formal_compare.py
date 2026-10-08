@@ -98,7 +98,10 @@ def compare_formal_runs(
     *,
     nf4_config_path: Path, bf16_config_path: Path, manifest_path: Path,
     nf4_dir: Path, bf16_dir: Path,
+    gpu_contention: str = "unknown",
 ) -> dict[str, Any]:
+    if gpu_contention not in {"observed", "not-observed", "unknown"}:
+        raise ValueError("gpu_contention must be observed, not-observed, or unknown")
     manifest = load_json(manifest_path)
     cfg_a = yaml.safe_load(nf4_config_path.read_text(encoding="utf-8"))
     cfg_b = yaml.safe_load(bf16_config_path.read_text(encoding="utf-8"))
@@ -140,6 +143,8 @@ def compare_formal_runs(
         "experiment": "TRAIN-007A-vs-007B",
         "comparison_type": "two real matched-seed, matched-data GPU training runs",
         "formal_data": True,
+        "gpu_contention_during_comparison": gpu_contention,
+        "wallclock_performance_is_clean_hardware_comparison": False,
         "data": {
             "train_rows": 4096, "heldout_rows": 256,
             "train_sha256": manifest["train"]["sha256"],
@@ -157,6 +162,7 @@ def compare_formal_runs(
         ),
         "limitations": [
             "Single seed, not a statistically powered quality result.",
+            "BF16 training overlapped another GPU workload on Tang if gpu_contention=observed; training speed difference cannot be attributed to quantization.",
             "Quantized and unquantized models use different numerical compute paths.",
             "Train input rows can differ from the effective tokenized examples after fully masked samples are dropped.",
             "Loss comparison does not establish task-level generation accuracy.",
@@ -172,12 +178,14 @@ def main() -> None:
     p.add_argument("--nf4-run", type=Path, default=Path("artifacts/posttrain-a/train007a-qlora-ultrachat"))
     p.add_argument("--bf16-run", type=Path, default=Path("artifacts/posttrain-a/train007b-lora-ultrachat"))
     p.add_argument("--output", type=Path, default=Path("artifacts/posttrain-a/train007a-vs-007b/comparison.json"))
+    p.add_argument("--gpu-contention", choices=("observed", "not-observed", "unknown"), default="unknown")
     a = p.parse_args()
     if a.output.exists():
         raise FileExistsError("formal comparison already exists; refusing silent overwrite")
     result = compare_formal_runs(
         nf4_config_path=a.nf4_config, bf16_config_path=a.bf16_config,
         manifest_path=a.manifest, nf4_dir=a.nf4_run, bf16_dir=a.bf16_run,
+        gpu_contention=a.gpu_contention,
     )
     a.output.parent.mkdir(parents=True, exist_ok=True)
     a.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
