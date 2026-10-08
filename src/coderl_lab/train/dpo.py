@@ -105,6 +105,8 @@ def run_dpo(
     output_dir: Path | None = None,
     max_pairs: int | None = None,
     max_steps: int | None = None,
+    eval_preferences_path: Path | None = None,
+    max_eval_pairs: int | None = None,
 ) -> dict[str, Any]:
     try:
         import peft
@@ -133,6 +135,37 @@ def run_dpo(
         max_pairs=max_pairs,
     )
     dataset = Dataset.from_list(rows)
+
+    # The legacy EXP-004B configuration remains train-only. New Track A
+    # experiments must pass a *separate* held-out preference split.
+    if eval_preferences_path is None and cfg.get("data", {}).get("heldout_validation"):
+        eval_preferences_path = Path(str(cfg["data"]["heldout_validation"]))
+    evaluation_dataset = None
+    if eval_preferences_path is not None:
+        eval_raw = load_jsonl(eval_preferences_path)
+        if max_eval_pairs is not None:
+            if max_eval_pairs <= 0:
+                raise ValueError("max_eval_pairs must be positive")
+            eval_raw = eval_raw[:max_eval_pairs]
+        train_raw = load_jsonl(preferences_path)
+        train_prompts = {str(row["prompt"]) for row in train_raw}
+        evaluation_prompts = {str(row["prompt"]) for row in eval_raw}
+        if train_prompts & evaluation_prompts:
+            raise ValueError("DPO train/held-out validation prompt overlap")
+        if not eval_raw:
+            raise ValueError("DPO held-out validation cannot be empty")
+        for index, entry in enumerate(eval_raw):
+            if not (str(entry.get("chosen", "")).strip()
+                    and str(entry.get("rejected", "")).strip()
+                    and str(entry.get("prompt", "")).strip()):
+                raise ValueError(f"empty DPO eval preference row {index}")
+            if str(entry["chosen"]) == str(entry["rejected"]):
+                raise ValueError(f"identical DPO eval preference row {index}")
+        eval_prepared = prepare_rows(
+            eval_preferences_path, seed=seed,
+            max_pairs=max_eval_pairs,
+        )
+        evaluation_dataset = Dataset.from_list(eval_prepared)
 
     model_name = str(model_cfg["name_or_path"])
     revision = str(model_cfg["revision"])
@@ -225,6 +258,7 @@ def run_dpo(
         max_length=int(train_cfg.get("max_length", 1024)),
         logging_steps=int(train_cfg.get("logging_steps", 1)),
         save_strategy=str(train_cfg.get("save_strategy", "no")),
+        eval_strategy="epoch" if evaluation_dataset is not None else "no",
         seed=seed,
         data_seed=seed,
         bf16=dtype_name == "bfloat16",
@@ -240,6 +274,7 @@ def run_dpo(
         ref_model=None,
         args=args,
         train_dataset=dataset,
+        eval_dataset=evaluation_dataset,
         processing_class=tokenizer,
     )
 
@@ -277,6 +312,9 @@ def run_dpo(
         "model": model_name,
         "requested_model_revision": revision,
         "num_pairs": len(dataset),
+        "num_heldout_preference_pairs": (
+            len(evaluation_dataset) if evaluation_dataset is not None else 0
+        ),
         "num_train_epochs": epochs,
         "max_steps": requested_max_steps,
         "warmup_ratio_requested": warmup_ratio,
@@ -324,6 +362,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--output-dir", type=Path)
     p.add_argument("--max-pairs", type=int)
     p.add_argument("--max-steps", type=int)
+    p.add_argument("--eval-preferences", type=Path)
+    p.add_argument("--max-eval-pairs", type=int)
     return p.parse_args()
 
 
@@ -336,6 +376,8 @@ def main() -> None:
         output_dir=args.output_dir,
         max_pairs=args.max_pairs,
         max_steps=args.max_steps,
+        eval_preferences_path=args.eval_preferences,
+        max_eval_pairs=args.max_eval_pairs,
     )
 
 
