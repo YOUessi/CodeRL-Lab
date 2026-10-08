@@ -11,6 +11,7 @@ from coderl_lab.train.reward_model import (
     compute_reward_metrics,
     file_sha256,
     pairwise_logistic_loss,
+    pack_reward_tokens,
     read_pairs,
     render_pair,
     validate_preference_snapshot,
@@ -142,3 +143,58 @@ def test_invalid_margin_metrics_fail_closed():
         compute_reward_metrics([float("nan")])
     with pytest.raises(ValueError,match="finite"):
         compute_reward_metrics([])
+
+
+class _CharacterTokenizer:
+    eos_token_id = 999
+
+    def encode(self, text: str, add_special_tokens: bool = False) -> list[int]:
+        assert add_special_tokens is False
+        return [ord(c) for c in text]
+
+
+def test_completion_preserved_for_long_prompt_and_two_different_answers() -> None:
+    tok = _CharacterTokenizer()
+    prompt = "P" * 920
+    good, gp = pack_reward_tokens(
+        tok, prompt=prompt, completion="Correct answer.",
+        max_length=768, max_prompt_tokens=512, min_response_tokens=128,
+    )
+    bad, bp = pack_reward_tokens(
+        tok, prompt=prompt, completion="Incorrect answer.",
+        max_length=768, max_prompt_tokens=512, min_response_tokens=128,
+    )
+    assert gp["prompt_truncated"] and bp["prompt_truncated"]
+    assert good[:512] == bad[:512] == [ord("P")] * 512
+    assert good != bad
+    assert good[-1] == bad[-1] == tok.eos_token_id
+    assert good[-2] == ord(".")
+    assert gp["answer_truncated"] is False
+    assert len(good) <= 768
+
+
+def test_very_long_answer_keeps_suffix_instead_of_erasing_its_label() -> None:
+    tok = _CharacterTokenizer()
+    chosen, c = pack_reward_tokens(
+        tok, prompt="P" * 920, completion="A" * 900 + "WIN",
+        max_length=768, max_prompt_tokens=512, min_response_tokens=128,
+    )
+    rejected, r = pack_reward_tokens(
+        tok, prompt="P" * 920, completion="A" * 900 + "LOSE",
+        max_length=768, max_prompt_tokens=512, min_response_tokens=128,
+    )
+    assert c["answer_truncated"] is True
+    assert r["answer_truncated"] is True
+    assert chosen != rejected
+    assert chosen[-4:-1] == [ord(x) for x in "WIN"]
+    assert rejected[-5:-1] == [ord(x) for x in "LOSE"]
+    assert len(chosen) == len(rejected) == 768
+
+
+def test_reward_pair_packing_rejects_invalid_token_budget() -> None:
+    with pytest.raises(ValueError, match="exceed"):
+        pack_reward_tokens(
+            _CharacterTokenizer(),
+            prompt="long prompt", completion="answer",
+            max_length=100, max_prompt_tokens=90, min_response_tokens=32,
+        )
