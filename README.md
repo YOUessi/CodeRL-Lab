@@ -504,16 +504,103 @@ Base vs SFT：
 
 > SFT 整体生成更短、更高 margin 的轨迹，但其轨迹内部仍存在少量 local near-tie bottleneck；这些稀疏瓶颈，而不是全局低 confidence，决定了 perturbation susceptibility。
 
-### 当前优先：local bottleneck 因果干预
+### EXP-004H-K：Low-Margin Bottleneck → Held-Out Verifier-Gated Escape ✅
 
-下一步不再尝试证明“全局 margin 恶化”。
+在 EXP-004F/G 的 susceptibility 机制基础上，项目进一步完成局部 low-margin bottleneck 的因果干预与 held-out 复制。
 
-优先研究：
+#### EXP-004H：局部 bottleneck 因果干预
 
-1. high-susceptibility task 的 bottleneck token 是否跨 perturbation seed / scale 重复出现；
-2. 仅对 bottleneck 附近做受控 logit/margin 干预，是否能够改变 greedy trajectory；
-3. 低 susceptibility task 上相同强度干预是否明显更难改变轨迹；
-4. 从“margin profile 能预测脆弱性”推进到“局部决策边界对分叉具有因果作用”。
+四个预注册 perturbation arm × 90 tasks：
+
+- low-margin stabilize 相对 baseline：**+13.16 pp** exact-trajectory rescue，95% CI **[+7.46,+19.74]**；
+- low-margin destabilize：**-53.51 pp** exact-match，95% CI **[-62.72,-44.30]**；
+- high-margin control：0；
+- first-divergence survival：stabilize **+8.92 token**，destabilize **-37.20 token**。
+
+因此 low-margin bottleneck 已从相关性推进为直接因果证据。
+
+#### EXP-004I：Correctness causality + public verifier gate
+
+hidden correctness 后验分析显示：
+
+- reference wrong 时，low-destabilize **+9.21 pp**，95% CI **[+1.97,+18.42]**；
+- reference correct 时，destabilize 有伤害风险；
+- local bottleneck 是轨迹闸门，不是“正确方向”标记。
+
+只用 public tests 做 gate：
+
+- public-fail subset：+8.33 pp，95% CI **[+0.69,+18.06]**；
+- offline gated policy：+5.26 pp，95% CI **[+0.44,+11.40]**。
+
+#### EXP-004J：SFT-only verifier-gated bottleneck escape
+
+冻结规则：
+
+- public fail 才触发；
+- first128 margin<=0.05；
+- low-margin reference token -0.25；
+- high-margin 位置为位置控制。
+
+90-task validation：
+
+- baseline：40.00%；
+- gated-low：43.33%；
+- +3.33 pp，95% CI [0,+7.78]；
+- wrong→correct=3，correct→wrong=0；
+- gated-high 完全无变化；
+- always-low 有 rescue 也有 harm。
+
+方向一致，但开发集 primary CI 下界为0，因此不继续调参，直接迁移 held-out。
+
+#### EXP-004K：500-task held-out replication ✅
+
+冻结 EXP-004J 的全部 threshold / bias / gate / window，在此前未参与方法设计的 MBPP test 500 tasks 上复制。
+
+| 条件 | Hidden correct | Accuracy |
+|---|---:|---:|
+| Baseline SFT greedy | 207 / 500 | 41.40% |
+| **Gated low-margin destabilize** | **215 / 500** | **43.00%** |
+| Gated high-margin control | 207 / 500 | 41.40% |
+| Always-low without gate | 207 / 500 | 41.40% |
+
+Primary held-out result：
+
+- delta：**+1.60 pp**；
+- 95% CI：**[+0.40,+3.00] pp**；
+- wrong→correct=10；
+- correct→wrong=2；
+- 预注册成功标准正式通过。
+
+位置控制：
+
+- gated-high - baseline = 0。
+
+Gate necessity：
+
+- always-low 救活10题，也伤害10题，净收益0；
+- gated-low - always-low = **+1.60 pp**，95% CI **[+0.60,+2.80]**。
+
+Held-out public verifier：
+
+- public-fail 对 hidden-wrong precision = **96.07%**；
+- recall = **91.81%**；
+- actual gate precision = **95.60%**。
+
+因此当前可以正式说：
+
+> **局部 low-margin bottleneck 是可干预的自回归决策闸门；当可执行 public verifier 指示当前 greedy 轨迹可能错误时，对 bottleneck 做小幅定向 destabilize，可以在不重新训练模型的情况下解锁替代轨迹，并在冻结规则的 500-task held-out 上获得统计显著正确率提升。**
+
+### 当前优先：跨分布 / 跨任务粒度验证
+
+不再在 MBPP 上继续调 threshold、bias 或 window。
+
+优先：
+
+1. LiveCodeBench 时间更新代码任务；
+2. 检查是否能构造不泄漏答案的可执行 verifier；
+3. 复现 low-margin bottleneck + verifier-gated escape；
+4. 或迁移到仓库级软件工程任务，用单元测试/CI 作为 verifier；
+5. 验证机制是否跨数据分布、跨任务粒度成立。
 
 ## 快速开始
 
@@ -600,6 +687,10 @@ Tang（RTX 4090 Laptop GPU，16 GB）仅作为 GPU 执行节点：需要 CUDA、
 - [x] EXP-004E：扰动幅度剂量—响应
 - [x] EXP-004F：自回归 / 随机采样放大机制
 - [x] EXP-004G：Trajectory susceptibility / 低 Margin 决策边界
+- [x] EXP-004H：Local bottleneck causality
+- [x] EXP-004I：Correctness causality + public-test gate
+- [x] EXP-004J：Verifier-gated bottleneck escape
+- [x] EXP-004K：500-task held-out replication
 - [x] EXP-006A：1.7B Base / SFT / GRPO 规模复现
 - [x] EXP-006B：大 k 能力边界 / 支持集保持
 - [ ] EXP-007：奖励投机与隐藏测试鲁棒性
