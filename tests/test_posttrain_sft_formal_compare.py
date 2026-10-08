@@ -75,8 +75,10 @@ def _files(tmp_path: Path) -> dict:
 
 def test_real_artifact_comparison_requires_and_reports_matched_inputs(tmp_path: Path):
     paths = _files(tmp_path)
-    result = compare_formal_runs(**paths)
+    result = compare_formal_runs(**paths, gpu_contention="observed")
     assert result["formal_data"] is True
+    assert result["gpu_contention_during_comparison"] == "observed"
+    assert result["wallclock_performance_is_clean_hardware_comparison"] is False
     assert result["nf4_qlora"]["optimizer_steps"] == 252
     assert result["bf16_lora"]["eval_loss"] == 1.12
     assert result["relative_memory_saving_nf4"] == pytest.approx(1-4/6)
