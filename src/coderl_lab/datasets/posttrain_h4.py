@@ -152,28 +152,37 @@ def select_subset(
     count = 0
     valid = 0
     finished = True
-    for index, row in enumerate(rows):
-        if scan_limit is not None and index >= scan_limit:
-            finished = False
-            break
-        count += 1
-        try:
-            fingerprint, record = builder(row, split)
-        except (ValueError, TypeError, KeyError, AttributeError) as exc:
-            rejected[type(exc).__name__] += 1
-            continue
-        if fingerprint in seen_prompts:
-            rejected["duplicate_prompt"] += 1
-            continue
-        seen_prompts.add(fingerprint)
-        valid += 1
-        # Include source and split so the subsampling policy is explicit.
-        score = int(_sha(f"{seed}|{kind}|{split}|{fingerprint}"), 16)
-        item = (-score, -index, record)
-        if len(heap) < take:
-            heapq.heappush(heap, item)
-        elif score < -heap[0][0]:
-            heapq.heapreplace(heap, item)
+    # datasets streaming can hold Arrow background resources. Closing early
+    # (rather than relying on interpreter shutdown) avoids a PyGILState
+    # finalizer crash on some Python 3.11 / Arrow / datasets combinations.
+    iterator = iter(rows)
+    try:
+        for index, row in enumerate(rows):
+            if scan_limit is not None and index >= scan_limit:
+                finished = False
+                break
+            count += 1
+            try:
+                fingerprint, record = builder(row, split)
+            except (ValueError, TypeError, KeyError, AttributeError) as exc:
+                rejected[type(exc).__name__] += 1
+                continue
+            if fingerprint in seen_prompts:
+                rejected["duplicate_prompt"] += 1
+                continue
+            seen_prompts.add(fingerprint)
+            valid += 1
+            # Include source and split so the subsampling policy is explicit.
+            score = int(_sha(f"{seed}|{kind}|{split}|{fingerprint}"), 16)
+            item = (-score, -index, record)
+            if len(heap) < take:
+                heapq.heappush(heap, item)
+            elif score < -heap[0][0]:
+                heapq.heapreplace(heap, item)
+        finally:
+        close = getattr(iterator, "close", None)
+        if callable(close):
+            close()
 
     if len(heap) != take:
         raise ValueError(f"{kind}/{split}: requested {take}, only {len(heap)} valid records")
