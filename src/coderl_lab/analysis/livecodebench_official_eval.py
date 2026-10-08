@@ -276,6 +276,22 @@ class OfficialLiveCodeBenchExecutor:
 
         lines = [line for line in proc.stdout.splitlines() if line.strip()]
         if not lines:
+            # A generated program may exhaust the *existing frozen* 1g Docker
+            # memory limit and be SIGKILLed (exit 137). A repeat of abc391_f
+            # gated-low, but not its baseline, reproduced this code-specific
+            # failure under the same official checker and the same private
+            # cases. Resource-limit violation is an incorrect solution, not
+            # a benchmark-infrastructure failure. Never raise the memory cap
+            # after inspecting held-out outcomes.
+            if proc.returncode == 137:
+                return LiveCodeBenchExecutionResult(
+                    passed=False,
+                    results=("candidate-resource-limit",),
+                    metadata={
+                        "error": "candidate-resource-limit",
+                        "exit_code": proc.returncode,
+                    },
+                )
             return LiveCodeBenchExecutionResult(
                 passed=False,
                 results=("runner-error",),
