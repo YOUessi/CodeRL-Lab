@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import random
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -116,6 +117,75 @@ def compute_warmup_steps(
     )
 
 
+def build_training_identity(
+    *,
+    config_path: Path,
+    data_path: Path,
+    heldout_path: Path | None,
+    train_rows: int,
+    heldout_rows: int,
+) -> dict[str, Any]:
+    """Freeze exact data and full training config before checkpointed training."""
+    return {
+        "config_sha256": hashlib.sha256(config_path.read_bytes()).hexdigest(),
+        "training_data_sha256": hashlib.sha256(data_path.read_bytes()).hexdigest(),
+        "heldout_data_sha256": (
+            hashlib.sha256(heldout_path.read_bytes()).hexdigest()
+            if heldout_path is not None else None
+        ),
+        "training_rows": train_rows,
+        "heldout_rows": heldout_rows,
+    }
+
+
+def validate_resume_checkpoint(
+    *,
+    checkpoint: Path,
+    output_dir: Path,
+    identity: dict[str, Any],
+) -> Path:
+    """Fail closed if optimizer/RNG states or frozen training inputs differ."""
+    resolved = checkpoint.resolve()
+    if resolved.parent != output_dir.resolve():
+        raise ValueError("resume checkpoint must belong to this training output")
+    if not re.fullmatch(r"checkpoint-[1-9][0-9]*", resolved.name):
+        raise ValueError("not a Hugging Face Trainer step checkpoint")
+    for required in ("trainer_state.json", "optimizer.pt", "scheduler.pt", "rng_state.pth"):
+        if not (resolved / required).is_file():
+            raise FileNotFoundError(f"incomplete resumable checkpoint: {required}")
+    persisted = output_dir / "training_identity.json"
+    if not persisted.is_file():
+        raise FileNotFoundError("training identity is missing; cannot safely resume")
+    frozen = json.loads(persisted.read_text(encoding="utf-8"))
+    if frozen != identity:
+        raise ValueError("training data/config SHA mismatch; refusing non-identical resume")
+    state = json.loads((resolved / "trainer_state.json").read_text(encoding="utf-8"))
+    if state.get("global_step") != int(resolved.name.split("-")[-1]):
+        raise ValueError("trainer step checkpoint naming/state mismatch")
+    return resolved
+
+
+def initialize_training_identity(
+    *,
+    output_dir: Path,
+    identity: dict[str, Any],
+    resume_from_checkpoint: Path | None,
+) -> Path | None:
+    path = output_dir / "training_identity.json"
+    if resume_from_checkpoint is not None:
+        return validate_resume_checkpoint(
+            checkpoint=resume_from_checkpoint, output_dir=output_dir,
+            identity=identity,
+        )
+    if path.exists():
+        raise FileExistsError("frozen training identity already exists; use explicit --resume-from-checkpoint")
+    if any(output_dir.glob("checkpoint-*")) or (output_dir / "adapter_model.safetensors").exists():
+        raise FileExistsError("existing model/checkpoint would be overwritten")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(identity, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return None
+
+
 def run_sft(
     *,
     config_path: Path,
@@ -124,6 +194,7 @@ def run_sft(
     max_samples: int | None = None,
     num_train_epochs: float | None = None,
     max_eval_samples: int | None = None,
+    resume_from_checkpoint: Path | None = None,
 ) -> dict[str, Any]:
     try:
         import peft
@@ -180,6 +251,17 @@ def run_sft(
     revision = str(model_cfg["revision"])
     final_output = output_dir or Path(str(train_cfg["output_dir"]))
     final_output.mkdir(parents=True, exist_ok=True)
+    frozen_identity = build_training_identity(
+        config_path=config_path,
+        data_path=data_path,
+        heldout_path=Path(str(eval_path_raw)) if eval_path_raw is not None else None,
+        train_rows=len(prepared_rows),
+        heldout_rows=len(evaluation_dataset) if evaluation_dataset is not None else 0,
+    )
+    checkpoint_to_resume = initialize_training_identity(
+        output_dir=final_output, identity=frozen_identity,
+        resume_from_checkpoint=resume_from_checkpoint,
+    )
 
     random.seed(seed)
     torch.manual_seed(seed)
@@ -262,6 +344,15 @@ def run_sft(
         warmup_ratio=warmup_ratio,
     )
 
+    save_strategy = str(train_cfg.get("save_strategy", "no"))
+    if save_strategy not in {"no", "epoch", "steps"}:
+        raise ValueError(f"unsupported save strategy: {save_strategy}")
+    if save_strategy == "steps":
+        if int(train_cfg.get("save_steps", 0)) <= 0:
+            raise ValueError("step checkpointing requires save_steps > 0")
+        if int(train_cfg.get("save_total_limit", 0)) < 2:
+            raise ValueError("at least 2 rotating step checkpoints required")
+
     args = SFTConfig(
         output_dir=str(final_output),
         num_train_epochs=epochs,
@@ -272,7 +363,12 @@ def run_sft(
         weight_decay=float(train_cfg.get("weight_decay", 0.0)),
         lr_scheduler_type=str(train_cfg.get("lr_scheduler_type", "cosine")),
         logging_steps=int(train_cfg.get("logging_steps", 1)),
-        save_strategy=str(train_cfg.get("save_strategy", "no")),
+        save_strategy=save_strategy,
+        save_steps=int(train_cfg.get("save_steps", 500)),
+        save_total_limit=(
+            int(train_cfg["save_total_limit"])
+            if train_cfg.get("save_total_limit") is not None else None
+        ),
         eval_strategy="epoch" if evaluation_dataset is not None else "no",
         seed=seed,
         data_seed=seed,
@@ -296,7 +392,12 @@ def run_sft(
     )
 
     started = time.perf_counter()
-    train_result = trainer.train()
+    train_result = trainer.train(
+        resume_from_checkpoint=(
+            str(checkpoint_to_resume)
+            if checkpoint_to_resume is not None else None
+        )
+    )
     elapsed = time.perf_counter() - started
 
     trainer.save_model(str(final_output))
@@ -340,6 +441,13 @@ def run_sft(
             len(evaluation_dataset) if evaluation_dataset is not None else 0
         ),
         "num_train_epochs": epochs,
+        "checkpoint_policy": {
+            "save_strategy": save_strategy,
+            "save_steps": int(train_cfg.get("save_steps", 500)) if save_strategy == "steps" else None,
+            "save_total_limit": int(train_cfg.get("save_total_limit", 0)) if save_strategy == "steps" else None,
+            "resumed_from": str(checkpoint_to_resume) if checkpoint_to_resume is not None else None,
+            "identity": frozen_identity,
+        },
         "warmup_ratio_requested": warmup_ratio,
         "warmup_steps": warmup_steps,
         "seed": seed,
@@ -390,6 +498,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-samples", type=int)
     parser.add_argument("--num-train-epochs", type=float)
     parser.add_argument("--max-eval-samples", type=int)
+    parser.add_argument("--resume-from-checkpoint", type=Path)
     return parser.parse_args()
 
 
@@ -402,6 +511,7 @@ def main() -> None:
         max_samples=args.max_samples,
         num_train_epochs=args.num_train_epochs,
         max_eval_samples=args.max_eval_samples,
+        resume_from_checkpoint=args.resume_from_checkpoint,
     )
 
 
