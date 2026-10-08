@@ -58,6 +58,54 @@ def render_pair(row: dict[str, str]) -> tuple[str, str]:
     return row["prompt"] + row["chosen"], row["prompt"] + row["rejected"]
 
 
+def pack_reward_tokens(
+    tokenizer,
+    *,
+    prompt: str,
+    completion: str,
+    max_length: int,
+    max_prompt_tokens: int,
+    min_response_tokens: int,
+) -> tuple[list[int], dict[str, Any]]:
+    """Preserve the assistant response even for long conversation prefixes.
+
+    Naively doing tokenizer(prompt + completion, truncation=True) can truncate
+    both preferred/rejected responses away, making their reward scores identical.
+    Keep the same tail of the prompt for both answers, reserve response room,
+    retain the *suffix* of a very long response, and use the model's EOS token.
+    This is a frozen representation policy, not an outcome-dependent truncation.
+    """
+    if not prompt.strip() or not completion.strip():
+        raise ValueError("reward prompt/completion cannot be empty")
+    if max_length < 8 or min_response_tokens < 1 or max_prompt_tokens < 1:
+        raise ValueError("invalid reward token budget")
+    if max_prompt_tokens + min_response_tokens + 1 > max_length:
+        raise ValueError("prompt plus reserved answer tokens exceed max_length")
+    eos = tokenizer.eos_token_id
+    if eos is None:
+        raise ValueError("reward tokenizer must define EOS token")
+    prompt_ids = list(tokenizer.encode(prompt, add_special_tokens=False))
+    completion_ids = list(tokenizer.encode(completion, add_special_tokens=False))
+    if not completion_ids:
+        raise ValueError("tokenized reward completion cannot be empty")
+    shared_prompt = prompt_ids[-max_prompt_tokens:]
+    answer_budget = max_length - len(shared_prompt) - 1
+    if answer_budget < min_response_tokens:
+        raise AssertionError("reserved answer budget not met")
+    kept_response = completion_ids[-answer_budget:]
+    packed = shared_prompt + kept_response + [int(eos)]
+    if len(packed) > max_length or not kept_response:
+        raise AssertionError("invalid reward packed sequence")
+    return packed, {
+        "prompt_original_tokens": len(prompt_ids),
+        "prompt_used_tokens": len(shared_prompt),
+        "answer_original_tokens": len(completion_ids),
+        "answer_used_tokens": len(kept_response),
+        "prompt_truncated": len(shared_prompt) < len(prompt_ids),
+        "answer_truncated": len(kept_response) < len(completion_ids),
+    }
+
+
 def pairwise_logistic_loss(margin: float) -> float:
     """Numerically stable -log(sigmoid(r_chosen - r_rejected))."""
     if margin >= 0:
@@ -337,16 +385,24 @@ def train_reward_model(
         torch.cuda.set_rng_state_all(state["cuda_rng"])
 
     max_length = int(setup["max_length"])
+    max_prompt_tokens = int(setup.get("max_prompt_tokens", 512))
+    min_response_tokens = int(setup.get("min_response_tokens", 128))
+    if max_prompt_tokens + min_response_tokens + 1 > max_length:
+        raise ValueError("reward packed token budget is invalid")
     log: list[dict[str, Any]] = []
     started = time.perf_counter()
 
-    def reward_score(text: str):
-        inputs = tokenizer(
-            text, truncation=True, max_length=max_length,
-            return_tensors="pt",
+    def reward_score(prompt: str, completion: str):
+        token_ids, _ = pack_reward_tokens(
+            tokenizer,
+            prompt=prompt, completion=completion,
+            max_length=max_length,
+            max_prompt_tokens=max_prompt_tokens,
+            min_response_tokens=min_response_tokens,
         )
-        inputs = {name: tensor.to(model.device) for name, tensor in inputs.items()}
-        return model(**inputs).logits.float().reshape(-1)[0]
+        input_ids = torch.tensor([token_ids], dtype=torch.long, device=model.device)
+        attention_mask = torch.ones_like(input_ids)
+        return model(input_ids=input_ids, attention_mask=attention_mask).logits.float().reshape(-1)[0]
 
     baseline_eval_path = root / "initial_heldout_metrics.json"
     if resume_from_checkpoint is None:
@@ -355,8 +411,8 @@ def train_reward_model(
         model.eval()
         with torch.inference_mode():
             initial_margins = [
-                float((reward_score(render_pair(row)[0]) -
-                       reward_score(render_pair(row)[1])).item())
+                float((reward_score(row["prompt"], row["chosen"]) -
+                       reward_score(row["prompt"], row["rejected"])).item())
                 for row in heldout
             ]
         baseline_heldout = compute_reward_metrics(initial_margins)
@@ -371,9 +427,9 @@ def train_reward_model(
     model.train()
     optimizer.zero_grad(set_to_none=True)
     for pos in range(processed, len(train)):
-        chosen, rejected = render_pair(train[ids[pos]])
-        chosen_r = reward_score(chosen)
-        rejected_r = reward_score(rejected)
+        row = train[ids[pos]]
+        chosen_r = reward_score(row["prompt"], row["chosen"])
+        rejected_r = reward_score(row["prompt"], row["rejected"])
         margin = chosen_r - rejected_r
         loss = F.softplus(-margin)
         regularizer = float(setup.get("reward_l2", 0.0))
@@ -410,8 +466,10 @@ def train_reward_model(
     eval_margins = []
     with torch.inference_mode():
         for row in heldout:
-            chosen, rejected = render_pair(row)
-            margin = (reward_score(chosen) - reward_score(rejected)).item()
+            margin = (
+                reward_score(row["prompt"], row["chosen"]) -
+                reward_score(row["prompt"], row["rejected"])
+            ).item()
             eval_margins.append(float(margin))
     eval_metrics = compute_reward_metrics(eval_margins)
     elapsed = time.perf_counter() - started
@@ -425,6 +483,14 @@ def train_reward_model(
         "experiment": "TRAIN-008A",
         "status": "formal" if identity["formal"] else "smoke_only",
         "initialization": "Qwen3-1.7B-Base fresh sequence-classification head, NF4/LoRA",
+        "representation": {
+            "max_length": max_length,
+            "max_prompt_tokens": max_prompt_tokens,
+            "min_response_tokens": min_response_tokens,
+            "completion_preserved_for_every_pair": True,
+            "long_prompt_policy": "left-truncate prompt to shared tail",
+            "long_completion_policy": "keep completion suffix then EOS",
+        },
         "training_identity": identity,
         "adapter_sha256": file_sha256(adapter_file),
         "train_pairs": len(train), "heldout_pairs": len(heldout),
