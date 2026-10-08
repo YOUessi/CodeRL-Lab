@@ -68,3 +68,28 @@
 - 机器可读归档：`results/train008a-preflight/summary.json`，独立保存预先冻结的两个选样文件SHA和工作流版本。
 - workflow只把去标识化的小型审计摘要上传为Artifact，没有向Git上传训练/验证对话文本。
 - 下一项验收仍是单卡 32/16真实Reward Model smoke，必须在007B和004N不再占用GPU时进行；正式偏好胜率/训练前后排序对比尚未产生。
+
+
+## 2026-10-09：真实冻结数据的 Tokenizer 截断审计（GPU训练之前）
+
+在全量冻结 UltraFeedback 2048 train/256 heldout 上使用 **真实 Qwen3-1.7B-Base tokenizer**，预训练模型revision和训练输入SHA不变，对每条chosen/rejected候选做成对token打包审计，未加载Reward Model或查看隐藏测试：
+
+| 审计指标 | 训练集2048 | 验证集256 |
+| --- | ---: | ---: |
+| 提示词被截断 | 158 | 11 |
+| chosen回答被截断 | 240 | 26 |
+| rejected回答被截断 | 188 | 21 |
+| 截断后chosen与rejected完全相同 | **0** | **0** |
+| 原始提示Token均值 | 162.76 | 132.95 |
+| chosen回答原始Token均值 | 288.20 | 294.42 |
+| rejected回答原始Token均值 | 249.15 | 251.41 |
+
+**先前的实现风险：**直接把prompt+completion拼接后右侧截断到768 Token，长prompt可以把真正要比较的回答截掉，从而使偏好训练变成比较同一前缀。
+
+**修复：**冻结 `max_length=768`、`max_prompt_tokens=512`、`min_response_tokens=128`；统一保留两臂相同的prompt尾部，并保留完整短回复或长回复后部，再加EOS。真实审计显示该设定下2048/256对都没有发生两个候选编码完全相同的情况。
+
+**局限：**有不少回复仍要截断（训练 chosen 240条 / rejected188条）。因此不能宣称语义信息无损；当前选择是避免完全丧失偏好差异信号。如果进一步比较不同上下文/回答保留策略，必须另立实验，不可利用heldout结果挑胜者后当成独立验证。
+
+真实 GitHub Actions 成功运行：[TRAIN-008A Tokenizer Audit](https://github.com/YOUessi/CodeRL-Lab/actions/runs/37822736841)，机器可读永久摘要：`results/train008a-token-audit/summary.json`，完整原始偏好文本仍不上传 Git。
+
+截至2026-10-09 02:17，**Reward Model 实际GPU训练仍未启动**，所以没有任何模型ranking accuracy改善数字。
