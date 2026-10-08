@@ -78,8 +78,10 @@ def verify_run(
     peak = int(summary["gpu"]["peak_reserved_bytes"])
     if not all(math.isfinite(x) for x in (loss, eval_loss, time)) or min(loss, eval_loss, time, peak) <= 0:
         raise ValueError("invalid actual run metrics")
+    resumed_from = summary.get("checkpoint_policy", {}).get("resumed_from")
     return {
         "optimizer_steps": actual_optimizer_steps(history),
+        "resumed_from_checkpoint": resumed_from,
         "train_loss": loss, "eval_loss": eval_loss,
         "elapsed_seconds_wall": time,
         "gpu_peak_reserved_bytes": peak,
@@ -161,11 +163,20 @@ def compare_formal_runs(
         },
         "nf4_qlora": a, "bf16_lora": b,
         "differences_bf16_minus_nf4": {
-            "train_loss": b["train_loss"] - a["train_loss"],
+            # When HF Trainer resumes, its final train_loss can aggregate only
+            # post-resume steps. Held-out eval_loss remains directly comparable.
+            "train_loss": (
+                b["train_loss"] - a["train_loss"]
+                if a["resumed_from_checkpoint"] is None and b["resumed_from_checkpoint"] is None
+                else None
+            ),
             "heldout_eval_loss": b["eval_loss"] - a["eval_loss"],
             "peak_reserved_bytes": b["gpu_peak_reserved_bytes"] - a["gpu_peak_reserved_bytes"],
             "elapsed_seconds_wall": b["elapsed_seconds_wall"] - a["elapsed_seconds_wall"],
         },
+        "training_loss_deltas_comparable": (
+            a["resumed_from_checkpoint"] is None and b["resumed_from_checkpoint"] is None
+        ),
         "relative_memory_saving_nf4": 1 - (
             a["gpu_peak_reserved_bytes"] / b["gpu_peak_reserved_bytes"]
         ),
@@ -176,6 +187,7 @@ def compare_formal_runs(
             "Quantized and unquantized models use different numerical compute paths.",
             "Train input rows can differ from the effective tokenized examples after fully masked samples are dropped.",
             "Loss comparison does not establish task-level generation accuracy.",
+            "If either Trainer resumed, reported training loss may cover only the resumed segment; report held-out loss instead.",
         ],
     }
 
