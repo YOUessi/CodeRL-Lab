@@ -80,7 +80,7 @@ def test_pair_transitions_and_primary_metric() -> None:
     assert out["conditions"]["baseline"]["correct_tasks"] == 1
     assert out["conditions"]["gated_low_destabilize"]["correct_tasks"] == 3
     assert out["conditions"]["gated_low_destabilize"]["delta_vs_baseline"] == 0.5
-    assert out["primary_success"] is True
+    assert out["primary_success"] is False  # With n=4, the paired CI still includes zero
     assert out["gate_triggered_tasks"] == 3
     assert transitions(rows, "gated_low_destabilize") == {
         "wrong_to_correct": 2,
