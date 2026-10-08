@@ -7,7 +7,7 @@
 - 规则：完全冻结自 EXP-004J
 - held-out runner：已实现
 - smoke：已通过
-- 正式500题：运行中
+- 正式500题：已完成，held-out primary 通过
 
 ## 研究目的
 
@@ -165,3 +165,144 @@ Smoke 只用于工程与无泄漏检查，不用于方法选择。
 - 正式运行中不修改 low/high threshold、bias、gate、window 或 bootstrap 配置。
 
 正式 hidden outcome 只会在 runner/public-only gate/second-pass 全部冻结后统一读取。
+
+
+# 正式 500-task held-out 结果
+
+正式 runner 已完成全部 500 个 MBPP test task，并且最终 artifact 明确记录：
+
+`hidden_tests_accessed = false`
+
+hidden outcome 只在 baseline / public-only gate / second-pass intervention 全部冻结后统一评测。
+
+## 全 500 题主要结果
+
+| 条件 | Hidden correct | Accuracy | Δ vs baseline |
+|---|---:|---:|---:|
+| Baseline SFT greedy | 207 / 500 | 41.40% | — |
+| **Gated low-margin destabilize** | **215 / 500** | **43.00%** | **+1.60 pp** |
+| Gated high-margin control | 207 / 500 | 41.40% | 0 |
+| Always-low, no gate | 207 / 500 | 41.40% | 0 |
+
+Primary paired task bootstrap（20,000 次）：
+
+- gated-low - baseline：**+1.60 pp**；
+- 95% CI：**[+0.40,+3.00] pp**；
+- P(delta>0)=0.98995。
+
+因此 held-out primary hypothesis 正式通过预注册成功标准：95% CI lower bound > 0。
+
+## 转移计数
+
+### Gated low vs baseline
+
+- wrong→correct：**10**；
+- correct→wrong：**2**；
+- correct→correct：205；
+- wrong→wrong：283。
+
+### High-margin control
+
+- wrong→correct：0；
+- correct→wrong：0；
+- 完全无行为收益。
+
+### Always-low without gate
+
+- wrong→correct：10；
+- correct→wrong：10；
+- 净提升 0。
+
+这说明 gate 不是可有可无的工程细节：同样 low-margin destabilize，如果对所有 eligible task 无条件使用，收益与伤害完全抵消。
+
+## Gate-triggered 子集
+
+实际触发 second pass：159 / 500。
+
+在这 159 题中：
+
+- baseline correct：7 / 159 = 4.40%；
+- gated-low：15 / 159 = **9.43%**；
+- 提升：**+5.03 pp**；
+- 95% CI：**[+1.26,+9.43] pp**。
+
+转移：
+
+- wrong→correct：10；
+- correct→wrong：2。
+
+## Gate 与 hidden-wrong 的关系
+
+仅 public-fail（不要求 bottleneck）在 500 held-out 上：
+
+- public-fail tasks：280；
+- baseline hidden-wrong：293；
+- public-fail ∩ hidden-wrong：269；
+- precision：**96.07%**；
+- recall：**91.81%**。
+
+真正的 actual gate = public-fail AND low bottleneck exists：
+
+- selected：159；
+- hidden-wrong：152；
+- hidden-correct：7；
+- precision：**95.60%**；
+- recall：51.88%。
+
+所以 gate 是一个高 precision、低 recall 的保守干预规则：只在非常可能错误、且确实存在 low-margin bottleneck 的任务上触发。
+
+## 位置特异性
+
+Gated-low 与 gated-high 的差异：
+
+- +1.60 pp；
+- 95% CI：**[+0.40,+3.00] pp**。
+
+同样的 -0.25 logit 干预放在 high-margin control 位置完全没有收益，说明不是“任意修改 logits”即可。
+
+## Gate necessity
+
+Gated-low 与 always-low 的差异：
+
+- +1.60 pp；
+- 95% CI：**[+0.60,+2.80] pp**；
+- P(delta>0)=0.99985。
+
+public-pass 的 220 个任务：
+
+- gated-low changed：0；
+- gated-high changed：0；
+- always-low changed：90。
+
+因此 gate 同时承担两件事：
+
+1. 用 public verifier 识别“值得逃逸”的错误轨迹；
+2. 保护已经能通过 public tests 的轨迹不被无谓扰动。
+
+# EXP-004K 结论
+
+EXP-004H-I-J-K 的证据链现在闭环：
+
+1. local low-margin bottleneck 可预测 perturbation susceptibility；
+2. 对 low-margin token 的受控 stabilize/destabilize 可以因果改变 trajectory；
+3. SFT reference 错误时，destabilize 可解锁 alternative correct trajectory；
+4. public tests 可作为不依赖 hidden outcome 的高 precision gate；
+5. SFT-only verifier-gated two-pass decoding 在 90-task validation 上方向为正但 CI 下界=0；
+6. 冻结全部规则后，在独立 MBPP test 500-task 上复制成功：**+1.60 pp，95% CI [+0.40,+3.00]**。
+
+因此当前可以正式说：
+
+> **局部 low-margin bottleneck 是可干预的自回归决策闸门；当外部可验证信号表明当前 greedy 轨迹可能错误时，对该 bottleneck 做小幅定向 destabilize，可以在不重新训练模型的情况下解锁替代轨迹，并在 held-out 500 题上获得统计显著的正确率提升。**
+
+同时，high-margin control 和 ungated always-low 都没有净收益，说明位置特异性与 verifier gate 都是必要组成部分。
+
+## 下一步
+
+不继续在 MBPP 上调 threshold / bias / window。
+
+优先做外部分布验证：
+
+1. LiveCodeBench / 时间更新代码任务；
+2. 如果任务格式允许，复现 public-verifier-gated bottleneck escape；
+3. 或迁移到仓库级软件工程任务，使用可执行测试作为 verifier；
+4. 检查 low-margin bottleneck + verifier gate 是否跨数据分布、跨任务粒度成立。
