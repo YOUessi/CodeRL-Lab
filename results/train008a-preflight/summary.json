@@ -1,0 +1,28 @@
+{
+  "experiment": "TRAIN-008A",
+  "date": "2026-10-08",
+  "stage": "real_frozen_preference_data_audit",
+  "status": "passed",
+  "verified_in": "GitHub Actions CPU job (no GPU model training)",
+  "source_action": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/37789195866",
+  "source_artifact": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/37789195866/artifacts/11555432361",
+  "source_code_sha": "32d073db13adc36cef7a942016aa61025d075aba",
+  "input_training_source": "HuggingFaceH4/ultrafeedback_binarized",
+  "input_source_revision": "daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2",
+  "selected_train_pairs": 2048,
+  "selected_heldout_pairs": 256,
+  "train_sha256": "945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77",
+  "heldout_sha256": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450",
+  "train_heldout_prompt_overlap": 0,
+  "fullscan_snapshot": true,
+  "frozen_manifest_checked": true,
+  "chosen_rejected_different_and_share_prompt": true,
+  "hidden_or_private_tests_used": false,
+  "gpu_training_completed": false,
+  "observed_reward_model_accuracy": null,
+  "notes": [
+    "This was a real data read and schema/hash audit using the previously created GitHub Actions fullscan dataset artifact.",
+    "No model checkpoint was trained by this workflow; the future 32/16 GPU smoke and formal 2048/256 reward training remain separate.",
+    "The frozen preference dataset is not a contamination-free benchmark of general human preference or RLHF performance."
+  ]
+}
