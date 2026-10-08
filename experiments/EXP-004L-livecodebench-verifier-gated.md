@@ -1,0 +1,182 @@
+# EXP-004L：LiveCodeBench v6 Verifier-Gated Bottleneck Escape
+
+## 状态
+
+- 分支：exp/livecodebench-verifier-gated
+- 基线：EXP-004K held-out 500-task 成功规则
+- LiveCodeBench 官方 commit：28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24
+- 数据切片：code_generation_lite / v6（175 tasks）
+- 数据接入：实现中
+- 12-task smoke：待运行
+- 正式外部分布：未开始
+
+## 研究目的
+
+EXP-004K 已经在未参与方法设计的 MBPP test 500 tasks 上复制成功：
+
+- baseline 41.40%
+- gated-low 43.00%
+- +1.60 pp
+- 95% CI [+0.40,+3.00]
+
+现在不再在 MBPP 上调整任何 threshold / bias / window。
+
+本实验检查：
+
+> public verifier + local low-margin bottleneck escape 是否能跨到时间更新、竞赛式、stdin/functional 混合代码任务。
+
+## 冻结规则
+
+全部沿用 EXP-004K：
+
+- model：Qwen3-1.7B-Base + EXP-006A SFT adapter
+- greedy decoding
+- max_new_tokens=512
+- primary window=128
+- low threshold=0.05
+- high threshold=0.20
+- bias=-0.25
+- gate：baseline public tests 未全部通过 AND low bottleneck exists
+- gated-low / gated-high / always-low 定义保持不变
+- bootstrap 20,000
+- seed=42
+
+## 数据
+
+官方数据：
+
+- repository：livecodebench/code_generation_lite
+- fine-grained version：v6
+- raw file：test6.jsonl
+- tasks：175
+- 时间窗口：release_v6 新增题，约 2025 年新题
+- 字段：
+  - question_content
+  - starter_code
+  - public_test_cases
+  - private_test_cases
+  - metadata
+  - contest_date / platform / difficulty
+
+选择 v6 而不是 release_v6 全量 1055 题，是为了：
+
+1. 更强分布外性；
+2. 降低可能的早期 benchmark contamination；
+3. 控制 1.7B 单卡实验成本；
+4. 使用官方支持的 fine-grained release slice。
+
+## 无泄漏协议
+
+### Phase 0：public-only 数据准备
+
+只读取：
+
+- question / starter code
+- public_test_cases
+- metadata.func_name
+- release metadata
+
+不解码、不导出 private_test_cases。
+
+### Phase 1：SFT baseline + margin trace
+
+GPU 只做：
+
+- greedy baseline
+- first128 margin profile
+- low/high bottleneck position
+
+### Phase 2：public verifier
+
+只执行 public_test_cases。
+
+得到：
+
+public_fail AND low bottleneck exists
+
+### Phase 3：second-pass
+
+同一个 SFT adapter：
+
+- gated-low：low bottleneck -0.25
+- gated-high：high-margin control -0.25
+- always-low：所有 eligible task 都 low -0.25
+- baseline：不改
+
+### Phase 4：官方 final evaluator
+
+只有 Phase 1-3 完全冻结后：
+
+- 调用官方 LiveCodeBench evaluator；
+- 读取 private_test_cases；
+- 评估 baseline / gated-low / gated-high / always-low。
+
+## 官方 evaluator
+
+不自己复写 LiveCodeBench checker。
+
+固定官方仓库 commit：
+
+28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24
+
+CodeRL-Lab 只导出：
+
+- question_id
+- code_list
+
+最终执行使用官方 lcb_runner code-generation evaluator。
+
+## 预注册主要结果
+
+Primary：
+
+gated-low hidden correctness - baseline hidden correctness
+
+成功标准：
+
+95% paired task bootstrap CI lower bound > 0。
+
+Secondary：
+
+- gated-low - gated-high
+- gated-low - always-low
+- wrong→correct / correct→wrong
+- public-pass task protection
+- gate precision / recall
+
+## 当前已遇到的数据接入问题
+
+### 问题1：datasets 5.1 不再支持 dataset script
+
+老式：
+
+load_dataset(... trust_remote_code=True)
+
+在当前环境失败：
+
+Dataset scripts are no longer supported.
+
+决定：
+
+不降级 CodeRL-Lab 的 datasets 版本。
+
+### 问题2：Parquet 自动转换文件不在 main
+
+尝试 main/release_v6/*.parquet 返回 404。
+
+原因：
+
+Hugging Face Parquet 自动转换位于单独 revision，不在 dataset main。
+
+处理：
+
+正式准备脚本改为直接下载 upstream main 的 test6.jsonl，并自行解析 JSONL；
+不依赖远程 dataset script，也不依赖 Parquet 自动转换 revision。
+
+## 工程原则
+
+- GitHub 是代码/配置/日志唯一事实源；
+- Tang 只下载数据和跑真实 GPU / official evaluator；
+- private tests 不写入 Git；
+- public-only manifest 可以记录 hash/count，但不包含 private content；
+- 所有失败、修复、数据 hash、官方 commit 写入每日研发日志。
