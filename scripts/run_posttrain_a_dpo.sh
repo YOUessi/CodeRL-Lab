@@ -3,11 +3,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PYTHON="\${PYTHON:-.venv/bin/python}"
+PYTHON="${PYTHON:-.venv/bin/python}"
 test -x "$PYTHON" || { echo "Python interpreter unavailable: $PYTHON" >&2; exit 2; }
 
-ADAPTER="\${ADAPTER:-artifacts/posttrain-a/train007a-qlora-ultrachat}"
-OUTPUT="\${OUTPUT:-artifacts/posttrain-a/train007c-dpo-ultrafeedback}"
+ADAPTER="${ADAPTER:-artifacts/posttrain-a/train007a-qlora-ultrachat}"
+OUTPUT="${OUTPUT:-artifacts/posttrain-a/train007c-dpo-ultrafeedback}"
 EFFECTIVE_CONFIG="$OUTPUT/frozen_config.yaml"
 DATA_TRAIN="data/generated/posttrain-h4-v1/dpo_train.jsonl"
 DATA_EVAL="data/generated/posttrain-h4-v1/dpo_validation.jsonl"
@@ -21,7 +21,7 @@ if [ -e "$OUTPUT/adapter_model.safetensors" ]; then
   exit 4
 fi
 
-PYTHONPATH="src\${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
+PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
   -m coderl_lab.train.posttrain_a_dpo_freeze \
   --adapter "$ADAPTER" \
   --sft-summary "$ADAPTER/run_summary.json" \
@@ -30,10 +30,10 @@ PYTHONPATH="src\${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
   --output "$EFFECTIVE_CONFIG"
 
 # A full BF16 DPO model uses more GPU memory than NF4 SFT.
-PYTHONPATH="src\${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
+PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
   -m coderl_lab.train.gpu_preflight --min-free-mib 12000
 
-PYTHONPATH="src\${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -m coderl_lab.train.dpo \
+PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -m coderl_lab.train.dpo \
   --config "$EFFECTIVE_CONFIG" \
   --preferences "$DATA_TRAIN" \
   --eval-preferences "$DATA_EVAL" \
