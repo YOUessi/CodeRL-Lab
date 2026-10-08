@@ -11,6 +11,11 @@ from typing import Any
 
 import yaml
 
+from coderl_lab.train.sft import (
+    build_training_identity,
+    initialize_training_identity,
+)
+
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [
@@ -107,6 +112,7 @@ def run_dpo(
     max_steps: int | None = None,
     eval_preferences_path: Path | None = None,
     max_eval_pairs: int | None = None,
+    resume_from_checkpoint: Path | None = None,
 ) -> dict[str, Any]:
     try:
         import peft
@@ -188,6 +194,18 @@ def run_dpo(
         raise ValueError(
             f"SFT adapter SHA mismatch: expected {expected_sha}, got {adapter_sha}"
         )
+    train_identity = build_training_identity(
+        config_path=config_path,
+        data_path=preferences_path,
+        heldout_path=eval_preferences_path,
+        train_rows=len(dataset),
+        heldout_rows=len(evaluation_dataset) if evaluation_dataset is not None else 0,
+    )
+    train_identity["source_sft_adapter_sha256"] = adapter_sha
+    checkpoint_to_resume = initialize_training_identity(
+        output_dir=final_output, identity=train_identity,
+        resume_from_checkpoint=resume_from_checkpoint,
+    )
 
     random.seed(seed)
     torch.manual_seed(seed)
@@ -274,6 +292,15 @@ def run_dpo(
         max_steps=requested_max_steps,
     )
 
+    save_strategy = str(train_cfg.get("save_strategy", "no"))
+    if save_strategy not in {"no", "epoch", "steps"}:
+        raise ValueError(f"unsupported DPO save strategy: {save_strategy}")
+    if save_strategy == "steps":
+        if int(train_cfg.get("save_steps", 0)) <= 0:
+            raise ValueError("DPO step checkpointing requires save_steps > 0")
+        if int(train_cfg.get("save_total_limit", 0)) < 2:
+            raise ValueError("DPO must retain at least 2 step checkpoints")
+
     args = DPOConfig(
         output_dir=str(final_output),
         num_train_epochs=epochs,
@@ -288,7 +315,12 @@ def run_dpo(
         loss_type=str(train_cfg.get("loss_type", "sigmoid")),
         max_length=int(train_cfg.get("max_length", 1024)),
         logging_steps=int(train_cfg.get("logging_steps", 1)),
-        save_strategy=str(train_cfg.get("save_strategy", "no")),
+        save_strategy=save_strategy,
+        save_steps=int(train_cfg.get("save_steps", 500)),
+        save_total_limit=(
+            int(train_cfg["save_total_limit"])
+            if train_cfg.get("save_total_limit") is not None else None
+        ),
         eval_strategy="epoch" if evaluation_dataset is not None else "no",
         seed=seed,
         data_seed=seed,
@@ -310,7 +342,12 @@ def run_dpo(
     )
 
     started = time.perf_counter()
-    result = trainer.train()
+    result = trainer.train(
+        resume_from_checkpoint=(
+            str(checkpoint_to_resume)
+            if checkpoint_to_resume is not None else None
+        )
+    )
     elapsed = time.perf_counter() - started
 
     trainer.save_model(str(final_output))
@@ -353,6 +390,13 @@ def run_dpo(
             len(evaluation_dataset) if evaluation_dataset is not None else 0
         ),
         "num_train_epochs": epochs,
+        "checkpoint_policy": {
+            "save_strategy": save_strategy,
+            "save_steps": int(train_cfg.get("save_steps", 500)) if save_strategy == "steps" else None,
+            "save_total_limit": int(train_cfg.get("save_total_limit", 0)) if save_strategy == "steps" else None,
+            "resumed_from": str(checkpoint_to_resume) if checkpoint_to_resume is not None else None,
+            "identity": train_identity,
+        },
         "max_steps": requested_max_steps,
         "warmup_ratio_requested": warmup_ratio,
         "warmup_steps": warmup_steps,
@@ -401,6 +445,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--max-steps", type=int)
     p.add_argument("--eval-preferences", type=Path)
     p.add_argument("--max-eval-pairs", type=int)
+    p.add_argument("--resume-from-checkpoint", type=Path)
     return p.parse_args()
 
 
@@ -415,6 +460,7 @@ def main() -> None:
         max_steps=args.max_steps,
         eval_preferences_path=args.eval_preferences,
         max_eval_pairs=args.max_eval_pairs,
+        resume_from_checkpoint=args.resume_from_checkpoint,
     )
 
 
