@@ -59,3 +59,12 @@
 ## 后续条件
 
 只有在奖励模型完整训练及 heldout 检查通过后，才考虑 PPO/RLHF；届时必须另立实验并实现在线rollout、固定参考策略、KL约束、有效奖励验证与Reward Hacking审计。当前不将 PPO 理论写成已实现。
+
+
+## 2026-10-08 22:02：正式来源数据的 CPU 实盘审计已通过
+
+- [GitHub Actions 真实数据审计](https://github.com/YOUessi/CodeRL-Lab/actions/runs/37789195866) 使用 Actions token 下载以前的冻结源数据快照（不是单元测试编造的JSONL）。
+- 完整2048/256条偏好数据、数据SHA、source revision、prompt train/heldout无交集、chosen/rejected共享同一提示而答案不同等检查均通过。模型 GPU 未训练。
+- 机器可读归档：`results/train008a-preflight/summary.json`，独立保存预先冻结的两个选样文件SHA和工作流版本。
+- workflow只把去标识化的小型审计摘要上传为Artifact，没有向Git上传训练/验证对话文本。
+- 下一项验收仍是单卡 32/16真实Reward Model smoke，必须在007B和004N不再占用GPU时进行；正式偏好胜率/训练前后排序对比尚未产生。
