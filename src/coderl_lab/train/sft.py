@@ -152,6 +152,24 @@ def run_sft(
     )
     dataset = Dataset.from_list(prepared_rows)
 
+    # Held-out validation is optional; never concatenate it into the train set.
+    eval_path_raw = config.get("data", {}).get("heldout_validation")
+    evaluation_dataset = None
+    if eval_path_raw is not None:
+        evaluation_rows = load_sft_rows(Path(str(eval_path_raw)))
+        evaluation_prepared = prepare_prompt_completion_rows(
+            evaluation_rows, seed=seed
+        )
+        train_task_ids = {str(row["task_id"]) for row in rows}
+        evaluation_task_ids = {str(row["task_id"]) for row in evaluation_rows}
+        if train_task_ids & evaluation_task_ids:
+            raise ValueError("SFT train/held-out validation task_id overlap")
+        train_prompts = {str(row["prompt"]) for row in prepared_rows}
+        validation_prompts = {str(row["prompt"]) for row in evaluation_prepared}
+        if train_prompts & validation_prompts:
+            raise ValueError("SFT train/held-out validation prompt overlap")
+        evaluation_dataset = Dataset.from_list(evaluation_prepared)
+
     model_name = str(model_cfg["name_or_path"])
     revision = str(model_cfg["revision"])
     final_output = output_dir or Path(str(train_cfg["output_dir"]))
@@ -249,6 +267,7 @@ def run_sft(
         lr_scheduler_type=str(train_cfg.get("lr_scheduler_type", "cosine")),
         logging_steps=int(train_cfg.get("logging_steps", 1)),
         save_strategy=str(train_cfg.get("save_strategy", "no")),
+        eval_strategy="epoch" if evaluation_dataset is not None else "no",
         seed=seed,
         data_seed=seed,
         bf16=dtype_name == "bfloat16",
@@ -265,6 +284,7 @@ def run_sft(
         model=model,
         args=args,
         train_dataset=dataset,
+        eval_dataset=evaluation_dataset,
         processing_class=tokenizer,
         peft_config=peft_config,
     )
@@ -296,6 +316,9 @@ def run_sft(
             "compute_dtype": dtype_name if quant_mode == "nf4" else None,
         },
         "num_examples": len(dataset),
+        "num_heldout_validation_examples": (
+            len(evaluation_dataset) if evaluation_dataset is not None else 0
+        ),
         "num_train_epochs": epochs,
         "warmup_ratio_requested": warmup_ratio,
         "warmup_steps": warmup_steps,
@@ -327,6 +350,10 @@ def run_sft(
             "peak_reserved_bytes": torch.cuda.max_memory_reserved(),
         }
 
+    (final_output / "log_history.json").write_text(
+        json.dumps(list(trainer.state.log_history), ensure_ascii=False, indent=2, default=str) + "\n",
+        encoding="utf-8",
+    )
     (final_output / "run_summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
