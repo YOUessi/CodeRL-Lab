@@ -119,8 +119,12 @@ def compare_formal_runs(
             raise ValueError(f"unmatched {key} config")
     train_a = dict(cfg_a["training"])
     train_b = dict(cfg_b["training"])
-    train_a.pop("output_dir", None)
-    train_b.pop("output_dir", None)
+    checkpoint_keys = ("save_strategy", "save_steps", "save_total_limit")
+    checkpoint_policy_a = {key: train_a.get(key) for key in checkpoint_keys}
+    checkpoint_policy_b = {key: train_b.get(key) for key in checkpoint_keys}
+    for key in ("output_dir", *checkpoint_keys):
+        train_a.pop(key, None)
+        train_b.pop(key, None)
     if train_a != train_b:
         raise ValueError("unmatched SFT training hyperparameters")
     if cfg_a["quantization"]["mode"] != "nf4" or cfg_b["quantization"]["mode"] != "none":
@@ -143,6 +147,11 @@ def compare_formal_runs(
         "experiment": "TRAIN-007A-vs-007B",
         "comparison_type": "two real matched-seed, matched-data GPU training runs",
         "formal_data": True,
+        "checkpoint_policies_match": checkpoint_policy_a == checkpoint_policy_b,
+        "checkpoint_policies": {
+            "nf4": checkpoint_policy_a,
+            "bf16": checkpoint_policy_b,
+        },
         "gpu_contention_during_comparison": gpu_contention,
         "wallclock_performance_is_clean_hardware_comparison": False,
         "data": {
@@ -162,6 +171,7 @@ def compare_formal_runs(
         ),
         "limitations": [
             "Single seed, not a statistically powered quality result.",
+            "Interruption required a zero-step BF16 restart with step-based checkpoints. Checkpoint cadence differs from the prior NF4 run; optimizer settings and dataset remain matched.",
             "BF16 training overlapped another GPU workload on Tang if gpu_contention=observed; training speed difference cannot be attributed to quantization.",
             "Quantized and unquantized models use different numerical compute paths.",
             "Train input rows can differ from the effective tokenized examples after fully masked samples are dropped.",
@@ -174,9 +184,9 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--manifest", type=Path, default=Path("data/generated/posttrain-h4-v1/sft_manifest.json"))
     p.add_argument("--nf4-config", type=Path, default=Path("configs/posttrain_a_qlora_qwen3_1.7b.yaml"))
-    p.add_argument("--bf16-config", type=Path, default=Path("configs/posttrain_a_lora_qwen3_1.7b.yaml"))
+    p.add_argument("--bf16-config", type=Path, default=Path("configs/posttrain_a_lora_resumable_qwen3_1.7b.yaml"))
     p.add_argument("--nf4-run", type=Path, default=Path("artifacts/posttrain-a/train007a-qlora-ultrachat"))
-    p.add_argument("--bf16-run", type=Path, default=Path("artifacts/posttrain-a/train007b-lora-ultrachat"))
+    p.add_argument("--bf16-run", type=Path, default=Path("artifacts/posttrain-a/train007b-lora-resumable"))
     p.add_argument("--output", type=Path, default=Path("artifacts/posttrain-a/train007a-vs-007b/comparison.json"))
     p.add_argument("--gpu-contention", choices=("observed", "not-observed", "unknown"), default="unknown")
     a = p.parse_args()
