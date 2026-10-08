@@ -78,3 +78,13 @@
 - “调高 tokens 就能恢复 token escape”；
 - “v5 会复制 MBPP +1.60 pp”；
 - “任何分布的 public Gate 都无用”。
+
+
+## 2026-10-08：独立公开数据集冻结完成
+
+- GitHub Actions [EXP-004N 数据构建及跨 release 去重检查](https://github.com/YOUessi/CodeRL-Lab/actions/runs/37729627752) 已成功。
+- 官方固定版本 `test5.jsonl` 仅包含 v5 增量 **167题**，并与先前使用的 v6 175题进行 question_id 与规范化题面+starter_code 双重交叉核验；两类交集均为 **0**，因此没有排除任务，也没有按难度筛选题目。
+- v5 raw SHA256 `7f77571c2a6df0c2a72a3277650309f67e01e0008e18117e624633df53f81214`；公开视图 SHA256 `e695ba9fa2ce35abc8db2f3360bf711930746cd55843890177ecd518c0a4c98d`。
+- 对照 v6 的原先固定 public-view SHA256 也经同一数据源 commit 重建验证为 `f9fd88d4e1b35b4f6720ca548c2e2d1187ad53b5fb5723ef4999a40b79d7c399`。
+- 机器可读记录 `results/exp004n-data/summary.json`，公开任务与 manifest 保存于 [GitHub Actions Artifact](https://github.com/YOUessi/CodeRL-Lab/actions/runs/37729627752/artifacts/11529138203)，原始私有测试从未解码或导出。
+- 本条记录仅是 GPU 生成前的数据冻结；主检验及 Base/SFT/1024 控制没有执行，不能发表新方法效果结论。
