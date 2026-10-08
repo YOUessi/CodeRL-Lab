@@ -40,7 +40,9 @@ training:
   lr_scheduler_type: cosine
   gradient_checkpointing: true
   logging_steps: 1
-  save_strategy: "epoch"
+  save_strategy: steps
+  save_steps: 32
+  save_total_limit: 4
   beta: 0.1
   loss_type: sigmoid
   max_length: 1024
