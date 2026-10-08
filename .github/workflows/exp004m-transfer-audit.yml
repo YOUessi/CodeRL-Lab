@@ -1,0 +1,58 @@
+name: EXP-004M frozen-transfer audit
+
+on:
+  push:
+    branches:
+      - exp/livecodebench-verifier-gated
+    paths:
+      - .github/workflows/exp004m-transfer-audit.yml
+      - src/coderl_lab/analysis/exp004m_transfer_diagnostics.py
+      - results/exp004k/summary.json
+      - results/exp004l/summary.json
+  workflow_dispatch:
+
+jobs:
+  aggregate-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU-only dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Verify two frozen source summaries and exact test
+        run: pytest -q tests/test_exp004m_transfer_diagnostics.py
+      - name: Generate reproducible posthoc diagnostics
+        run: |
+          python -m coderl_lab.analysis.exp004m_transfer_diagnostics \
+            --mbpp-k results/exp004k/summary.json \
+            --lcb-l results/exp004l/summary.json \
+            --json-output artifacts/exp004m/summary.json \
+            --markdown-output artifacts/exp004m/analysis.md
+      - name: Show source-reconciled contrasts
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a = json.loads(Path("artifacts/exp004m/summary.json").read_text())
+          k = a["metrics"]["mbpp_test_500"]
+          l = a["metrics"]["livecodebench_v6_175"]
+          assert k["rescued"] == 10 and k["harmed"] == 2
+          assert l["rescued"] == 1 and l["harmed"] == 0
+          print("K gate precision:", k["gate_precision_for_wrong"])
+          print("L gate precision:", l["gate_precision_for_wrong"])
+          print("K conditional rescue:", k["rescue_per_wrong_trigger"])
+          print("L conditional rescue:", l["rescue_per_wrong_trigger"])
+          print("EXP-004M exploratory Fisher p:", a["exploratory_between_domain_comparison"]["fisher_exact_two_sided_unadjusted"])
+          print("No frozen decoding rules changed")
+          PY
+      - name: Retain audit, no raw private-test examples
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp004m-frozen-transfer-audit
+          path: artifacts/exp004m/
+          retention-days: 30
