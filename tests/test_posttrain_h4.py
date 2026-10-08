@@ -137,3 +137,21 @@ def test_public_manifest_contains_hash_not_raw_answers(tmp_path: Path) -> None:
     assert manifest["test_or_private_examples_in_training"] is False
     assert "This is a valid" not in json.dumps(manifest)
     assert len((tmp_path / "sft_train.jsonl").read_text().splitlines()) == 4
+
+
+def test_early_stop_closes_streaming_input() -> None:
+    closed = []
+
+    def rows():
+        try:
+            for i in range(12):
+                yield sft_row(f"Data stream sample number {i}")
+        finally:
+            closed.append(True)
+
+    selection = select_subset(
+        rows(), kind="sft", split="train_sft",
+        take=2, seed=42, scan_limit=3,
+    )
+    assert selection.full_scan is False
+    assert closed == [True]
