@@ -125,6 +125,7 @@ def run_livecodebench_verifier_gated(
     public_timeout: int = 6,
     public_memory: str = "1g",
     max_tasks: int | None = None,
+    experiment_id: str = "EXP-004L",
 ) -> dict[str, Any]:
     try:
         import torch
@@ -134,6 +135,8 @@ def run_livecodebench_verifier_gated(
             "LiveCodeBench verifier-gated runner requires model dependencies"
         ) from exc
 
+    if experiment_id not in {"EXP-004L", "EXP-004N"}:
+        raise ValueError(f"unsupported LiveCodeBench experiment: {experiment_id}")
     public_map = load_public_tasks(public_tasks_path)
     question_ids = sorted(public_map)
     if max_tasks is not None:
@@ -270,7 +273,7 @@ def run_livecodebench_verifier_gated(
             }
 
     result = {
-        "experiment": "EXP-004L",
+        "experiment": experiment_id,
         "model": model_name,
         "revision": revision,
         "adapter": str(adapter),
@@ -345,6 +348,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--public-timeout", type=int, default=6)
     parser.add_argument("--public-memory", default="1g")
     parser.add_argument("--max-tasks", type=int)
+    parser.add_argument("--experiment-id", choices=("EXP-004L", "EXP-004N"), default="EXP-004L")
     return parser.parse_args()
 
 
@@ -366,6 +370,7 @@ def main() -> None:
         public_timeout=args.public_timeout,
         public_memory=args.public_memory,
         max_tasks=args.max_tasks,
+        experiment_id=args.experiment_id,
     )
 
 
