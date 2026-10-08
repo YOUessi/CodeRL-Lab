@@ -1,0 +1,53 @@
+{
+  "experiment": "TRAIN-007A",
+  "stage": "formal_sft",
+  "date": "2026-10-08",
+  "status": "completed_on_Tang_RTX4090_Laptop",
+  "source": "Tang artifacts/posttrain-a/train007a-qlora-ultrachat/run_summary.json and saved adapter, read 2026-10-08 15:40+08",
+  "code_commit_on_Tang": "c0a7940aab2b1c497275a9d63286181872e9c85b",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "model_revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "sft_source": "HuggingFaceH4/ultrachat_200k@b7fe606ecdbf71e8537946a8d9de5ccf0f6da48b",
+  "train_input_rows": 4096,
+  "heldout_input_rows": 256,
+  "train_sha256": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+  "validation_sha256": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+  "quantization": {
+    "mode": "nf4",
+    "double_quant": true,
+    "compute_dtype": "bfloat16"
+  },
+  "lora": {
+    "r": 16,
+    "alpha": 32,
+    "dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  },
+  "seed": 42,
+  "epochs": 1,
+  "optimizer_steps": 252,
+  "train_loss": 1.1474928844069678,
+  "heldout_eval_loss": 1.1399177312850952,
+  "elapsed_seconds_wall": 2834.327505792957,
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 4090 Laptop GPU",
+    "peak_allocated_bytes": 3636360704,
+    "peak_reserved_bytes": 3938451456
+  },
+  "adapter_sha256": "d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d",
+  "output_path_on_Tang": "/home/you/projects/CodeRL-Lab-track-a/artifacts/posttrain-a/train007a-qlora-ultrachat",
+  "raw_artifacts_in_git": false,
+  "limitations": [
+    "input train records=4096; tokenization/truncation may exclude fully-masked rows; audit effective training count separately",
+    "held-out eval loss and train loss are not a task-level benchmark quality comparison",
+    "BF16 LoRA and DPO official matched budgets not yet included in this result"
+  ]
+}
