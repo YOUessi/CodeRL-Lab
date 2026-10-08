@@ -22,6 +22,11 @@
 5. 不为了正结果修改 B 已注册的 threshold、bias 或 window；A 新实验另立编号与比较基线。
 6. 当前 A 的 RLHF / PPO / 奖励模型不应被写成“已实现”。先完成可重复的训练样本、训练和显存/质量对照，再推进下一算法。
 
+## 主线 A 后续模块（与当前训练隔离）
+
+- [TRAIN-008A Pairwise Reward Model / PR #29](https://github.com/YOUessi/CodeRL-Lab/pull/29)：在**基于主线A的独立叠加分支**中实现 UltraFeedback 2048/256、Qwen3-1.7B 的 Bradley–Terry 标量奖励模型、CPU审计及可恢复训练；当前尚未在 GPU 实训，因此不算已完成的奖励模型实验或 PPO/RLHF。
+- 不在现有 PR #28 里混入 TRAIN-008A 源文件和大量未验证模型结果；只有父分支验收之后再独立审阅该后续 PR。
+
 ## 进度与入口
 
 - A [TRAIN-007A/007B：H4 数据 + QLoRA/LoRA](../../experiments/TRAIN-007A-posttraining-data-qlora.md)
