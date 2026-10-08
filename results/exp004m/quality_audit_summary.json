@@ -1,0 +1,119 @@
+{
+  "experiment": "EXP-004M",
+  "audit": "posthoc_baseline_token_cap_and_syntax",
+  "frozen_runner_sha256": "506ebd7eb08519a44d2988dc76dd855a43c7ccd454059d131e97079375c3879a",
+  "overall": {
+    "tasks": 175,
+    "gate_triggered": 148,
+    "hit_512_token_cap": 41,
+    "token_cap_fraction": 0.2342857142857143,
+    "baseline_ast_parseable": 147,
+    "gated_ast_parseable": 143,
+    "baseline_unparseable": 28,
+    "gated_unparseable": 32,
+    "changed": 119,
+    "unparseable_at_cap": 28,
+    "mean_reference_tokens": 221.88
+  },
+  "groups": {
+    "difficulty": {
+      "easy": {
+        "tasks": 43,
+        "gate_triggered": 26,
+        "hit_512_token_cap": 3,
+        "token_cap_fraction": 0.06976744186046512,
+        "baseline_ast_parseable": 41,
+        "gated_ast_parseable": 41,
+        "baseline_unparseable": 2,
+        "gated_unparseable": 2,
+        "changed": 18,
+        "unparseable_at_cap": 2,
+        "mean_reference_tokens": 119.27906976744185
+      },
+      "hard": {
+        "tasks": 80,
+        "gate_triggered": 77,
+        "hit_512_token_cap": 32,
+        "token_cap_fraction": 0.4,
+        "baseline_ast_parseable": 59,
+        "gated_ast_parseable": 56,
+        "baseline_unparseable": 21,
+        "gated_unparseable": 24,
+        "changed": 60,
+        "unparseable_at_cap": 21,
+        "mean_reference_tokens": 309.4
+      },
+      "medium": {
+        "tasks": 52,
+        "gate_triggered": 45,
+        "hit_512_token_cap": 6,
+        "token_cap_fraction": 0.11538461538461539,
+        "baseline_ast_parseable": 47,
+        "gated_ast_parseable": 46,
+        "baseline_unparseable": 5,
+        "gated_unparseable": 6,
+        "changed": 41,
+        "unparseable_at_cap": 5,
+        "mean_reference_tokens": 172.07692307692307
+      }
+    },
+    "platform": {
+      "atcoder": {
+        "tasks": 112,
+        "gate_triggered": 94,
+        "hit_512_token_cap": 31,
+        "token_cap_fraction": 0.2767857142857143,
+        "baseline_ast_parseable": 94,
+        "gated_ast_parseable": 89,
+        "baseline_unparseable": 18,
+        "gated_unparseable": 23,
+        "changed": 76,
+        "unparseable_at_cap": 18,
+        "mean_reference_tokens": 235.46428571428572
+      },
+      "leetcode": {
+        "tasks": 63,
+        "gate_triggered": 54,
+        "hit_512_token_cap": 10,
+        "token_cap_fraction": 0.15873015873015872,
+        "baseline_ast_parseable": 53,
+        "gated_ast_parseable": 54,
+        "baseline_unparseable": 10,
+        "gated_unparseable": 9,
+        "changed": 43,
+        "unparseable_at_cap": 10,
+        "mean_reference_tokens": 197.73015873015873
+      }
+    },
+    "gated": {
+      "true": {
+        "tasks": 148,
+        "gate_triggered": 148,
+        "hit_512_token_cap": 41,
+        "token_cap_fraction": 0.27702702702702703,
+        "baseline_ast_parseable": 120,
+        "gated_ast_parseable": 116,
+        "baseline_unparseable": 28,
+        "gated_unparseable": 32,
+        "changed": 119,
+        "unparseable_at_cap": 28,
+        "mean_reference_tokens": 245.2027027027027
+      },
+      "false": {
+        "tasks": 27,
+        "gate_triggered": 0,
+        "hit_512_token_cap": 0,
+        "token_cap_fraction": 0,
+        "baseline_ast_parseable": 27,
+        "gated_ast_parseable": 27,
+        "baseline_unparseable": 0,
+        "gated_unparseable": 0,
+        "changed": 0,
+        "unparseable_at_cap": 0,
+        "mean_reference_tokens": 94.03703703703704
+      }
+    }
+  },
+  "no_private_test_data_or_raw_code_exported": true,
+  "interpretation_limit": "Hitting the 512-token cap may indicate truncation, but it is not by itself proof of truncation or the causal reason for failed tests. AST parseability is necessary but not sufficient for correctness; the two task domains use different code formats."
+}
