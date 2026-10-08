@@ -135,10 +135,10 @@ EXP-004J 移除扰动 adapter，在 SFT 自己上执行两阶段推理。90题�
 
 - 数据集 + evaluator 的完整 commit 和 SHA 固定；
 - 12-task 跨两类格式的工程 smoke 已通过，baseline 与 gated-low均1/12，属于流程测试而非性能结论；
-- 175题 GPU 生成已启动，**正式 outcome 未提交之前不声称跨分布成功或失败**；
-- private tests 只在 runner/public gate/second-pass 冻结后执行。
+- 175题官方私有评测已完成：baseline 14/175 (8.00%)、gated-low 15/175 (8.57%)、gated-high 14/175、always-low 15/175；primary +0.57pp，95% CI [0,+1.71]，**未达到预注册显著性标准**；
+- private tests 只在 runner/public gate/second-pass 冻结后执行。竞赛任务 hard 0/80，强烈提示小模型能力地板，但不能确定它解释了全部迁移失败。该负结果要求后续独立模型/任务预注册，而不能直接调此测试集参数。
 
-证据：[EXP-004L](../../experiments/EXP-004L-livecodebench-verifier-gated.md)、[12题 smoke](../../results/exp004l-smoke/summary.json) / [PR #27](https://github.com/YOUessi/CodeRL-Lab/pull/27)。
+证据：[EXP-004L](../../experiments/EXP-004L-livecodebench-verifier-gated.md)、[正式175题结果](../../results/exp004l/summary.json)、[12题 smoke](../../results/exp004l-smoke/summary.json) / [PR #27](https://github.com/YOUessi/CodeRL-Lab/pull/27)。
 
 ## 研究方法与复现索引
 
