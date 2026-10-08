@@ -3,7 +3,7 @@
 ## 研究状态（2026-10-08）
 
 - 阶段：**独立研究问题预注册 + 数据入口准备**。
-- 当前尚未执行任何新的 v5 模型生成、私有测试或成效计算；EXP-004L 的175题不用于调参。
+- GPU 阶段尚未执行新的 v5 生成、私有测试或成效计算；本分支已经实现独立的六臂生成与官方 private scorer，正进行前置工程验证。EXP-004L 的175题不用于调参。
 - 所有正负结果必须保留。
 
 ## 为什么不是继续修改 EXP-004L？
@@ -88,3 +88,27 @@
 - 对照 v6 的原先固定 public-view SHA256 也经同一数据源 commit 重建验证为 `f9fd88d4e1b35b4f6720ca548c2e2d1187ad53b5fb5723ef4999a40b79d7c399`。
 - 机器可读记录 `results/exp004n-data/summary.json`，公开任务与 manifest 保存于 [GitHub Actions Artifact](https://github.com/YOUessi/CodeRL-Lab/actions/runs/37729627752/artifacts/11529138203)，原始私有测试从未解码或导出。
 - 本条记录仅是 GPU 生成前的数据冻结；主检验及 Base/SFT/1024 控制没有执行，不能发表新方法效果结论。
+
+## 2026-10-08 15:45 后：EXP-004N 六臂可执行流水线已实现（未产生结果）
+
+### 主要干预与模型能力对照完整冻结
+
+- 冻结的 SFT 512-token policy：`src/coderl_lab/analysis/livecodebench_verifier_gated.py --experiment-id EXP-004N`，保持 512/128/0.05/0.20/0.25 以及 public-fail Gate，不改变 EXP-004L 默认逻辑。
+- Base512 原始模型与 SFT1024 同一模型家族控制：`src/coderl_lab/analysis/exp004n_capacity_generate.py`；仅使用官方 GenericBase prompt，不读取 private tests。
+- 正式六组条件：Base512、SFT512、gated-low、gated-high、always-low、SFT1024。
+- 官方私有测试 scorer：`src/coderl_lab/analysis/exp004n_formal_eval.py`；先检查 v5 完整167题、public view SHA、模型/Adapter SHA、官方 checkout commit、三份 frozen runner 哈希，再开始第一条 private 解码；checkpoint 仅记录布尔正确性与公开错误类别，不存 private I/O。
+- 主要结果仍仅使用 gated-low - SFT512 的 paired task bootstrap 20,000 / seed42 / lower CI > 0，次要比较分别为 Base512-SFT512 与 SFT1024-SFT512。
+- 运行入口：`scripts/run_exp004n_generate.sh`（GPU，三份 runner 冻结）与 `scripts/eval_exp004n.sh`（冻结后正式私有测试）。
+- 此阶段**没有生成正确率结论**，尤其不能把 v6 的14/175结果迁移为 v5结果。
+
+### 测试失败记录与修复
+
+- 新增 CPU 单测模拟167任务、私有数据未触及、公共门控/输出 Token cap/AST 指标以及配对 Bootstrap。
+- 最初的 synthetic task-grid fixture 缺少 `task_id`，触发 `bootstrap_task_cluster` 对该字段的严格要求，真实 GitHub CI 失败；通过在 scorer 的真实任务详情和 synthetic fixture 中都写入 `task_id` 后修复。
+- 最新 GitHub CI 在修复后通过：对应提交 `31a99cd8a33797ffd002a89dba343c16ac2989a2`，是数据/统计输入契约问题，而不是模型科研结果。
+
+### 实际数据接入与硬件互斥
+
+- EXP-004N 的 v5 public-only 167题、v6 ID/题面 disjointness 与 source/public SHA 早已由 [独立 GitHub Actions](https://github.com/YOUessi/CodeRL-Lab/actions/runs/37729627752) 真正验证。
+- 15:48 已在 Tang 的 B 工作树拉取分支并启动 `python -m coderl_lab.datasets.livecodebench_v5`，只下载 fixed source 和产生 public-only view；网络读取仍在继续，无 private 解码。
+- 同时 A 分支正式 4096条 BF16 LoRA GPU 已在训练，故 B 不启动新的 CUDA 生成；通过独立 CPU/网络路径继续研发，保证不抢单 GPU。
