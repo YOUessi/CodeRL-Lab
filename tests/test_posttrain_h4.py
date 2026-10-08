@@ -72,7 +72,7 @@ def test_dpo_shared_prefix_and_preference_contrast() -> None:
 
 def test_dpo_rejects_incompatible_prefixes() -> None:
     row = dpo_row("Explain LoRA rank.")
-    row["rejected"][0]["content"] = "Explain model quantization."
+    row["rejected"][0] = {"role": "user", "content": "Explain model quantization."}
     with pytest.raises(ValueError, match="prefixes disagree"):
         build_dpo_record(row, "train_prefs")
 
