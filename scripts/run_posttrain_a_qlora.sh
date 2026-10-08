@@ -3,14 +3,15 @@
 # EXP-004L is using the same Tang GPU; only run after it has exited.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-source .venv/bin/activate
+PYTHON="${PYTHON:-.venv/bin/python}"
+test -x "$PYTHON" || { echo "Python interpreter unavailable: $PYTHON" >&2; exit 2; }
 
 DATA="data/generated/posttrain-h4-v1/sft_train.jsonl"
 EVAL="data/generated/posttrain-h4-v1/sft_validation.jsonl"
 MANIFEST="data/generated/posttrain-h4-v1/sft_manifest.json"
 CONFIG="configs/posttrain_a_qlora_qwen3_1.7b.yaml"
 
-python - "$DATA" "$EVAL" "$MANIFEST" "$CONFIG" <<'PY'
+PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" - "$DATA" "$EVAL" "$MANIFEST" "$CONFIG" <<'PY'
 import hashlib, json, pathlib, sys
 import yaml
 train_path, eval_path, manifest_path, config_path = map(pathlib.Path, sys.argv[1:])
@@ -35,14 +36,9 @@ if ! command -v nvidia-smi >/dev/null 2>&1; then
   exit 3
 fi
 # No parallel runs on Tang: benchmark fidelity and OOM risk matter.
-GPU_PIDS="$(nvidia-smi --query-compute-apps=pid --format=csv,noheader 2>/dev/null | grep -E '^[0-9]+' || true)"
-if [ -n "$GPU_PIDS" ]; then
-  echo "Tang GPU is already busy; refusing concurrent QLoRA training:" >&2
-  echo "$GPU_PIDS" >&2
-  exit 4
-fi
+PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -m coderl_lab.train.gpu_preflight --min-free-mib 6000
 
-python - <<'PY'
+PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" - <<'PY'
 import torch
 import bitsandbytes
 if not torch.cuda.is_available():
@@ -51,4 +47,4 @@ print("CUDA:", torch.cuda.get_device_name(0))
 print("bitsandbytes:", getattr(bitsandbytes, "__version__", "unknown"))
 PY
 
-python -m coderl_lab.train.sft --config "$CONFIG" --data "$DATA"
+PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -m coderl_lab.train.sft --config "$CONFIG" --data "$DATA"
