@@ -122,6 +122,7 @@ def run_sft(
     output_dir: Path | None = None,
     max_samples: int | None = None,
     num_train_epochs: float | None = None,
+    max_eval_samples: int | None = None,
 ) -> dict[str, Any]:
     try:
         import peft
@@ -157,6 +158,10 @@ def run_sft(
     evaluation_dataset = None
     if eval_path_raw is not None:
         evaluation_rows = load_sft_rows(Path(str(eval_path_raw)))
+        if max_eval_samples is not None:
+            if max_eval_samples <= 0:
+                raise ValueError("max_eval_samples must be positive")
+            evaluation_rows = evaluation_rows[:max_eval_samples]
         evaluation_prepared = prepare_prompt_completion_rows(
             evaluation_rows, seed=seed
         )
@@ -369,6 +374,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--max-samples", type=int)
     parser.add_argument("--num-train-epochs", type=float)
+    parser.add_argument("--max-eval-samples", type=int)
     return parser.parse_args()
 
 
@@ -380,6 +386,7 @@ def main() -> None:
         output_dir=args.output_dir,
         max_samples=args.max_samples,
         num_train_epochs=args.num_train_epochs,
+        max_eval_samples=args.max_eval_samples,
     )
 
 
