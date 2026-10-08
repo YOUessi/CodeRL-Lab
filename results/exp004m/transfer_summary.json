@@ -1,0 +1,43 @@
+{
+  "experiment": "EXP-004M",
+  "date": "2026-10-08",
+  "type": "posthoc_descriptive_transfer_audit",
+  "frozen_sources": [
+    "results/exp004k/summary.json",
+    "results/exp004l/summary.json"
+  ],
+  "reproducible_workflow": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/37727689371",
+  "stats_not_preregistered_for_cross_dataset_contrast": true,
+  "no_new_model_generation_or_hidden_test_access": true,
+  "k": {
+    "tasks": 500,
+    "baseline_correct": 207,
+    "gate_triggered": 159,
+    "hidden_wrong_selected": 152,
+    "gate_precision": 0.9559748427672956,
+    "rescued": 10,
+    "harmed": 2,
+    "rescue_per_wrong_trigger": 0.06578947368421052,
+    "net_improvement": 0.016
+  },
+  "l": {
+    "tasks": 175,
+    "baseline_correct": 14,
+    "gate_triggered": 148,
+    "hidden_wrong_selected": 148,
+    "gate_precision": 1,
+    "rescued": 1,
+    "harmed": 0,
+    "rescue_per_wrong_trigger": 0.006756756756756757,
+    "net_improvement": 0.005714285714285714,
+    "low_changed_on_gated": 119,
+    "low_intervention_applied_on_gated": 148
+  },
+  "exploratory_unadjusted_fisher_p_two_sided": 0.01039723948290066,
+  "conclusion": "Gate precision does not collapse cross distribution; conditional rescue collapses. This does not establish task difficulty as the causal mechanism. On L, 119/148 gated trajectories changed yet only 1/148 became correct. This is retrospective, not a new prospective evaluation.",
+  "limitations": [
+    "K and L differ in source distribution, prompt type, difficulty and code execution semantics; do not interpret as a randomized trial.",
+    "The comparison and strata are exploratory and exposed to post-selection/multiple comparisons.",
+    "Do not adjust LCB-v6 threshold, bias, prompt or decoding to exploit this result."
+  ]
+}
