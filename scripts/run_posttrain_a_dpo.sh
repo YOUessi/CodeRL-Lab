@@ -21,6 +21,11 @@ if [ -e "$OUTPUT/adapter_model.safetensors" ]; then
   exit 4
 fi
 
+# Never produce an immutable frozen runtime config until GPU reservation passes.
+# A failed preflight should leave this runner safely re-invocable without cleanup.
+PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
+  -m coderl_lab.train.gpu_preflight --min-free-mib 12000
+
 PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
   -m coderl_lab.train.posttrain_a_dpo_freeze \
   --adapter "$ADAPTER" \
@@ -28,10 +33,6 @@ PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
   --train-preferences "$DATA_TRAIN" \
   --validation-preferences "$DATA_EVAL" \
   --output "$EFFECTIVE_CONFIG"
-
-# A full BF16 DPO model uses more GPU memory than NF4 SFT.
-PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
-  -m coderl_lab.train.gpu_preflight --min-free-mib 12000
 
 PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -m coderl_lab.train.dpo \
   --config "$EFFECTIVE_CONFIG" \
