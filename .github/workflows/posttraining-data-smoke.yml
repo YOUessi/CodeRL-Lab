@@ -1,0 +1,61 @@
+name: Track A real HF data smoke
+
+on:
+  push:
+    branches:
+      - feat/posttraining-track-a-data-qlora
+    paths:
+      - .github/workflows/posttraining-data-smoke.yml
+      - src/coderl_lab/datasets/posttrain_h4.py
+  workflow_dispatch:
+
+jobs:
+  real-source-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned data runtime
+        run: python -m pip install -e ".[data,dev]"
+      - name: Real UltraChat SFT source smoke (64 scanned)
+        run: |
+          python -m coderl_lab.datasets.posttrain_h4 \
+            --stage sft \
+            --output-dir data/generated/posttrain-h4-smoke \
+            --train-size 16 --validation-size 8 \
+            --smoke-scan-limit 64
+      - name: Real UltraFeedback DPO source smoke (64 scanned)
+        run: |
+          python -m coderl_lab.datasets.posttrain_h4 \
+            --stage dpo \
+            --output-dir data/generated/posttrain-h4-smoke \
+            --train-size 16 --validation-size 8 \
+            --smoke-scan-limit 64
+      - name: Assert manifest is smoke only and no train/holdout overlap
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for stage in ("sft", "dpo"):
+              manifest = json.loads(Path(f"data/generated/posttrain-h4-smoke/{stage}_manifest.json").read_text())
+              assert manifest["full_scan"] is False
+              assert manifest["scan_limit"] == 64
+              assert manifest["train"]["rows"] == 16
+              assert manifest["validation"]["rows"] == 8
+              assert manifest["prompt_overlap"] == 0
+              assert manifest["test_or_private_examples_in_training"] is False
+              print(stage, "real-source smoke PASS", manifest["dataset_revision"])
+          PY
+      - name: Upload hash-only manifests (no training text)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: posttraining-hf-smoke-manifests
+          path: data/generated/posttrain-h4-smoke/*_manifest.json
+          if-no-files-found: ignore
+          retention-days: 14
