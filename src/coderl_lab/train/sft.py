@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import random
@@ -300,6 +301,17 @@ def run_sft(
 
     trainer.save_model(str(final_output))
     tokenizer.save_pretrained(str(final_output))
+    saved_adapter_path = final_output / "adapter_model.safetensors"
+    if not saved_adapter_path.is_file():
+        raise FileNotFoundError(
+            f"SFT did not save expected LoRA adapter weights: {saved_adapter_path}"
+        )
+    adapter_sha256 = hashlib.sha256(saved_adapter_path.read_bytes()).hexdigest()
+    train_data_sha256 = hashlib.sha256(data_path.read_bytes()).hexdigest()
+    heldout_data_sha256 = (
+        hashlib.sha256(Path(str(eval_path_raw)).read_bytes()).hexdigest()
+        if eval_path_raw is not None else None
+    )
 
     trainable = sum(
         p.numel() for p in trainer.model.parameters() if p.requires_grad
@@ -321,6 +333,9 @@ def run_sft(
             "compute_dtype": dtype_name if quant_mode == "nf4" else None,
         },
         "num_examples": len(dataset),
+        "saved_adapter_sha256": adapter_sha256,
+        "train_data_sha256": train_data_sha256,
+        "heldout_data_sha256": heldout_data_sha256,
         "num_heldout_validation_examples": (
             len(evaluation_dataset) if evaluation_dataset is not None else 0
         ),
