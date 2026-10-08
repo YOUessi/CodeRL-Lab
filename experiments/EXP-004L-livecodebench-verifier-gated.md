@@ -6,9 +6,9 @@
 - 基线：EXP-004K held-out 500-task 成功规则
 - LiveCodeBench 官方 commit：28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24
 - 数据切片：code_generation_lite / v6（175 tasks）
-- 数据接入：实现中
-- 12-task smoke：待运行
-- 正式外部分布：未开始
+- 数据接入：已完成，固定 source revision 和 SHA-256
+- 12-task smoke：已完成（含官方私有测试验证）
+- 正式外部分布：175-task GPU generation 已启动，尚未生成完整结果
 
 ## 研究目的
 
@@ -180,3 +180,30 @@ Hugging Face Parquet 自动转换位于单独 revision，不在 dataset main。
 - private tests 不写入 Git；
 - public-only manifest 可以记录 hash/count，但不包含 private content；
 - 所有失败、修复、数据 hash、官方 commit 写入每日研发日志。
+
+
+## 2026-10-08：分布外 smoke 实测
+
+固定数据源：
+
+- revision：\`0fe84c3912ea0c4d4a78037083943e8f0c4dd505\`；
+- raw \ \`test6.jsonl\` SHA-256：\`bb4c364f71921c4495a6ad15abe1a927350b720009f4933e2e71f8af0f6fd1f5\`；
+- public-only view SHA-256：\`f9fd88d4e1b35b4f6720ca548c2e2d1187ad53b5fb5723ef4999a40b79d7c399\`；
+- 175 unique tasks：AtCoder 112 / LeetCode 63；easy 43 / medium 52 / hard 80；public test cases 463；
+- contest dates：2025-01-04 至 2025-04-06；private 数据未导出、未在选题/门控中读取。
+
+Smoke 采用结果盲、预先固定的 2平台×3难度×各2题，确保测试 stdin/functional 两类执行，而非只用默认排序后的前12题。
+
+- 完整 CPU 回归：149/149 通过；
+- GPU 12/12 完成；eligible 9/12；gate triggered 9/12；public-pass 1/12；
+- runner private_tests_accessed=false；
+- official final scorer 严格在 runner 冻结后首次解码 private tests，成功完成；
+- Baseline / gated-low / gated-high / always-low 全为 1/12；三项与 Baseline 的净差均为0；
+- wrong→correct=0，correct→wrong=0；
+- smoke 正确率不作为 efficacy 证据，不据此改变 threshold、bias、window 或 prompt。
+
+机器可读结果：\`results/exp004l-smoke/summary.json\`。
+
+### 正式175题
+
+已在 Tang 启动正式生成，固定同一代码、模型、数据与解码规则。必须满足 175/175、gate audit 和 runner 完全冻结之后，才能进入 official private evaluation；独立统计器执行 paired task bootstrap 20,000 / seed42 和三种对照。尚无175题正确率可报告。
