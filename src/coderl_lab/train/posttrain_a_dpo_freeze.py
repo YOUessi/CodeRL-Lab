@@ -79,8 +79,17 @@ def freeze_dpo_config(
         raise ValueError("must initialize formal DPO from 4096-example Train-007 SFT")
     if summary.get("saved_adapter_sha256") != adapter_hash:
         raise ValueError("SFT checkpoint SHA does not match SFT training record")
-    if summary.get("quantization", {}).get("mode") not in ("nf4", "none"):
+    sft_precision = summary.get("quantization", {}).get("mode")
+    preference_precision = cfg.get("quantization", {}).get("mode")
+    if sft_precision not in ("nf4", "none"):
         raise ValueError("unrecognized SFT precision pathway")
+    if preference_precision != sft_precision:
+        raise ValueError("SFT / DPO base quantization mismatch")
+    if sft_precision == "nf4" and (
+        bool(cfg["quantization"].get("double_quant", True))
+        != bool(summary["quantization"].get("double_quant", True))
+    ):
+        raise ValueError("SFT / DPO double-quant precision mismatch")
     if str(init_cfg.get("sft_adapter")) != str(adapter_dir):
         raise ValueError("runtime adapter path mismatches preregistered source")
     if init_cfg.get("expected_sha256") != "REQUIRES_VERIFIED_TRAIN007A_CHECKPOINT":
