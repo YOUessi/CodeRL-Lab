@@ -21,3 +21,12 @@
 - Tang 单卡当前正在执行 TRAIN-007B 4096样本 BF16正式训练，B 的EXP-004N单卡GPU任务也已排队。因此 TRAIN-008A **尚未执行真实GPU smoke或完整奖励模型训练**。
 - 此时不存在可报告的 Reward Model heldout accuracy、模型增益或 RLHF/PPO 算法结果。
 - 下一步优先在GPU空闲后做32/16真实训练 smoke，验证量化score head和梯度；再做2048/256正式奖励模型。PPO/RLHF另立实验，不能视为本RM PR已经完成。
+
+
+## 22:02 GitHub Actions 真实冻结数据审计
+
+新增 `.github/workflows/train008a-reward-data-audit.yml`，它在GitHub云端真正取回之前已冻结的 `posttraining-frozen-h4-v1` 数据产物，对全量2048训练/256独立验证运行 reward-model 输入契约检查。首轮 [工作流37789195866](https://github.com/YOUessi/CodeRL-Lab/actions/runs/37789195866) 正式 **success**；单元测试亦全部通过。
+
+保存 `results/train008a-preflight/summary.json`：train SHA=`945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77`、eval SHA=`9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450`、split prompt overlap=0、所有pair chosen/rejected结构合法。
+
+**没有训练任何新的Reward Model，也没有可报告的reward accuracy**；不能把真实数据接入测试等同于GPU训练完成。
