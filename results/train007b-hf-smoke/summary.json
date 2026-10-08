@@ -1,0 +1,29 @@
+{
+  "experiment": "TRAIN-007B-SMOKE",
+  "date": "2026-10-08",
+  "result_status": "real_cuda_smoke_passed_not_formal",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "model_revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "precision": "BF16 LoRA unquantized",
+  "training_examples": 32,
+  "validation_examples": 8,
+  "optimizer_steps": 4,
+  "train_loss": 1.1864025294780731,
+  "validation_losses": [
+    {
+      "step": 4,
+      "eval_loss": 0.9038249850273132
+    }
+  ],
+  "train_runtime_seconds": 10.368,
+  "gpu_peak_allocated_bytes": 4529925120,
+  "gpu_peak_reserved_bytes": 5005901824,
+  "adapter_sha256": "a791a6f16d1205d1ee79472eeb6680975974d660c5a2045e1e601f70d6304ff2",
+  "train_sha256": "f702e61f2695168b448aa13924f3f59684e279a175fe9a7b15cf839aef164602",
+  "validation_sha256": "9542c6863834533d7599a48ce8bf1a4e4cbe802595d02ec7d154be3e29e92c38",
+  "full_training_completed": false,
+  "notes": [
+    "same frozen 32/8 real HF samples, seed, LR and LoRA structure as QLoRA smoke; only quantization differs",
+    "mini-run loss and runtime are descriptive only; formal 4096-example comparison remains pending"
+  ]
+}
