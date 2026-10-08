@@ -157,7 +157,7 @@ def select_subset(
     # finalizer crash on some Python 3.11 / Arrow / datasets combinations.
     iterator = iter(rows)
     try:
-        for index, row in enumerate(rows):
+        for index, row in enumerate(iterator):
             if scan_limit is not None and index >= scan_limit:
                 finished = False
                 break
@@ -179,7 +179,7 @@ def select_subset(
                 heapq.heappush(heap, item)
             elif score < -heap[0][0]:
                 heapq.heapreplace(heap, item)
-        finally:
+    finally:
         close = getattr(iterator, "close", None)
         if callable(close):
             close()
