@@ -153,7 +153,10 @@ def prepare_public_view(
     output_dir: Path,
     source_revision: str,
     limit: int | None = None,
+    fine_grained_version: str = "v6",
 ) -> dict[str, Any]:
+    if fine_grained_version not in {"v5", "v6"}:
+        raise ValueError("unsupported fine-grained release")
     rows = load_upstream_rows(source_path)
     if limit is not None:
         rows = rows[:limit]
@@ -182,7 +185,7 @@ def prepare_public_view(
 
     manifest = {
         "dataset_repo": DATASET_REPO,
-        "fine_grained_version": "v6",
+        "fine_grained_version": fine_grained_version,
         "source_filename": V6_FILENAME,
         "source_revision": source_revision,
         "source_sha256": sha256_file(source_path),
