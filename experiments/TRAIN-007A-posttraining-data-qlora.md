@@ -105,3 +105,19 @@ GitHub Actions：[完整来源数据构建成功](https://github.com/YOUessi/Cod
 两条数据线均为 full_scan=true，prompt SHA256 train/validation overlap=0。机器可读归档：`results/train007a-data/summary.json`。这些是真实筛选的数据，不等于模型已重新训练，也不能凭数据生成就声称性能提高。
 
 下一步单卡真实 QLoRA GPU smoke 使用训练32条 / 保留验证8条，训练步/显存确认后才启动4096条完整 SFT；LoRA 控制与 QLoRA 禁止同时训练。
+
+
+## 2026-10-08：真正跑通两组 32/8 CUDA 训练 smoke
+
+两组使用完全一致的真实 UltraChat 样本哈希，并分别完成训练、验证 loss、adapter 保存：
+
+| arm | 4 step train loss | held-out eval loss | GPU peak reserved |
+|---|---:|---:|---:|
+| NF4 QLoRA | 1.2441 | 0.9588 | 4.05GB |
+| BF16 LoRA | 1.1864 | 0.9038 | 5.01GB |
+
+机器可读结果：`results/train007a-b-hf-smoke/comparison.json`；**不可外推到4096样本的最终准确率/质量**。
+
+同一天 Tang 下载并扫描原始H4数据时曾发生 upstream Parquet HTTP read timeout，经过重试已构建 SFT 4096/256 与 DPO 2048/256。四份实际生成数据的 SHA256 都与 GitHub Actions 完整扫描文件完全一致（`results/train007a-data/summary.json`）。
+
+TRAIN-007A 正式4096-example NF4 QLoRA SFT 已通过 GPU 独占、训练/验证隔离、SHA256 和依赖检查，实际启动了1 epoch训练。此阶段只记录运行开始，尚不提交正式模型效果。
