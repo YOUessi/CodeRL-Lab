@@ -10,6 +10,8 @@ from typing import Any
 
 DATASET_REPO = "livecodebench/code_generation_lite"
 V6_FILENAME = "test6.jsonl"
+V5_FILENAME = "test5.jsonl"
+PINNED_LCB_DATASET_REVISION = "0fe84c3912ea0c4d4a78037083943e8f0c4dd505"
 
 
 @dataclass(frozen=True)
@@ -136,6 +138,21 @@ def download_v6_source() -> tuple[Path, str]:
     return path, revision
 
 
+def download_v5_source() -> tuple[Path, str]:
+    """Pre-registered disjoint v5 release source; does not change v6 pin."""
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError as exc:
+        raise RuntimeError("v5 download requires huggingface_hub") from exc
+    path = Path(hf_hub_download(
+        repo_id=DATASET_REPO,
+        filename=V5_FILENAME,
+        repo_type="dataset",
+        revision=PINNED_LCB_DATASET_REVISION,
+    ))
+    return path, PINNED_LCB_DATASET_REVISION
+
+
 def load_upstream_rows(path: Path) -> list[dict[str, Any]]:
     rows = [
         json.loads(line)
@@ -157,11 +174,25 @@ def prepare_public_view(
 ) -> dict[str, Any]:
     if fine_grained_version not in {"v5", "v6"}:
         raise ValueError("unsupported fine-grained release")
-    rows = load_upstream_rows(source_path)
-    if limit is not None:
-        rows = rows[:limit]
-
-    tasks = [LiveCodeBenchPublicTask.from_upstream_row(row) for row in rows]
+    # Stream rows: v5 raw archives are much larger than their public-only
+    # view. Discard large private_test_cases strings immediately without ever
+    # decoding/executing them or retaining them in memory.
+    tasks: list[LiveCodeBenchPublicTask] = []
+    seen_ids: set[str] = set()
+    with source_path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            if limit is not None and len(tasks) >= limit:
+                break
+            row = json.loads(line)
+            task = LiveCodeBenchPublicTask.from_upstream_row(row)
+            if task.question_id in seen_ids:
+                raise ValueError(f"duplicate LiveCodeBench question_id: {task.question_id}")
+            seen_ids.add(task.question_id)
+            tasks.append(task)
+    if not tasks:
+        raise ValueError("empty LiveCodeBench public view")
 
     output_dir.mkdir(parents=True, exist_ok=True)
     public_path = output_dir / "public_tasks.jsonl"
@@ -186,7 +217,9 @@ def prepare_public_view(
     manifest = {
         "dataset_repo": DATASET_REPO,
         "fine_grained_version": fine_grained_version,
-        "source_filename": V6_FILENAME,
+        "source_filename": (
+            V5_FILENAME if fine_grained_version == "v5" else V6_FILENAME
+        ),
         "source_revision": source_revision,
         "source_sha256": sha256_file(source_path),
         "public_view_path": str(public_path),
@@ -259,13 +292,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--source", type=Path)
     parser.add_argument("--source-revision")
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--fine-grained-version", choices=("v5", "v6"), default="v6")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     if args.source is None:
-        source_path, source_revision = download_v6_source()
+        source_path, source_revision = (
+            download_v5_source() if args.fine_grained_version == "v5"
+            else download_v6_source()
+        )
     else:
         source_path = args.source
         source_revision = args.source_revision or "local-file"
@@ -275,6 +312,7 @@ def main() -> None:
         output_dir=args.output_dir,
         source_revision=source_revision,
         limit=args.limit,
+        fine_grained_version=args.fine_grained_version,
     )
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
 
