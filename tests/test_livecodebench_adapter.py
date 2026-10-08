@@ -133,3 +133,47 @@ def test_generic_base_prompt_uses_official_first_example(tmp_path: Path) -> None
     assert "OFFICIAL_ANSWER" in prompt
     assert "Return x + 1." in prompt
     assert task.starter_code in prompt
+
+
+def test_v5_public_only_stream_preserves_v6_default(tmp_path: Path) -> None:
+    source = tmp_path / "test5.jsonl"
+    first = _row(private_value="NEVER_EXPORT_V5_PRIVATE")
+    second = _row(private_value="SENTINEL_TWO")
+    second["question_id"] = "q2"
+    source.write_text(
+        json.dumps(first) + "\n" + json.dumps(second) + "\n",
+        encoding="utf-8",
+    )
+    v5 = prepare_public_view(
+        source_path=source,
+        output_dir=tmp_path / "v5",
+        source_revision="frozen",
+        fine_grained_version="v5",
+    )
+    assert v5["tasks"] == 2
+    assert v5["source_filename"] == "test5.jsonl"
+    assert v5["fine_grained_version"] == "v5"
+    assert not v5["private_tests_decoded"]
+    assert "NEVER_EXPORT" not in (tmp_path / "v5/public_tasks.jsonl").read_text()
+
+    v6 = prepare_public_view(
+        source_path=source, output_dir=tmp_path / "v6",
+        source_revision="frozen",
+    )
+    assert v6["source_filename"] == "test6.jsonl"
+    assert v6["fine_grained_version"] == "v6"
+    assert v6["public_view_sha256"] == v5["public_view_sha256"]
+
+
+def test_public_only_source_duplicate_question_fails(tmp_path: Path) -> None:
+    source = tmp_path / "dup.jsonl"
+    source.write_text(
+        json.dumps(_row()) + "\n" + json.dumps(_row()) + "\n",
+        encoding="utf-8",
+    )
+    import pytest
+    with pytest.raises(ValueError, match="duplicate LiveCodeBench question_id"):
+        prepare_public_view(
+            source_path=source, output_dir=tmp_path / "out",
+            source_revision="fixture", fine_grained_version="v5",
+        )
