@@ -186,9 +186,9 @@ Hugging Face Parquet 自动转换位于单独 revision，不在 dataset main。
 
 固定数据源：
 
-- revision：\`0fe84c3912ea0c4d4a78037083943e8f0c4dd505\`；
-- raw \ \`test6.jsonl\` SHA-256：\`bb4c364f71921c4495a6ad15abe1a927350b720009f4933e2e71f8af0f6fd1f5\`；
-- public-only view SHA-256：\`f9fd88d4e1b35b4f6720ca548c2e2d1187ad53b5fb5723ef4999a40b79d7c399\`；
+- revision：`0fe84c3912ea0c4d4a78037083943e8f0c4dd505`；
+- raw `test6.jsonl` SHA-256：`bb4c364f71921c4495a6ad15abe1a927350b720009f4933e2e71f8af0f6fd1f5`；
+- public-only view SHA-256：`f9fd88d4e1b35b4f6720ca548c2e2d1187ad53b5fb5723ef4999a40b79d7c399`；
 - 175 unique tasks：AtCoder 112 / LeetCode 63；easy 43 / medium 52 / hard 80；public test cases 463；
 - contest dates：2025-01-04 至 2025-04-06；private 数据未导出、未在选题/门控中读取。
 
@@ -202,7 +202,7 @@ Smoke 采用结果盲、预先固定的 2平台×3难度×各2题，确保测试
 - wrong→correct=0，correct→wrong=0；
 - smoke 正确率不作为 efficacy 证据，不据此改变 threshold、bias、window 或 prompt。
 
-机器可读结果：\`results/exp004l-smoke/summary.json\`。
+机器可读结果：`results/exp004l-smoke/summary.json`。
 
 ### 正式175题
 
