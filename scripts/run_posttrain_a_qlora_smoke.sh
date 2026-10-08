@@ -30,12 +30,7 @@ if ! command -v nvidia-smi >/dev/null 2>&1; then
   echo "CUDA GPU with nvidia-smi required" >&2
   exit 3
 fi
-GPU_PIDS="$(nvidia-smi --query-compute-apps=pid --format=csv,noheader 2>/dev/null | grep -E '^[0-9]+' || true)"
-if [ -n "$GPU_PIDS" ]; then
-  echo "GPU occupied; refusing parallel TRAIN-007A smoke" >&2
-  echo "$GPU_PIDS" >&2
-  exit 4
-fi
+PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -m coderl_lab.train.gpu_preflight --min-free-mib 6000
 
 PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -m coderl_lab.train.sft \
   --config "$CONFIG" \
