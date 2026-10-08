@@ -82,8 +82,8 @@ bash scripts/run_posttrain_a_qlora.sh
 - [x] 数据源 revision、选样/去重/训练保护规则已落代码。
 - [x] 新旧 SFT 格式兼容性测试编写完毕。
 - [x] NF4 QLoRA 与 BF16 LoRA 同数据配置完成。
-- [ ] CI 最新提交全部通过。
-- [ ] 真实 H4 源数据下载与 full-scan manifest 固定。
+- [x] CI 相关 CPU / 真实数据构建流程通过。
+- [x] 真实 H4 源数据下载与 full-scan manifest 固定（GitHub Actions #37725387735）。
 - [ ] 真实 CUDA 上的 QLoRA 2-step smoke。
 - [ ] 两臂完整训练、验证 loss、显存和速度比较。
 - [ ] 从新 SFT checkpoint 开展 2048 对 UltraFeedback DPO 正式训练。
@@ -92,3 +92,16 @@ bash scripts/run_posttrain_a_qlora.sh
 ## 结果解释边界
 
 当前**只有实验设计、实现与 CPU 验证**，还没有新模型训练的质量或算力数字。禁止把既有 MBPP 374题的 LoRA/SFT 成绩冒充新的 UltraChat 4096题 QLoRA 成绩。
+
+## 2026-10-08：真实训练数据的正式快照完成
+
+GitHub Actions：[完整来源数据构建成功](https://github.com/YOUessi/CodeRL-Lab/actions/runs/37725387735)；可下载冻结训练样本的 [Artifact](https://github.com/YOUessi/CodeRL-Lab/actions/runs/37725387735/artifacts/11527757268)（有保留期限）。
+
+| Stage | Train（来源完整扫描量） | Validation（来源扫描量） | Train SHA256 | Validation SHA256 |
+| --- | --- | --- | --- | --- |
+| SFT | 4096 (207865) | 256 (23110) | `f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b` | `a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170` |
+| DPO | 2048 (61135) | 256 (2000) | `945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77` | `9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450` |
+
+两条数据线均为 full_scan=true，prompt SHA256 train/validation overlap=0。机器可读归档：`results/train007a-data/summary.json`。这些是真实筛选的数据，不等于模型已重新训练，也不能凭数据生成就声称性能提高。
+
+下一步单卡真实 QLoRA GPU smoke 使用训练32条 / 保留验证8条，训练步/显存确认后才启动4096条完整 SFT；LoRA 控制与 QLoRA 禁止同时训练。
