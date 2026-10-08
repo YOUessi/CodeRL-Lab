@@ -120,3 +120,15 @@ def test_log_must_contain_finite_heldout_eval_loss():
         last_eval_loss([{"eval_loss": float("nan")}])
     with pytest.raises(ValueError, match="optimizer steps"):
         actual_optimizer_steps([{"loss":0.1}])
+
+
+def test_resumed_run_keeps_eval_comparable_but_not_partial_training_loss(tmp_path: Path):
+    paths = _files(tmp_path)
+    summary_path = paths["bf16_dir"] / "run_summary.json"
+    summary = json.loads(summary_path.read_text())
+    summary["checkpoint_policy"] = {"resumed_from": "checkpoint-64"}
+    summary_path.write_text(json.dumps(summary))
+    comparison = compare_formal_runs(**paths)
+    assert comparison["training_loss_deltas_comparable"] is False
+    assert comparison["differences_bf16_minus_nf4"]["train_loss"] is None
+    assert comparison["differences_bf16_minus_nf4"]["heldout_eval_loss"] == pytest.approx(-0.01)
