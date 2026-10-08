@@ -309,7 +309,9 @@ def train_reward_model(
     gradient_accum = int(setup["gradient_accumulation_steps"])
     if gradient_accum < 1:
         raise ValueError("invalid gradient accumulation")
-    total_steps = math.ceil(len(train) / gradient_accum) * int(setup["epochs"])
+    if int(setup["epochs"]) != 1:
+        raise ValueError("TRAIN-008A first formal protocol supports exactly one epoch")
+    total_steps = math.ceil(len(train) / gradient_accum)
     warmup = math.ceil(total_steps * float(setup["warmup_ratio"]))
     scheduler = get_cosine_schedule_with_warmup(optimizer, warmup, total_steps)
 
@@ -346,6 +348,27 @@ def train_reward_model(
         inputs = {name: tensor.to(model.device) for name, tensor in inputs.items()}
         return model(**inputs).logits.float().reshape(-1)[0]
 
+    baseline_eval_path = root / "initial_heldout_metrics.json"
+    if resume_from_checkpoint is None:
+        if baseline_eval_path.exists():
+            raise FileExistsError("initial reward evaluation already exists")
+        model.eval()
+        with torch.inference_mode():
+            initial_margins = [
+                float((reward_score(render_pair(row)[0]) -
+                       reward_score(render_pair(row)[1])).item())
+                for row in heldout
+            ]
+        baseline_heldout = compute_reward_metrics(initial_margins)
+        baseline_eval_path.write_text(
+            json.dumps(baseline_heldout, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    else:
+        if not baseline_eval_path.is_file():
+            raise FileNotFoundError("frozen initial reward ranking metrics missing on resume")
+        baseline_heldout = json.loads(baseline_eval_path.read_text(encoding="utf-8"))
+    model.train()
     optimizer.zero_grad(set_to_none=True)
     for pos in range(processed, len(train)):
         chosen, rejected = render_pair(train[ids[pos]])
@@ -355,6 +378,8 @@ def train_reward_model(
         loss = F.softplus(-margin)
         regularizer = float(setup.get("reward_l2", 0.0))
         loss = loss + regularizer * 0.5 * (chosen_r.square() + rejected_r.square())
+        if not torch.isfinite(loss.detach()).item():
+            raise FloatingPointError(f"reward loss became nonfinite at sample {pos}")
         (loss / gradient_accum).backward()
         total_loss += float(loss.detach().item())
         if (pos + 1) % gradient_accum != 0 and pos != len(train) - 1:
@@ -405,7 +430,11 @@ def train_reward_model(
         "train_pairs": len(train), "heldout_pairs": len(heldout),
         "optimizer_steps": step, "total_steps_expected": total_steps,
         "mean_training_loss": total_loss / len(train),
+        "initial_heldout": baseline_heldout,
         "heldout": eval_metrics,
+        "heldout_preference_accuracy_delta": (
+            eval_metrics["preference_accuracy"] - baseline_heldout["preference_accuracy"]
+        ),
         "resumed_from": str(resume_from_checkpoint) if resume_from_checkpoint is not None else None,
         "elapsed_seconds_wall": elapsed,
         "gpu": {
