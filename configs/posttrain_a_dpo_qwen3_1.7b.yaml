@@ -8,6 +8,10 @@ model:
   revision: ea980cb0a6c2ae4b936e82123acc929f1cec04c1
   dtype: bfloat16
 
+quantization:
+  mode: nf4
+  double_quant: true
+
 initial_policy:
   sft_adapter: artifacts/posttrain-a/train007a-qlora-ultrachat
   # Must be replaced from the *actual* newly trained adapter by a validated
