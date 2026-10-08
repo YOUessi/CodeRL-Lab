@@ -14,6 +14,7 @@ def fixture_bundle(tmp_path: Path) -> dict[str, Path]:
     cfg = {
         "experiment": {"id": "TRAIN-007C"},
         "model": {"name_or_path": "Qwen/Qwen3-1.7B-Base", "revision": "frozen_rev"},
+        "quantization": {"mode": "nf4", "double_quant": True},
         "initial_policy": {
             "sft_adapter": str(tmp_path / "train007a"),
             "expected_sha256": "REQUIRES_VERIFIED_TRAIN007A_CHECKPOINT",
@@ -37,7 +38,7 @@ def fixture_bundle(tmp_path: Path) -> dict[str, Path]:
         "model": "Qwen/Qwen3-1.7B-Base",
         "requested_model_revision": "frozen_rev",
         "num_examples": 2,
-        "quantization": {"mode": "nf4"},
+        "quantization": {"mode": "nf4", "double_quant": True},
         "saved_adapter_sha256": digest,
     }), encoding="utf-8")
 
@@ -126,3 +127,22 @@ def test_freeze_requires_real_4096_sample_sft_by_default(tmp_path: Path) -> None
     paths = fixture_bundle(tmp_path)
     with pytest.raises(ValueError, match="4096-example"):
         freeze_dpo_config(**paths)
+
+
+def test_freeze_rejects_dpo_precision_drift(tmp_path: Path) -> None:
+    paths = fixture_bundle(tmp_path)
+    cfg = yaml.safe_load(paths["template_path"].read_text())
+    cfg["quantization"]["mode"] = "none"
+    paths["template_path"].write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    with pytest.raises(ValueError, match="quantization mismatch"):
+        run_freeze(paths)
+    assert not paths["output_path"].exists()
+
+
+def test_freeze_rejects_nf4_double_quant_drift(tmp_path: Path) -> None:
+    paths = fixture_bundle(tmp_path)
+    cfg = yaml.safe_load(paths["template_path"].read_text())
+    cfg["quantization"]["double_quant"] = False
+    paths["template_path"].write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    with pytest.raises(ValueError, match="double-quant precision mismatch"):
+        run_freeze(paths)
