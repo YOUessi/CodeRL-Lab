@@ -178,13 +178,40 @@ def run_sft(
         "float32": torch.float32,
     }[dtype_name]
 
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        revision=revision,
-        dtype=dtype,
-        trust_remote_code=True,
-    )
+    # Track A: optional NF4 QLoRA; default behavior remains ordinary bf16 LoRA
+    # so all established EXP-002/006A baselines remain unchanged.
+    quant_cfg = dict(config.get("quantization", {}))
+    quant_mode = str(quant_cfg.get("mode", "none"))
+    if quant_mode not in {"none", "nf4"}:
+        raise ValueError(f"unsupported quantization mode: {quant_mode}")
+    model_kwargs: dict[str, Any] = {
+        "revision": revision,
+        "dtype": dtype,
+        "trust_remote_code": True,
+    }
+    if quant_mode == "nf4":
+        if not torch.cuda.is_available():
+            raise RuntimeError("NF4 QLoRA requires a CUDA GPU")
+        try:
+            from peft import prepare_model_for_kbit_training
+            from transformers import BitsAndBytesConfig
+            import bitsandbytes
+        except ImportError as exc:
+            raise RuntimeError("NF4 QLoRA requires pip install bitsandbytes") from exc
+        model_kwargs["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=bool(quant_cfg.get("double_quant", True)),
+            bnb_4bit_compute_dtype=dtype,
+        )
+        model_kwargs["device_map"] = {"": torch.cuda.current_device()}
+    model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
     model.config.use_cache = False
+    if quant_mode == "nf4":
+        model = prepare_model_for_kbit_training(
+            model,
+            use_gradient_checkpointing=bool(train_cfg.get("gradient_checkpointing", True)),
+        )
 
     peft_config = LoraConfig(
         r=int(lora_cfg["r"]),
@@ -262,6 +289,12 @@ def run_sft(
         "requested_model_revision": revision,
         "resolved_model_revision": getattr(model.config, "_commit_hash", None),
         "dtype": dtype_name,
+        "quantization": {
+            "mode": quant_mode,
+            "double_quant": bool(quant_cfg.get("double_quant", True))
+            if quant_mode == "nf4" else None,
+            "compute_dtype": dtype_name if quant_mode == "nf4" else None,
+        },
         "num_examples": len(dataset),
         "num_train_epochs": epochs,
         "warmup_ratio_requested": warmup_ratio,
