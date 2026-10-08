@@ -135,6 +135,7 @@ def test_all_six_arms_and_bootstrap_use_same_task_grid() -> None:
     rows = []
     for i in range(7):
         x = {
+            "task_id": f"fixture_task_{i:03d}",
             "platform": "atcoder" if i < 4 else "leetcode",
             "difficulty": "easy" if i < 3 else "hard",
             "sft512_public_all_pass": i == 0,
