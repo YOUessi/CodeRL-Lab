@@ -112,3 +112,30 @@
 - EXP-004N 的 v5 public-only 167题、v6 ID/题面 disjointness 与 source/public SHA 早已由 [独立 GitHub Actions](https://github.com/YOUessi/CodeRL-Lab/actions/runs/37729627752) 真正验证。
 - 15:48 已在 Tang 的 B 工作树拉取分支并启动 `python -m coderl_lab.datasets.livecodebench_v5`，只下载 fixed source 和产生 public-only view；网络读取仍在继续，无 private 解码。
 - 同时 A 分支正式 4096条 BF16 LoRA GPU 已在训练，故 B 不启动新的 CUDA 生成；通过独立 CPU/网络路径继续研发，保证不抢单 GPU。
+
+
+## 2026-10-08 15:58：v5/v6 可观察任务分布差异（模型结果盲）
+
+先固定并核验 v5 public SHA `e695ba9fa2ce35abc8db2f3360bf711930746cd55843890177ecd518c0a4c98d` 和 v6 public SHA `f9fd88d4e1b35b4f6720ca548c2e2d1187ad53b5fb5723ef4999a40b79d7c399`。随后使用只含公开题面/元数据的程序 `exp004n_public_shift.py` 真实对比全部题，且所有指标**不依赖模型输出或 private tests**：
+
+| 类别 | v5 (167) | v6 (175) |
+| --- | ---: | ---: |
+| Easy | 41 | 43 |
+| Medium | 52 | 52 |
+| Hard | 74 | 80 |
+| AtCoder | 105 | 112 |
+| LeetCode | 62 | 63 |
+| Public tests | 441 | 463 |
+| 平均题面字符数 | 1476.22 | 1404.81 |
+
+Hard 比例 v6 比 v5 仅高约1.40个百分点。其余 difficulty/platform 构成也接近。
+
+**有效结论：**难度/平台的粗粒度配比没有发生剧烈改变，不支持仅用“v6 的 Hard 比例大幅升高”解释迁移失效。但这个表格不能证明算法难度相同，也不能预测 Base/SFT 的正确率。实际能力地板、答案完整性和推理门控仍需冻结生成及 hidden 测试才能检验。
+
+机器可读：`results/exp004n-pretest-shift/summary.json`。原始任务未被选择性排除，也没有因为此诊断调整任何生成条件。
+
+## GPU 独占的正式运行入口
+
+- `scripts/run_exp004n_generate.sh` 固定全部167题，先SFT512/gated-low/high/always-low，再Base512及SFT1024；任何已存在的 frozen runner 会阻止覆盖。
+- `scripts/eval_exp004n.sh` 对全部三份 frozen runner 完成 SHA、模型/Adapter、官方版本和 gate 复核后，才读取 `test5.jsonl` 私有测试并执行官方 Docker。后验正确率、paired Bootstrap 20,000/seed42 和 Gate/资源错误审计只在这一阶段出现。
+- `scripts/queue_exp004n_after_train.sh` 是可选的 Tang 本机 GPU 独占串行启动器：必须验证 A 的完整 BF16 LoRA Adapter 确实保存、B 源代码 SHA 未改变以及无外部 GPU compute 进程。它不是统计结论，也不是 ChatGPT 异步通知服务。
