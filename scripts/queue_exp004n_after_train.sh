@@ -12,15 +12,18 @@ case "$TRAIN_PID" in
 esac
 
 ROOT="${ROOT:-artifacts/exp004n}"
+# Never reuse the prior, explicitly user-cancelled 16:12 queue state.
+QUEUE_STATE_FILE="${QUEUE_STATE_FILE:-$ROOT/queue_after_bf16_resumable.json}"
+A_DIR="${A_DIR:-/home/you/projects/CodeRL-Lab-track-a/artifacts/posttrain-a/train007b-lora-resumable}"
 mkdir -p "$ROOT"
-if [ -e "$ROOT/queue_active.json" ]; then
-  echo "Queue already active, refusing second unattended GPU job" >&2
+if [ -e "$QUEUE_STATE_FILE" ]; then
+  echo "Resume queue state already exists, refusing duplicate GPU job" >&2
   exit 3
 fi
 
 PYTHON="${PYTHON:-.venv/bin/python}"
 test -x "$PYTHON" || { echo "missing Python: $PYTHON" >&2; exit 3; }
-python3 - "$ROOT/queue_active.json" "$TRAIN_PID" "$EXPECTED_SOURCE_SHA" <<'PY'
+python3 - "$QUEUE_STATE_FILE" "$TRAIN_PID" "$EXPECTED_SOURCE_SHA" <<'PY'
 import json,sys
 from pathlib import Path
 Path(sys.argv[1]).write_text(json.dumps({
@@ -47,7 +50,6 @@ test -f "$ROOT/data/manifest.json"
 test -f "$ROOT/data/public_tasks.jsonl"
 test "$(git -C .external/livecodebench rev-parse HEAD)" = "28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24"
 
-A_DIR="/home/you/projects/CodeRL-Lab-track-a/artifacts/posttrain-a/train007b-lora-ultrachat"
 "$PYTHON" - "$A_DIR" <<'PY'
 import hashlib,json,sys
 from pathlib import Path
@@ -57,7 +59,12 @@ assert s["num_examples"]==4096 and s["num_heldout_validation_examples"]==256
 assert s["quantization"]["mode"]=="none"
 assert s["cuda_available"] is True
 assert s["saved_adapter_sha256"] == hashlib.sha256((p/"adapter_model.safetensors").read_bytes()).hexdigest()
-print("A BF16 full-data training completed and checkpoint verified",flush=True)
+assert s["train_data_sha256"]=="f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b"
+assert s["heldout_data_sha256"]=="a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170"
+assert s["checkpoint_policy"]["save_strategy"]=="steps"
+assert s["checkpoint_policy"]["save_steps"]==32
+assert s["metrics"]["train_loss"] > 0
+print("A BF16 full-data training completed, SHA-pinned and checkpoint policy verified",flush=True)
 PY
 PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
   -m coderl_lab.train.gpu_preflight --min-free-mib 12000
@@ -78,7 +85,7 @@ PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" \
 ) 9>/tmp/coderl_lab_gpu_experiment_lock
 
 test -s "$ROOT/final_evaluation/summary.json"
-"$PYTHON" - "$ROOT/queue_active.json" <<'PY'
+"$PYTHON" - "$QUEUE_STATE_FILE" <<'PY'
 import json,sys
 from pathlib import Path
 p=Path(sys.argv[1])
