@@ -8,9 +8,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from huggingface_hub import HfApi, hf_hub_download
-
-
 DATASET_REPO = "livecodebench/code_generation_lite"
 V6_FILENAME = "test6.jsonl"
 
@@ -117,6 +114,14 @@ def sha256_file(path: Path) -> str:
 
 
 def download_v6_source() -> tuple[Path, str]:
+    try:
+        from huggingface_hub import HfApi, hf_hub_download
+    except ImportError as exc:
+        raise RuntimeError(
+            "LiveCodeBench data download requires huggingface_hub; "
+            "install the project data/model extras before preparing v6"
+        ) from exc
+
     api = HfApi()
     info = api.dataset_info(DATASET_REPO, revision="main")
     revision = str(info.sha)
