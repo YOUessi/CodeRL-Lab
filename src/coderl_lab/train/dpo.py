@@ -203,13 +203,44 @@ def run_dpo(
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    base_model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        revision=revision,
-        dtype=dtype,
-        trust_remote_code=True,
-    )
+    # Track A's preference policy must use the same base precision pathway as
+    # the checkpoint produced by TRAIN-007A. Legacy EXP-004B stays BF16.
+    quant_cfg = dict(cfg.get("quantization", {}))
+    quant_mode = str(quant_cfg.get("mode", "none"))
+    if quant_mode not in {"none", "nf4"}:
+        raise ValueError(f"unsupported DPO quantization mode: {quant_mode}")
+    base_kwargs: dict[str, Any] = {
+        "revision": revision,
+        "dtype": dtype,
+        "trust_remote_code": True,
+    }
+    if quant_mode == "nf4":
+        if not torch.cuda.is_available():
+            raise RuntimeError("NF4 DPO requires a CUDA GPU")
+        try:
+            import bitsandbytes  # noqa: F401
+            from peft import prepare_model_for_kbit_training
+            from transformers import BitsAndBytesConfig
+        except ImportError as exc:
+            raise RuntimeError(
+                "NF4 DPO requires a bitsandbytes installation"
+            ) from exc
+        base_kwargs["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=bool(quant_cfg.get("double_quant", True)),
+            bnb_4bit_compute_dtype=dtype,
+        )
+        base_kwargs["device_map"] = {"": torch.cuda.current_device()}
+    base_model = AutoModelForCausalLM.from_pretrained(model_name, **base_kwargs)
     base_model.config.use_cache = False
+    if quant_mode == "nf4":
+        base_model = prepare_model_for_kbit_training(
+            base_model,
+            use_gradient_checkpointing=bool(
+                train_cfg.get("gradient_checkpointing", True)
+            ),
+        )
 
     model = PeftModel.from_pretrained(
         base_model,
@@ -311,6 +342,12 @@ def run_dpo(
         "output_dir": str(final_output),
         "model": model_name,
         "requested_model_revision": revision,
+        "quantization": {
+            "mode": quant_mode,
+            "double_quant": bool(quant_cfg.get("double_quant", True))
+            if quant_mode == "nf4" else None,
+            "compute_dtype": dtype_name if quant_mode == "nf4" else None,
+        },
         "num_pairs": len(dataset),
         "num_heldout_preference_pairs": (
             len(evaluation_dataset) if evaluation_dataset is not None else 0
