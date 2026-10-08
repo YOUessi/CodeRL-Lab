@@ -1,0 +1,29 @@
+{
+  "experiment": "EXP-004N",
+  "stage": "frozen_public_only_independent_evaluation_set",
+  "date": "2026-10-08",
+  "status": "data_prepared_and_checked_no_model_evaluation_yet",
+  "source_repo": "livecodebench/code_generation_lite",
+  "fine_grained_slice": "v5 only",
+  "source_file": "test5.jsonl",
+  "fixed_revision": "0fe84c3912ea0c4d4a78037083943e8f0c4dd505",
+  "source_sha256": "7f77571c2a6df0c2a72a3277650309f67e01e0008e18117e624633df53f81214",
+  "public_view_sha256": "e695ba9fa2ce35abc8db2f3360bf711930746cd55843890177ecd518c0a4c98d",
+  "disjoint_public_view_sha256": "e695ba9fa2ce35abc8db2f3360bf711930746cd55843890177ecd518c0a4c98d",
+  "v5_tasks": 167,
+  "v6_previous_tasks": 175,
+  "overlap_ids": 0,
+  "overlap_normalized_problem_and_starter_text": 0,
+  "excluded_after_predetermined_filter": 0,
+  "private_cases_exported": false,
+  "private_cases_decoded": false,
+  "v6_control": {
+    "source_sha256": "bb4c364f71921c4495a6ad15abe1a927350b720009f4933e2e71f8af0f6fd1f5",
+    "public_view_sha256": "f9fd88d4e1b35b4f6720ca548c2e2d1187ad53b5fb5723ef4999a40b79d7c399"
+  },
+  "provenance": {
+    "run": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/37729627752",
+    "artifact": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/37729627752/artifacts/11529138203"
+  },
+  "interpretation_limit": "v5 is older than v6 and has not yet undergone the preregistered model-generating experimental arms; public-only disjointness is not model generalization evidence."
+}
