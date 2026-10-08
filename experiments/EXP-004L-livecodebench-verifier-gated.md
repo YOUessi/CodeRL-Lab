@@ -207,3 +207,27 @@ Smoke 采用结果盲、预先固定的 2平台×3难度×各2题，确保测试
 ### 正式175题
 
 已在 Tang 启动正式生成，固定同一代码、模型、数据与解码规则。必须满足 175/175、gate audit 和 runner 完全冻结之后，才能进入 official private evaluation；独立统计器执行 paired task bootstrap 20,000 / seed42 和三种对照。尚无175题正确率可报告。
+
+
+## 2026-10-08：175题完成生成，官方判分 137 资源限制修复
+
+### 正式生成冻结
+
+- 175/175 生成完成；eligible=159；actual gate triggered=148；baseline public-pass=17；
+- `runner.json` 记录 `private_tests_accessed=false`；
+- 已复核 Gate 语义与 public-pass 保护，之后才启动 private official evaluator；
+- 固定 model、greedy、window128、low0.05、high0.20、bias=-0.25、memory1g、timeout6s，参数没有因结果而改变。
+
+### 正式评测中断，不得冒充负样本
+
+- private official evaluator 在第25题之后的 `abc391_f/gated_low_destabilize` 遇到原先被归为 `runner-error` 的 Docker 进程退出 `137`；
+- 原因调查：重跑**完全相同的冻结代码、任务和1g Docker配置**，baseline可以由官方 checker 返回普通的错误判定，gated-low 则在约2.7s 发生无 stdout 的 exit 137；
+- exit 137 = SIGKILL，结合固定 `--memory 1g` 资源限制，这是候选代码特定的**资源限制违例**，不能把它作为官方评测服务整体失效，更不能因此增加 hidden evaluation 的内存上限；
+- 修复仅作用于评测器错误分类：将原先 exit137 的笼统 `runner-error` 显式记录为 `candidate-resource-limit`，作为错误代码（passed=false）统计，其他无输出的容器错误继续保持基础设施故障并中断；
+- 冻结 runner hash、已评测缓存、对照参数、数据、私有测试及官方 checker commit 都不变；
+- 扩充 CPU 单元测试：exit137 → candidate resource-limit，exit125 → 真实 Docker 启动错误；增强 checkpoint 记录与每个 arm 的资源限制计数；
+- 修复提交：`2a382f5cb2caff267d76f8c1a0367b7c8a56ad4d` / `46cf6d4db97a2e26402b14773481efbda320bf64`。
+
+### 下一步
+
+保持已有 25题后续 checkpoint，不删除已经完成的正式私有测试结果。从原始 `runner.json`（175题已冻结）恢复官方 evaluator，完成 175题后再统计主要配对 Bootstrap 和对照；**尚未得出175题正式准确率**。
