@@ -8,7 +8,7 @@
 - 数据切片：code_generation_lite / v6（175 tasks）
 - 数据接入：已完成，固定 source revision 和 SHA-256
 - 12-task smoke：已完成（含官方私有测试验证）
-- 正式外部分布：175-task GPU generation 已启动，尚未生成完整结果
+- 正式外部分布：175题官方 private evaluation 完成，primary 不显著（+0.57 pp，CI 下界=0）
 
 ## 研究目的
 
@@ -231,3 +231,45 @@ Smoke 采用结果盲、预先固定的 2平台×3难度×各2题，确保测试
 ### 下一步
 
 保持已有 25题后续 checkpoint，不删除已经完成的正式私有测试结果。从原始 `runner.json`（175题已冻结）恢复官方 evaluator，完成 175题后再统计主要配对 Bootstrap 和对照；**尚未得出175题正式准确率**。
+
+## 2026-10-08：LiveCodeBench v6 175-task 正式结果
+
+### 数据、方法与边界
+
+- 175 / 175 题全部完成冻结生成与官方私有测试（AtCoder 112，LeetCode 63）；
+- no-private-before-freeze=true，固定官方 commit `28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24`、数据源版本和输入 SHA；
+- 175题里 eligible 159、actual public-fail + low-margin Gate 触发148、baseline public-pass17；
+- 全程固定 greedy、max tokens512、window128、low0.05、high0.20、bias-0.25、Docker memory1g / timeout6s；
+- paired task bootstrap 20,000，seed42；
+- Docker returncode 137 经同任务同资源复现，被显式归为 candidate resource-limit，不改变内存上限与模型输出；各 arm 均1例。
+
+### 正式正确率
+
+| Arm | Correct / 175 | Accuracy | Delta vs SFT |
+| --- | ---: | ---: | ---: |
+| Baseline SFT greedy | 14 | 8.00% | — |
+| Gated-low | 15 | 8.57% | +0.57pp |
+| Gated-high control | 14 | 8.00% | 0 |
+| Always-low without gate | 15 | 8.57% | +0.57pp |
+
+Primary (gated-low - baseline)：+1 / 175 = +0.5714pp，95% paired-bootstrap CI = **[0, +1.7143] pp**，20,000 iterations，seed42；预注册标准 lower bound>0 **未通过**。
+
+错误转换：wrong→correct=1、correct→wrong=0；gated-high 完全无变化；always-low 取得与 gated-low 相同的净收益，因此**外部分布没有复制出 Gate 必要性优势**。
+
+按平台/难度（仅描述，非预注册主要结果）：
+
+- AtCoder：12/112 → 13/112；LeetCode：2/63 → 2/63；
+- Easy：11/43 → 12/43；Medium：3/52 → 3/52；Hard：0/80 → 0/80。
+
+后验 gate audit：被选中148题均为 baseline hidden wrong，precision=100%，recall=148/161=91.93%；当 baseline 在 175题上仅8%正确时，不能把 gate precision 很高误解为 decoding intervention 一定有效。
+
+### 研究结论
+
+EXP-004J/K 的 MBPP 500题独立同家族复制成功，不等于跨任务分布有效。本次 LCB v6：
+
+1. 点估计 +0.57pp，但只有一题 rescue，95% CI 包含0，不满足预注册成功标准。
+2. high-margin control 仍未见收益，但 ungated always-low 也达到同一提升，没有复现 K 中 Gate 必要性证据。
+3. 当前1.7B Base+MBPP SFT 在竞赛式任务上基线仅8%，Hard为0/80；这提示明显的任务难度/能力地板效应，但**未经额外对照不能断言这是唯一原因**。
+4. 不因负结果调整这175题上的阈值、prompt、bias 或 max_new_tokens；在后续新模型/任务实验重新预注册前，先保持此负结果和全部数据版本。
+
+机器可读正式结果：[results/exp004l/summary.json](../results/exp004l/summary.json)；分支 PR #27 保持 Draft，待科研结论审阅。
