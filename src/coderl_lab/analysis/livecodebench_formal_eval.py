@@ -291,6 +291,7 @@ def run_final(
 
     checkpoint = output_dir / "private_evaluation_checkpoint.jsonl"
     cache: dict[tuple[str, str], bool] = {}
+    cache_failure_class: dict[tuple[str, str], str] = {}
     if checkpoint.exists():
         for line in checkpoint.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -300,6 +301,7 @@ def run_final(
             if key in cache and cache[key] != bool(item["passed"]):
                 raise ValueError("conflicting checkpoint result")
             cache[key] = bool(item["passed"])
+            cache_failure_class[key] = str(item.get("failure_class", "none"))
 
     evaluator = OfficialLiveCodeBenchExecutor(
         livecodebench_repo=lcb_repo, timeout_seconds=timeout, memory_limit=memory,
@@ -346,11 +348,17 @@ def run_final(
                 "code_sha256": key[1],
                 "passed": outcome.passed,
                 "number_of_results": len(outcome.results),
+                "failure_class": (
+                    "candidate-resource-limit"
+                    if outcome.results and outcome.results[0] == "candidate-resource-limit"
+                    else "none"
+                ),
             }
             # Never persist the official error metadata: it may contain private I/O.
             with checkpoint.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(record, ensure_ascii=False) + "\n")
             cache[key] = outcome.passed
+            cache_failure_class[key] = record["failure_class"]
         print(f"EXP-004L final: {len(found)}/{len(required)} tasks", flush=True)
     if found != required:
         raise ValueError(f"source is missing {sorted(required - found)}")
@@ -369,7 +377,11 @@ def run_final(
         }
         for condition in CONDITIONS:
             code = str(task[condition]["code"])
-            row[f"{condition}_correct"] = cache[(qid, _sha_text(code))]
+            key = (qid, _sha_text(code))
+            row[f"{condition}_correct"] = cache[key]
+            row[f"{condition}_resource_limited"] = (
+                cache_failure_class.get(key, "none") == "candidate-resource-limit"
+            )
             row[f"{condition}_changed"] = (
                 str(task[condition]["raw_completion"])
                 != str(task["baseline"]["raw_completion"])
@@ -379,6 +391,13 @@ def run_final(
     result = summarize(detail_rows, iterations=iterations, seed=seed)
     result["frozen_inputs"] = frozen
     result["private_tests_accessed_only_after_freeze"] = True
+    # Purely diagnostic post-hoc accounting, not a change of metric/gate.
+    result["candidate_resource_limit_counts"] = {
+        condition: sum(
+            bool(row[f"{condition}_resource_limited"]) for row in detail_rows
+        )
+        for condition in CONDITIONS
+    }
 
     with (output_dir / "details.jsonl").open("w", encoding="utf-8") as handle:
         for row in detail_rows:
