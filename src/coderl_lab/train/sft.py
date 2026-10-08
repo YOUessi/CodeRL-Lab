@@ -21,7 +21,13 @@ def load_sft_rows(path: Path) -> list[dict[str, Any]]:
             if not line:
                 continue
             row = json.loads(line)
-            required = ("task_id", "prompt", "starter_code", "response")
+            fmt = str(row.get("format", "code"))
+            required = (
+                ("task_id", "prompt", "starter_code", "response")
+                if fmt == "code" else ("task_id", "prompt", "response")
+            )
+            if fmt not in {"code", "raw"}:
+                raise ValueError(f"SFT line {line_no} has unsupported format: {fmt}")
             missing = [key for key in required if key not in row]
             if missing:
                 raise ValueError(
@@ -44,16 +50,25 @@ def prepare_prompt_completion_rows(
     if max_samples is not None:
         shuffled = shuffled[:max_samples]
 
-    return [
-        {
-            "prompt": build_prompt(
+    formatted: list[dict[str, str]] = []
+    for row in shuffled:
+        sample_format = str(row.get("format", "code"))
+        if sample_format == "raw":
+            prompt = str(row["prompt"])
+            if not prompt.strip():
+                raise ValueError("raw SFT prompt cannot be empty")
+        elif sample_format == "code":
+            prompt = build_prompt(
                 str(row["prompt"]),
-                str(row["starter_code"]),
-            ),
+                str(row.get("starter_code", "")),
+            )
+        else:
+            raise ValueError(f"unsupported SFT prompt format: {sample_format}")
+        formatted.append({
+            "prompt": prompt,
             "completion": str(row["response"]).rstrip() + "\n",
-        }
-        for row in shuffled
-    ]
+        })
+    return formatted
 
 
 def load_config(path: Path) -> dict[str, Any]:
