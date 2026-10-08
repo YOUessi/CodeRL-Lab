@@ -305,6 +305,7 @@ def run_final(
         l = long["per_task"][qid]
         codes = code_map(qid, sft, base, long)
         x: dict[str, Any] = {
+            "task_id": qid,
             "qid": qid,
             "platform": row["platform"],
             "difficulty": row["difficulty"],
