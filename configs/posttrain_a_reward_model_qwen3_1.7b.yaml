@@ -38,6 +38,8 @@ training:
   weight_decay: 0.0
   warmup_ratio: 0.03
   max_length: 768
+  max_prompt_tokens: 512
+  min_response_tokens: 128
   gradient_checkpointing: true
   reward_l2: 0.001
   max_grad_norm: 1.0
