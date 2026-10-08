@@ -84,14 +84,14 @@ bash scripts/run_posttrain_a_qlora.sh
 - [x] NF4 QLoRA 与 BF16 LoRA 同数据配置完成。
 - [x] CI 相关 CPU / 真实数据构建流程通过。
 - [x] 真实 H4 源数据下载与 full-scan manifest 固定（GitHub Actions #37725387735）。
-- [ ] 真实 CUDA 上的 QLoRA 2-step smoke。
-- [ ] 两臂完整训练、验证 loss、显存和速度比较。
+- [x] 真实 CUDA 上的 QLoRA 2-step smoke。
+- [ ] 两臂完整训练、验证 loss、显存和速度比较（007A 已完成，007B 已启动）。
 - [ ] 从新 SFT checkpoint 开展 2048 对 UltraFeedback DPO 正式训练。
 - [ ] 继续扩展奖励模型、PPO/RLHF；这些不是本实验已完成的内容。
 
 ## 结果解释边界
 
-当前**只有实验设计、实现与 CPU 验证**，还没有新模型训练的质量或算力数字。禁止把既有 MBPP 374题的 LoRA/SFT 成绩冒充新的 UltraChat 4096题 QLoRA 成绩。
+2026-10-08 15:40 更新：TRAIN-007A 4096 输入样本的真实 GPU SFT 已结束，数据、Adapter、训练损失和验证损失都有审计结果；TRAIN-007B 正式 BF16 对照仍在运行，不能提前宣称其质量或完整比较结论。禁止把既有 MBPP 374题的 LoRA/SFT 成绩冒充新的 UltraChat 4096题 QLoRA 成绩。
 
 ## 2026-10-08：真实训练数据的正式快照完成
 
@@ -121,3 +121,23 @@ GitHub Actions：[完整来源数据构建成功](https://github.com/YOUessi/Cod
 同一天 Tang 下载并扫描原始H4数据时曾发生 upstream Parquet HTTP read timeout，经过重试已构建 SFT 4096/256 与 DPO 2048/256。四份实际生成数据的 SHA256 都与 GitHub Actions 完整扫描文件完全一致（`results/train007a-data/summary.json`）。
 
 TRAIN-007A 正式4096-example NF4 QLoRA SFT 已通过 GPU 独占、训练/验证隔离、SHA256 和依赖检查，实际启动了1 epoch训练。此阶段只记录运行开始，尚不提交正式模型效果。
+
+## 2026-10-08 TRAIN-007A GPU 正式结果（已冻结）
+
+| 项目 | 实测 |
+| --- | --- |
+| 基础模型 | Qwen3-1.7B-Base |
+| 量化 | NF4 double quant / BF16 计算 |
+| SFT 数据 | UltraChat 固定4096条输入 |
+| 验证数据 | test_sft 固定256条 |
+| 更新 | 1 epoch，252 optimizer steps |
+| Train loss | **1.1474928844** |
+| Heldout eval loss | **1.1399177313** |
+| Wall time | **2834.33 秒** |
+| GPU memory peak reserved | **3,938,451,456 bytes** |
+| SFT adapter SHA | `d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d` |
+| 机器可读 | [results/train007a-formal/summary.json](../results/train007a-formal/summary.json) |
+
+这个模型已完成真实训练，但尚不能仅凭 train/eval loss 声称泛化能力优于原始 Base。TRL 数据过滤后有效样本数仍需另行审计；BF16 LoRA 的匹配正式运行已经开始，未产生最终结果。
+
+**DPO 正式训练准备：** TRAIN-007C 的 2048/256 偏好输入、源版本/manifest SHA、训练/验证不相交、正式 SFT Adapter SHA 等实际检查已通过；DPO GPU optimizer 尚未开始运行，不能算作已完成。
