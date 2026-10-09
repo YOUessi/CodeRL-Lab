@@ -19,3 +19,12 @@
 - **03:21尚未实际运行TRAIN-007D GPU评分，尚无SFT/DPO paired accuracy新数值**。
 - 本次是基于已经见过UltraFeedback heldout DPO结果之后补充的后验同口径诊断，不能作为新前瞻性无污染benchmark，也不能证明生成题目正确率或PPO收益。
 - 原有EXP-004L/N跨分布负结果完全不涉及此次方法/超参选择。
+
+## 03:50 自动串行评测失败，05:06 修复并重启独立配对实验
+
+- 依照先前串行条件，TRAIN-008A正式256-step模型及256 heldout、adapter SHA于03:49结项；`TRAIN-007D`本机队列在03:50通过RM完成校验、GPU独占、两份SFT/DPO正式模型和数据版本SHA。
+- 进入实际评测代码时因**路径类型不一致**失败：`verify_frozen_sources()`中的 `sha(sft_adapter)` 期望权重文件，但运行时传入PEFT加载所用Adapter目录 `.../train007a-qlora-ultrachat`，抛出 `IsADirectoryError`。**这次尚未计算任何配对log概率、没有 `task_logps.jsonl` 或 `summary.json`**，原失败日志保留。
+- 在GitHub研究分支中明确新增 `adapter_weights_path()`：支持传入目录或直接 `adapter_model.safetensors` 文件时统一哈希唯一合法权重文件，缺失/非正规文件拒绝；没有改输入数据/超参/Tokenizer或训练权重。补2项回归测试。
+- Tang在05:06拉取Github源 `e6cd2dbdea6813541ce64d63e511bd9499d876f6`，专项CPU 7项通过、真实两份Adapter weights及manifest/source SHA核对通过，RTX 4090仍空闲；原队列状态以明确失败原因标记，原日志未覆盖。
+- **05:06:51** 在独立新路径 `artifacts/train007d-matched-preference-retry` 启动真实252-pair SFT/DPO GPU评测，重跑日志 `artifacts/train007d-matched-preference-retry-20261010.log`。该评测只做forward不训练；只有全部252对、两份adapter的逐题输出完整后才能报告配对accuracy/Bootstrap。
+- 截止本日志初次写入，**新的GPU配对结果尚待实际生成**；不把失败队列文件改成成功，也不以单独DPO eval_reward_accuracy取代真正SFT基线。
