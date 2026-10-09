@@ -146,3 +146,36 @@ def test_freeze_rejects_nf4_double_quant_drift(tmp_path: Path) -> None:
     paths["template_path"].write_text(yaml.safe_dump(cfg), encoding="utf-8")
     with pytest.raises(ValueError, match="double-quant precision mismatch"):
         run_freeze(paths)
+
+
+def test_retry_verifies_exact_frozen_yaml_without_rewriting(tmp_path: Path) -> None:
+    paths = fixture_bundle(tmp_path)
+    result = run_freeze(paths)
+    original = paths["output_path"].read_bytes()
+    verified = freeze_dpo_config(
+        **paths, expected_sft_train_examples=2, verify_existing=True,
+    )
+    assert verified["runtime_config_sha256"] == result["runtime_config_sha256"]
+    assert paths["output_path"].read_bytes() == original
+
+
+def test_retry_rejects_changed_adapter_and_frozen_config(tmp_path: Path) -> None:
+    paths = fixture_bundle(tmp_path)
+    run_freeze(paths)
+    stored = paths["output_path"].read_bytes()
+    (paths["adapter_dir"] / "adapter_model.safetensors").write_bytes(b"changed")
+    with pytest.raises(ValueError, match="checkpoint SHA"):
+        freeze_dpo_config(**paths, expected_sft_train_examples=2, verify_existing=True)
+    assert paths["output_path"].read_bytes() == stored
+
+    (tmp_path / "next").mkdir()\n    paths = fixture_bundle(tmp_path / "next")
+    run_freeze(paths)
+    paths["output_path"].write_text(paths["output_path"].read_text() + "# modified")
+    with pytest.raises(ValueError, match="differs"):
+        freeze_dpo_config(**paths, expected_sft_train_examples=2, verify_existing=True)
+
+
+def test_retry_cannot_create_new_frozen_config(tmp_path: Path) -> None:
+    paths = fixture_bundle(tmp_path)
+    with pytest.raises(FileNotFoundError, match="no frozen"):
+        freeze_dpo_config(**paths, expected_sft_train_examples=2, verify_existing=True)
