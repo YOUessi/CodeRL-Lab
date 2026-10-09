@@ -1,0 +1,110 @@
+{
+  "experiment": "EXP-004O",
+  "status": "posthoc_read_only_descriptive_cross_cohort_audit",
+  "new_model_generation": false,
+  "new_private_test_access": false,
+  "model_tuning_from_lcb_outcomes": false,
+  "sources_sha256": {
+    "k": "9a1d8d8749f06ddd7d609698659df820b6e0a2851a0eb1d69334b473cc263436",
+    "l": "db3dd9b5869d3a1a2c46dcf156d18cfd2906603f4d098152e9df5dcfd60920c2",
+    "m": "b8b5896245c1d7f63d001fa2c974506cf3f5d1d7ec43786dca67dff3c68b48a1",
+    "n": "348d1c806138495dd96c959fe4ba3ff2c63d3955441dc93bbc2f4ff6e3cdd41f"
+  },
+  "cohorts": {
+    "mbpp_k": {
+      "cohort": "MBPP-test K",
+      "tasks": 500,
+      "baseline_correct": 207,
+      "baseline_accuracy": 0.414,
+      "gate_triggered": 159,
+      "gate_trigger_rate": 0.318,
+      "hidden_wrong_selected": 152,
+      "gate_precision_posthoc": 0.9559748427672956,
+      "changed_trajectories": null,
+      "change_given_gate": null,
+      "wrong_to_correct": 10,
+      "correct_to_wrong": 2,
+      "net_correct_delta": 8,
+      "rescue_per_wrong_selected": {
+        "observed_fraction": 0.06578947368421052,
+        "wilson95_low": 0.03612480732136652,
+        "wilson95_high": 0.11686053432719501
+      },
+      "rescue_per_changed_trajectory": null,
+      "preregistered_primary_success": true
+    },
+    "lcb_v6": {
+      "cohort": "LiveCodeBench v6",
+      "tasks": 175,
+      "baseline_correct": 14,
+      "baseline_accuracy": 0.08,
+      "gate_triggered": 148,
+      "gate_trigger_rate": 0.8457142857142858,
+      "hidden_wrong_selected": 148,
+      "gate_precision_posthoc": 1,
+      "changed_trajectories": 119,
+      "change_given_gate": 0.8040540540540541,
+      "wrong_to_correct": 1,
+      "correct_to_wrong": 0,
+      "net_correct_delta": 1,
+      "rescue_per_wrong_selected": {
+        "observed_fraction": 0.006756756756756757,
+        "wilson95_low": 0.0011937308904065719,
+        "wilson95_high": 0.03727704557646182
+      },
+      "rescue_per_changed_trajectory": {
+        "observed_fraction": 0.008403361344537815,
+        "wilson95_low": 0.0014849430400896285,
+        "wilson95_high": 0.04606788543307778
+      },
+      "preregistered_primary_success": false
+    },
+    "lcb_v5": {
+      "cohort": "LiveCodeBench v5",
+      "tasks": 167,
+      "baseline_correct": 4,
+      "baseline_accuracy": 0.023952095808383235,
+      "gate_triggered": 142,
+      "gate_trigger_rate": 0.8502994011976048,
+      "hidden_wrong_selected": 142,
+      "gate_precision_posthoc": 1,
+      "changed_trajectories": 117,
+      "change_given_gate": 0.823943661971831,
+      "wrong_to_correct": 0,
+      "correct_to_wrong": 0,
+      "net_correct_delta": 0,
+      "rescue_per_wrong_selected": {
+        "observed_fraction": 0,
+        "wilson95_low": 0,
+        "wilson95_high": 0.02633996431300811
+      },
+      "rescue_per_changed_trajectory": {
+        "observed_fraction": 0,
+        "wilson95_low": 0,
+        "wilson95_high": 0.03178924566273338
+      },
+      "preregistered_primary_success": false
+    }
+  },
+  "external_lcb_rescues_per_changed_output_exploratory": {
+    "observed_fraction": 0.00423728813559322,
+    "wilson95_low": 0.0007483774133292126,
+    "wilson95_high": 0.0236071232970847
+  },
+  "quality_controls": {
+    "lcb_v5_base512_correct": 0,
+    "lcb_v5_sft512_correct": 4,
+    "lcb_v5_sft1024_correct": 4,
+    "lcb_v5_base512_hit_token_cap": 133,
+    "lcb_v5_sft1024_hit_token_cap": 42,
+    "lcb_v5_sft1024_preserved_sft512_prefix": 167
+  },
+  "interpretation": "On both independent LCB cohorts, changing around eighty percent of gated trajectories produced near-zero correct alternatives. This supports an output-quality/ability-floor research hypothesis, not a causal identification of any single mechanism.",
+  "limits": [
+    "All cross-cohort comparisons are posthoc, not preregistered randomized contrasts.",
+    "MBPP versus LCB differs in difficulty, prompt, evaluation and data provenance.",
+    "LCB v5 is older than v6; neither is a fresh prospective holdout after this audit.",
+    "Do not tune thresholds, generation budget, prompts or models against these private outcomes.",
+    "Wilson bands describe binomial uncertainty; they do not correct domain confounding."
+  ]
+}
