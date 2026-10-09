@@ -210,3 +210,17 @@ def test_reward_model_script_checks_isolated_nf4_before_any_gpu_training() -> No
     )
     assert 'test -s "$OUTPUT/run_summary.json"' in script
     assert "flock -n 9" in script
+
+
+def test_serial_reward_gpu_queue_requires_formal_dpo_before_launch() -> None:
+    script = Path("scripts/queue_train008a_after_dpo.sh").read_text(encoding="utf-8")
+    assert "EXPECTED_RM_SHA" in script
+    assert "waiting_for_frozen_TRAIN007C_result" in script
+    assert 's["num_pairs"]==2048' in script
+    assert 's["num_heldout_preference_pairs"]==256' in script
+    assert 's["output_adapter_sha256"]==hashlib.sha256(weight.read_bytes()).hexdigest()' in script
+    assert 'eval_rows and math.isfinite(eval_rows[-1]["eval_loss"])' in script
+    assert script.index('assert s["output_adapter_sha256"]') < script.index(
+        "bash scripts/run_posttrain_a_reward_model.sh"
+    )
+    assert "train008a-reward-model-smoke/training_identity.json" in script
