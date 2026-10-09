@@ -29,3 +29,12 @@
 - 基于母分支A的独立 `exp/train007d-matched-sft-dpo-preference-eval` (Draft PR#31) 开发同一252有效UltraFeedback heldout偏好下SFT与DPO的概率配对比较。用单张4090的前向推断，**不与本次Reward训练并发**。
 - 该分析源数据、两份adapter权重SHA和Qwen3 tokenizer 256→252过滤预检已在GitHub CPU CI/ Tang本机通过。Tang已启动受条件保护的本地队列，只有完整RM256步、真实256 heldout以及Adapter SHA完成后才会尝试GPU分数。
 - 结果若失败或没有提升，仍按原始冻结标准归档，不回过头按heldout结果挑参数。
+
+
+## 03:23：可恢复状态不是纸面承诺，已经验收实际Optimizer文件
+
+- 训练达到 **72/256** optimizer steps，已保存 `checkpoint-32` 和 `checkpoint-64`。
+- 在真实Tang上调用项目源代码 `validate_resume(output_dir, checkpoint-32, identity)`，重新读取全部冻结config/train/heldout源SHA及模型revision，身份校验通过。
+- 再对真实 `checkpoint-32/state.pt` 只读检查：`step=32`、`processed_pairs=256`、优化器非空state 393 entries、CPU RNG/CUDA RNG及scheduler state均存在；同目录Adapter `adapter_model.safetensors` 约69.8MB。未修改运行中的模型、权重或优化器。
+- GPU仍由唯一Reward Model训练进程使用，未启动 TRAIN-007D/其它并行CUDA任务。
+- 完整模型与验证结果尚未产生，本条记录只证明中途**可安全检查并具备恢复状态**，不宣称发生了实际续训、也不以中途指标决定调参。
