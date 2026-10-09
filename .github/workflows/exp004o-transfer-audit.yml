@@ -1,0 +1,54 @@
+name: EXP-004O posthoc transfer boundaries from frozen summaries
+
+on:
+  push:
+    branches:
+      - exp/exp004o-transfer-boundaries
+    paths:
+      - .github/workflows/exp004o-transfer-audit.yml
+      - src/coderl_lab/analysis/exp004o_transfer_boundaries.py
+      - tests/test_exp004o_transfer_boundaries.py
+  workflow_dispatch:
+
+jobs:
+  frozen-summary-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only CPU regression dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Validate and test frozen-source audit
+        run: pytest -q tests/test_exp004o_transfer_boundaries.py
+      - name: Generate posthoc analysis from four frozen summary files only
+        run: |
+          python -m coderl_lab.analysis.exp004o_transfer_boundaries \
+            --output artifacts/exp004o/summary.json
+      - name: Enforce negative and no-private-test-access boundaries
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("artifacts/exp004o/summary.json")
+          r=json.loads(p.read_text())
+          assert r["experiment"]=="EXP-004O"
+          assert r["new_private_test_access"] is False
+          assert r["new_model_generation"] is False
+          assert r["model_tuning_from_lcb_outcomes"] is False
+          assert r["cohorts"]["lcb_v5"]["wrong_to_correct"] == 0
+          assert r["cohorts"]["lcb_v6"]["wrong_to_correct"] == 1
+          assert r["cohorts"]["mbpp_k"]["wrong_to_correct"] == 10
+          assert all(len(sha)==64 for sha in r["sources_sha256"].values())
+          print("EXP-004O frozen source-only transfer audit PASS")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp004o-posthoc-transfer-boundaries
+          path: artifacts/exp004o/summary.json
+          if-no-files-found: error
+          retention-days: 30
