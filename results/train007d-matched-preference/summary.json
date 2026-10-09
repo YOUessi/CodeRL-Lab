@@ -1,0 +1,56 @@
+{
+  "experiment": "TRAIN-007D",
+  "phase": "posthoc_matched_policy_loglikelihood_evaluation",
+  "raw_validation_pairs": 256,
+  "effective_validation_pairs": 252,
+  "sft": {
+    "correct": 139,
+    "ties": 0,
+    "pairs": 252,
+    "mean_logp_preference_accuracy": 0.5515873015873016,
+    "total_logp_preference_accuracy": 0.46825396825396826
+  },
+  "dpo": {
+    "correct": 139,
+    "ties": 0,
+    "pairs": 252,
+    "mean_logp_preference_accuracy": 0.5515873015873016,
+    "total_logp_preference_accuracy": 0.46825396825396826
+  },
+  "paired_mean_token_preference_accuracy_difference": {
+    "observed_difference": 0,
+    "ci95_low": 0,
+    "ci95_high": 0,
+    "iterations": 20000,
+    "seed": 42
+  },
+  "paired_accuracy_flips": {
+    "sft_wrong_to_dpo_correct": 0,
+    "sft_correct_to_dpo_wrong": 0
+  },
+  "limitations": [
+    "Average completion token log-likelihood is a descriptive preference ranking diagnostic, not the DPO reference-relative reward metric.",
+    "Responses vary in length; both mean-token and total-loglikelihood ranks are reported.",
+    "Same heldout 252 pairs after the frozen TRL keep_start max_length1024 filter; no new train/test selection.",
+    "This is one seeded matched retrospective validation, not human preference improvement, code correctness or PPO/RLHF."
+  ],
+  "frozen_inputs": {
+    "experiment": "TRAIN-007D",
+    "sft_adapter_sha256": "d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d",
+    "dpo_adapter_sha256": "3cb6ff9bd51e273b8c77bcf07f574a708b1ad2b089e53f9b61f4dc265c93ced4",
+    "train_sha256": "945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77",
+    "heldout_sha256": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450",
+    "manifest_sha256": "a624fe75898fab7d478a347071b4e72e66007bf61d61d5e51474c569165017f8",
+    "model": "Qwen/Qwen3-1.7B-Base",
+    "model_revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+    "max_length": 1024,
+    "tokenization": "TRL DPO keep_start with EOS and prompt-masked completion labels",
+    "raw_heldout_pairs": 256,
+    "no_private_or_hidden_tests": true,
+    "no_optimizer_training": true
+  },
+  "gpu": {
+    "device": "NVIDIA GeForce RTX 4090 Laptop GPU",
+    "peak_reserved_bytes": 4357881856
+  }
+}
