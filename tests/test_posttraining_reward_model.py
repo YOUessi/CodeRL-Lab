@@ -198,3 +198,15 @@ def test_reward_pair_packing_rejects_invalid_token_budget() -> None:
             prompt="long prompt", completion="answer",
             max_length=100, max_prompt_tokens=90, min_response_tokens=32,
         )
+
+
+def test_reward_model_script_checks_isolated_nf4_before_any_gpu_training() -> None:
+    script = Path("scripts/run_posttrain_a_reward_model.sh").read_text(encoding="utf-8")
+    assert "QLORA_EXTRA_PYTHONPATH" in script
+    assert "coderl_lab.train.gpu_preflight" in script
+    assert "import torch,bitsandbytes" in script
+    assert script.index("import torch,bitsandbytes") < script.index(
+        '"$PYTHON" -m coderl_lab.train.reward_model'
+    )
+    assert 'test -s "$OUTPUT/run_summary.json"' in script
+    assert "flock -n 9" in script
