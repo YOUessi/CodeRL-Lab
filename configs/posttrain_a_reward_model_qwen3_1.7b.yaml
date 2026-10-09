@@ -1,0 +1,47 @@
+experiment:
+  id: TRAIN-008A
+  track: A-posttraining
+  name: qwen3-1.7b-ultrafeedback-pairwise-reward-model
+
+model:
+  name_or_path: Qwen/Qwen3-1.7B-Base
+  revision: ea980cb0a6c2ae4b936e82123acc929f1cec04c1
+  dtype: bfloat16
+  num_labels: 1
+
+data:
+  source: HuggingFaceH4/ultrafeedback_binarized
+  revision: daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2
+  manifest: data/generated/posttrain-h4-v1/dpo_manifest.json
+  train: data/generated/posttrain-h4-v1/dpo_train.jsonl
+  heldout: data/generated/posttrain-h4-v1/dpo_validation.jsonl
+  expected_train_pairs: 2048
+  expected_heldout_pairs: 256
+
+quantization:
+  mode: nf4
+  double_quant: true
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  modules_to_save: [score]
+
+training:
+  output_dir: artifacts/posttrain-a/train008a-reward-model
+  seed: 42
+  epochs: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 0.00001
+  weight_decay: 0.0
+  warmup_ratio: 0.03
+  max_length: 768
+  max_prompt_tokens: 512
+  min_response_tokens: 128
+  gradient_checkpointing: true
+  reward_l2: 0.001
+  max_grad_norm: 1.0
+  save_steps: 32
+  save_total_limit: 4

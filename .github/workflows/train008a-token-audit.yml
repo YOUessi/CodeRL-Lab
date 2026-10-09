@@ -1,0 +1,65 @@
+name: TRAIN-008A frozen reward tokenization audit
+
+on:
+  push:
+    branches:
+      - feat/posttraining-reward-model
+    paths:
+      - .github/workflows/train008a-token-audit.yml
+      - src/coderl_lab/analysis/reward_model_token_audit.py
+      - src/coderl_lab/train/reward_model.py
+      - configs/posttrain_a_reward_model_qwen3_1.7b.yaml
+  workflow_dispatch:
+
+jobs:
+  token-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU-only tokenizer and audit dependencies
+        run: python -m pip install -e ".[dev]" "transformers==5.18.0"
+      - name: Obtain exact verified 2048+256 preference snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data/generated/posttrain-h4-v1
+          gh run download 37725387735 \
+            --repo YOUessi/CodeRL-Lab \
+            --name posttraining-frozen-h4-v1 \
+            --dir data/generated/posttrain-h4-v1
+      - name: Validate reward pair packing on mock tokenizer
+        run: pytest -q tests/test_posttraining_reward_model.py tests/test_reward_model_token_audit.py
+      - name: Real Qwen tokenizer, full data, SHA-pinned length audit
+        run: |
+          python -m coderl_lab.analysis.reward_model_token_audit \
+            --config configs/posttrain_a_reward_model_qwen3_1.7b.yaml \
+            --output artifacts/train008a/token_audit.json
+      - name: Assert completion tokens retained and freeze-only status
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          o=json.loads(Path("artifacts/train008a/token_audit.json").read_text())
+          assert o["train"]["pairs"] == 2048
+          assert o["heldout"]["pairs"] == 256
+          assert o["private_tests_accessed"] is False
+          assert o["training_completed"] is False
+          assert o["status"] == "frozen_data_tokenizer_audit_not_model_training"
+          for split in ("train","heldout"):
+              assert o[split]["chosen_original_max_tokens"] > 0
+              assert o[split]["rejected_original_max_tokens"] > 0
+          print("Frozen reward-model tokenization audit PASS")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: train008a-real-tokenization-audit
+          path: artifacts/train008a/token_audit.json
+          if-no-files-found: error
+          retention-days: 30

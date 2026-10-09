@@ -1,0 +1,46 @@
+{
+  "experiment": "TRAIN-008A",
+  "status": "completed_real_GPU_smoke_only",
+  "recorded_date": "2026-10-09",
+  "environment": "Tang NVIDIA GeForce RTX 4090 Laptop GPU",
+  "model": "Qwen/Qwen3-1.7B-Base with fresh sequence-classification reward head, NF4/LoRA",
+  "model_revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "source_code_commit": "81bf0a8994f171cbeb0ba7922feea97f9d472a44",
+  "dataset_source": "HuggingFaceH4/ultrafeedback_binarized",
+  "dataset_revision": "daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2",
+  "train_dataset_sha256": "945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77",
+  "validation_dataset_sha256": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450",
+  "frozen_runtime_config_sha256": "770127c08ba77c6872aa600e21a9228bcbf60d31e10ba99f4ab8a2d85fa84270",
+  "train_pairs": 32,
+  "heldout_pairs": 16,
+  "optimizer_steps": 4,
+  "mean_training_loss": 0.7008297918364406,
+  "heldout_before_training": {
+    "preference_accuracy": 0.625,
+    "correct_prefs": 10,
+    "total_prefs": 16,
+    "mean_margin": 0.08202757686376572,
+    "mean_pairwise_loss": 0.7213369506685532
+  },
+  "heldout_after_training": {
+    "preference_accuracy": 0.625,
+    "correct_prefs": 10,
+    "total_prefs": 16,
+    "mean_margin": 0.10349453240633011,
+    "mean_pairwise_loss": 0.7069750939867582
+  },
+  "change_in_heldout_accuracy": 0,
+  "elapsed_seconds_wall": 39.28533938998589,
+  "peak_gpu_memory_reserved_bytes": 3015704576,
+  "new_adapter_sha256": "eae9900e4e5781d272cc70931138dc8d5e07b5844e8dbd797ddfc1b0ec3f512e",
+  "local_result_path": "/home/you/projects/CodeRL-Lab-track-rm/artifacts/posttrain-a/train008a-reward-model-smoke/run_summary.json",
+  "integrity_verified": true,
+  "actual_adapter_sha_matches_summary": true,
+  "formal_full_2048_256_training_completed": false,
+  "limitations": [
+    "Only 32 training preference pairs, 16 validation pairs and 4 steps; not meaningful evidence of generalization.",
+    "Heldout preference ranking accuracy did not improve in smoke (10 of 16 before and after).",
+    "Lower pairwise loss and slightly higher margin are diagnostics only and do not establish model quality gain.",
+    "No full reward-model training, PPO/GRPO/RLHF policy updates or final preference quality evaluation claimed."
+  ]
+}
