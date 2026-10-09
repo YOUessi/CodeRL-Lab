@@ -79,5 +79,6 @@ def test_frozen_v5_and_v6_not_conflated():
     assert s["cohorts"]["lcb_v5"]["tasks"] == 167
     assert s["cohorts"]["lcb_v6"]["tasks"] == 175
     assert s["cohorts"]["mbpp_k"]["tasks"] == 500
-    assert all("posthoc" in t or "prospective" in t or "MBPP" in t or "Wilson" in t
-               for t in s["limits"])
+    assert any("prospective" in t for t in s["limits"])
+    assert any("tune" in t for t in s["limits"])
+    assert any("posthoc" in t for t in s["limits"])
