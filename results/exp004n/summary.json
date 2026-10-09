@@ -1,0 +1,218 @@
+{
+  "experiment": "EXP-004N",
+  "tasks": 167,
+  "arms": {
+    "base512": {
+      "correct": 0,
+      "accuracy": 0,
+      "transitions_vs_sft512": {
+        "wrong_to_correct": 0,
+        "correct_to_wrong": 4,
+        "correct_to_correct": 0,
+        "wrong_to_wrong": 163
+      }
+    },
+    "sft512": {
+      "correct": 4,
+      "accuracy": 0.023952095808383235,
+      "transitions_vs_sft512": null
+    },
+    "gated_low": {
+      "correct": 4,
+      "accuracy": 0.023952095808383235,
+      "transitions_vs_sft512": {
+        "wrong_to_correct": 0,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 4,
+        "wrong_to_wrong": 163
+      }
+    },
+    "gated_high": {
+      "correct": 4,
+      "accuracy": 0.023952095808383235,
+      "transitions_vs_sft512": {
+        "wrong_to_correct": 0,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 4,
+        "wrong_to_wrong": 163
+      }
+    },
+    "always_low": {
+      "correct": 4,
+      "accuracy": 0.023952095808383235,
+      "transitions_vs_sft512": {
+        "wrong_to_correct": 0,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 4,
+        "wrong_to_wrong": 163
+      }
+    },
+    "sft1024": {
+      "correct": 4,
+      "accuracy": 0.023952095808383235,
+      "transitions_vs_sft512": {
+        "wrong_to_correct": 0,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 4,
+        "wrong_to_wrong": 163
+      }
+    }
+  },
+  "contrasts": {
+    "gated_low_minus_sft512": {
+      "tasks": 167,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_high_minus_sft512": {
+      "tasks": 167,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "always_low_minus_sft512": {
+      "tasks": 167,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "base512_minus_sft512": {
+      "tasks": 167,
+      "observed_delta": -0.023952095808383235,
+      "ci95_low": -0.04790419161676647,
+      "ci95_high": -0.005988023952095809,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "sft1024_minus_sft512": {
+      "tasks": 167,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_low_minus_gated_high": {
+      "tasks": 167,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_low_minus_always_low": {
+      "tasks": 167,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    }
+  },
+  "strata": {
+    "platform:atcoder": {
+      "tasks": 105,
+      "base512": 0,
+      "sft512": 3,
+      "gated_low": 3,
+      "gated_high": 3,
+      "always_low": 3,
+      "sft1024": 3
+    },
+    "platform:leetcode": {
+      "tasks": 62,
+      "base512": 0,
+      "sft512": 1,
+      "gated_low": 1,
+      "gated_high": 1,
+      "always_low": 1,
+      "sft1024": 1
+    },
+    "difficulty:easy": {
+      "tasks": 41,
+      "base512": 0,
+      "sft512": 3,
+      "gated_low": 3,
+      "gated_high": 3,
+      "always_low": 3,
+      "sft1024": 3
+    },
+    "difficulty:hard": {
+      "tasks": 74,
+      "base512": 0,
+      "sft512": 1,
+      "gated_low": 1,
+      "gated_high": 1,
+      "always_low": 1,
+      "sft1024": 1
+    },
+    "difficulty:medium": {
+      "tasks": 52,
+      "base512": 0,
+      "sft512": 0,
+      "gated_low": 0,
+      "gated_high": 0,
+      "always_low": 0,
+      "sft1024": 0
+    }
+  },
+  "preregistered_primary_success": false,
+  "gate_audit": {
+    "gate_triggered": 142,
+    "gate_changed": 117,
+    "gate_selected_wrong": 142,
+    "public_pass_protected": true
+  },
+  "completion_quality": {
+    "base512": {
+      "cap_hit": 133,
+      "ast_syntax_ok": 44
+    },
+    "sft1024": {
+      "cap_hit": 42,
+      "ast_syntax_ok": 137
+    }
+  },
+  "sft_1024_preserves_512_raw_prefix_count": 167,
+  "bootstrap": {
+    "seed": 42,
+    "iterations": 20000
+  },
+  "conclusion_limit": "independent earlier v5 diagnostic; not a forward-time no-contamination benchmark",
+  "frozen_inputs": {
+    "experiment": "EXP-004N",
+    "stage": "frozen-before-private-tests",
+    "tasks": 167,
+    "source_sha256": "7f77571c2a6df0c2a72a3277650309f67e01e0008e18117e624633df53f81214",
+    "public_view_sha256": "e695ba9fa2ce35abc8db2f3360bf711930746cd55843890177ecd518c0a4c98d",
+    "official_commit": "28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24",
+    "adapter_sha256": "e1ea9a007a3e4213cdeb1ca6b1e12d29adb83594991421757d0d40b9168d0861",
+    "sft512_runner_sha256": "3d520efd4d8868849d82886db0addcbb6baa9414d9607cc8c54ae96e4ced5119",
+    "base512_runner_sha256": "c2194fb563c33f936d20f03660896c5d74d74c274461bb51273570cfa151538e",
+    "sft1024_runner_sha256": "bdd44f6e530b70e74fdccdff5fc37cdcca028bc298865de66e6bdac7e12c63de",
+    "private_tests_accessed": false
+  },
+  "private_tests_accessed_only_after_freeze": true,
+  "resource_limit_counts": {
+    "base512": 0,
+    "sft512": 0,
+    "gated_low": 0,
+    "gated_high": 0,
+    "always_low": 0,
+    "sft1024": 0
+  }
+}
