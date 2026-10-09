@@ -38,3 +38,13 @@
 - 再对真实 `checkpoint-32/state.pt` 只读检查：`step=32`、`processed_pairs=256`、优化器非空state 393 entries、CPU RNG/CUDA RNG及scheduler state均存在；同目录Adapter `adapter_model.safetensors` 约69.8MB。未修改运行中的模型、权重或优化器。
 - GPU仍由唯一Reward Model训练进程使用，未启动 TRAIN-007D/其它并行CUDA任务。
 - 完整模型与验证结果尚未产生，本条记录只证明中途**可安全检查并具备恢复状态**，不宣称发生了实际续训、也不以中途指标决定调参。
+
+## 03:49 训练结项，05:03 真机复核与GitHub结果归档
+
+- 实际 `TRAIN-008A` GPU 训练于2026-10-10 03:49:42（UTC+8）完成 **256/256 optimizer steps**。最后4个checkpoint为160/192/224/256，且每32步保存包含optimizer/scheduler/CPU+CUDA RNG的中间状态。
+- 输入训练偏好2048、完整独立heldout256，来源revision和训练/验证 SHA 不变，未为了提高准确率挑样本。单epoch train mean pairwise loss=`0.7108690377608582`，wall=2222.10秒，peak reserved=3,038,773,248 bytes。
+- 在**相同256对偏好**上，训练前随机初始化奖励头选对115对（44.921875%），训练后选对145对（56.640625%），观测提升**30/256=+11.71875个百分点**；pairwise heldout loss `0.8597028020→0.6970158364`，mean reward margin `-0.1006470374→+0.1465626673`。
+- 最终Adapter SHA `586fb4cb21bb3408507d6e179d1bd858aca35d7c3e46b1dbef84234d3adbd28c` 直接从Tang实际 `adapter_model.safetensors` 再计算并和 `run_summary.json` 逐值相同，属真实模型产物。
+- 05:03再次检查Tang GPU空闲且RM Python进程已退出；没有失败重启或冒充未完成。
+- 正式机器可读实验记录入GitHub `results/train008a-reward-model-formal/summary.json`。模型、优化器/原始偏好内容仍在Tang本地；GitHub是代码、实验配置、过程与安全聚合结果的唯一事实源。
+- **科学边界**：单种子、一份heldout与新初始化分类头；不能直接称“提高真实人类偏好质量”，也不能当成完整PPO/RLHF策略训练。下一步应独立设置新的盲测数据/不同seed后方可讨论泛化。
