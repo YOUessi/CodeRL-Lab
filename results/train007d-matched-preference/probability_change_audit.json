@@ -1,0 +1,31 @@
+{
+  "experiment": "TRAIN-007D",
+  "audit": "posthoc_all_504_adapter_score_rows_integrity",
+  "date_local": "2026-10-10",
+  "source_execution_commit": "e6cd2dbdea6813541ce64d63e511bd9499d876f6",
+  "input_frozen_summary_path": "results/train007d-matched-preference/summary.json",
+  "local_output_dir": "/home/you/projects/CodeRL-Lab-track-eval/artifacts/train007d-matched-preference-retry",
+  "local_summary_sha256": "6f94b00a4754f8fde5ec7df46f0751a82dfeec7c5009507c9db15c3eda176b46",
+  "frozen_inputs_sha256": "4e3474183e442e50c0f65d65bea98c74aae7a3113012bc24223d83a8b1095919",
+  "per_pair_scores_sha256": "ced869cd995825299da208bb06bc97663e1a8d997224c034a92b4537e021e6bf",
+  "total_score_rows": 504,
+  "sft_rows": 252,
+  "dpo_rows": 252,
+  "all_frozen_pair_ids_present_for_both_adapters": true,
+  "mean_delta_changed_rows_above_1e_minus_9": 252,
+  "mean_delta_changed_rows_above_1e_minus_4": 246,
+  "max_absolute_change_mean_logp_delta": 0.062143199584063336,
+  "mean_absolute_change_mean_logp_delta": 0.006809455271375916,
+  "max_absolute_change_total_logp_delta": 4.545951843261719,
+  "mean_absolute_change_total_logp_delta": 0.879692864796472,
+  "sft_preference_correct": 139,
+  "dpo_preference_correct": 139,
+  "wrong_to_correct": 0,
+  "correct_to_wrong": 0,
+  "result_note": "DPO changes the per-pair likelihood margins without changing any pair's chosen-vs-rejected ranking at the frozen criterion. Zero-discordant paired bootstrap collapses to [0,0] but does NOT establish equivalence on other data.",
+  "limitations": [
+    "No changes to model or evaluation hyperparameters after observing hidden outcomes.",
+    "This is a posthoc same-heldout diagnostic, not an unseen forward-time independent benchmark.",
+    "Full per-pair scores and large model files remain on authorized Tang; GitHub only contains counts and integrity hashes."
+  ]
+}
