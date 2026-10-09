@@ -25,3 +25,14 @@
 - GitHub新增 `scripts/queue_train008a_after_dpo.sh`，严格等待已确认的DPO parent PID，且必须验证正式DPO新的Adapter/训练数据SHA/256heldout eval已完成且数值有限，才允许奖励模型smoke（32训练/16验证）调用4090。若验证失败则拒绝，绝不标记成成功。
 - Tang `/home/you/projects/CodeRL-Lab-track-rm` 是基于GitHub `81bf0a8994f171cbeb0ba7922feea97f9d472a44` 的 detached真机测试工作树，项目`data/generated/posttrain-h4-v1`通过符号链接读取先前 A 的冻结数据；16项CPU专项测试与真实数据2048/256 SHA通过。
 - 本机队列从17:53启动，等待DPO parent PID `843075`，状态 `waiting_for_frozen_TRAIN007C_result`。**仍未开始任何RM优化步骤**；不预填偏好准确率或完成时间。代码/配置/过程记录始终以GitHub为唯一事实源，真实权重留Tang。
+
+
+## 18:11：TRAIN-008A 真GPU烟雾完成，23:56验证入库
+
+- 在TRAIN-007C于18:10完成正式Adapter与heldout核验后，Tang用户授权的一次性奖励模型队列通过校验，实际启动 `TRAIN-008A` NF4/LoRA标量排序头（Qwen3-1.7B-Base）真实4步GPU训练，CUDA模型保存、训练前后同一heldout对评测均完整成功。
+- 源GitHub代码 `81bf0a8994f171cbeb0ba7922feea97f9d472a44`，训练32对偏好、独立验证16对，4/4步骤；mean training loss `0.70082979`、peak reserved显存3,015,704,576字节、wall≈39.29秒。
+- 训练前heldout偏好准确率 `10/16=62.5%`，训练后仍 `10/16=62.5%`；pairwise loss `0.72133695→0.70697509`，平均margin `0.08202758→0.10349453`。损失/边际值改善，但**16个样本不足以主张泛化和真实效果提升，尤其准确率无改变**。
+- 新奖励头Adapter SHA256 `eae9900e4e5781d272cc70931138dc8d5e07b5844e8dbd797ddfc1b0ec3f512e`，通过从实际权重重新计算哈希核对一致。
+- 本次结束标记是 `smoke_only`，**完整2048/256 Reward Model训练并未启动**；尚无PPO/RLHF策略更新或强随机基线对比。
+- 已把真实实验摘要归档 `results/train008a-reward-model-smoke/summary.json`，权重仍在Tang本机。原实验日志、tokenizer审计和训练记录全部保留。
+- 23:56再次核查 Tang GPU 空闲，无CodeRL训练。正式大样本奖励模型和比较协议为后续独立验收内容，不伪报。
