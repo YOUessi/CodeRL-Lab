@@ -102,6 +102,38 @@ def prepare_rows(
     return rows
 
 
+def initialize_dpo_training_identity(
+    *,
+    output_dir: Path,
+    identity: dict[str, Any],
+    resume_from_checkpoint: Path | None,
+    retry_pretraining_failure: bool,
+) -> Path | None:
+    """Retry only before any optimizer step, without altering frozen files."""
+    if retry_pretraining_failure and resume_from_checkpoint is not None:
+        raise ValueError("pre-training retry and optimizer resume are exclusive")
+    if not retry_pretraining_failure:
+        return initialize_training_identity(
+            output_dir=output_dir, identity=identity,
+            resume_from_checkpoint=resume_from_checkpoint,
+        )
+    if not output_dir.is_dir():
+        raise FileNotFoundError("existing DPO pre-training directory missing")
+    actual = {p.name for p in output_dir.iterdir()}
+    if actual != {"frozen_config.yaml", "training_identity.json"}:
+        raise ValueError(
+            "pre-training retry refused: unexpected files or optimizer state: "
+            + ", ".join(sorted(actual))
+        )
+    previous = json.loads((output_dir / "training_identity.json").read_text(encoding="utf-8"))
+    if previous != identity:
+        raise ValueError("DPO frozen training identity mismatch; refusing retry")
+    frozen_config = output_dir / "frozen_config.yaml"
+    if hashlib.sha256(frozen_config.read_bytes()).hexdigest() != identity["config_sha256"]:
+        raise ValueError("DPO frozen config SHA mismatch")
+    return None
+
+
 def run_dpo(
     *,
     config_path: Path,
@@ -113,6 +145,7 @@ def run_dpo(
     eval_preferences_path: Path | None = None,
     max_eval_pairs: int | None = None,
     resume_from_checkpoint: Path | None = None,
+    retry_pretraining_failure: bool = False,
 ) -> dict[str, Any]:
     try:
         import peft
@@ -202,9 +235,10 @@ def run_dpo(
         heldout_rows=len(evaluation_dataset) if evaluation_dataset is not None else 0,
     )
     train_identity["source_sft_adapter_sha256"] = adapter_sha
-    checkpoint_to_resume = initialize_training_identity(
+    checkpoint_to_resume = initialize_dpo_training_identity(
         output_dir=final_output, identity=train_identity,
         resume_from_checkpoint=resume_from_checkpoint,
+        retry_pretraining_failure=retry_pretraining_failure,
     )
 
     random.seed(seed)
@@ -446,6 +480,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--eval-preferences", type=Path)
     p.add_argument("--max-eval-pairs", type=int)
     p.add_argument("--resume-from-checkpoint", type=Path)
+    p.add_argument("--retry-pretraining-failure", action="store_true",
+                   help="verify pretraining-only failure files without overwrite")
     return p.parse_args()
 
 
@@ -461,6 +497,7 @@ def main() -> None:
         eval_preferences_path=args.eval_preferences,
         max_eval_pairs=args.max_eval_pairs,
         resume_from_checkpoint=args.resume_from_checkpoint,
+        retry_pretraining_failure=args.retry_pretraining_failure,
     )
 
 
