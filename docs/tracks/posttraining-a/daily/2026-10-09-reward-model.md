@@ -17,3 +17,11 @@
 - 先在空闲GPU上做TRAIN-008A 32对训练/16验证真实smoke，核验NF4+序列标量头梯度与参数保存；
 - 全量2048/256训练必须在 DPO/B 试验不占GPU后单独执行。结果报告训练前后在同一冻结heldout偏好准确率及loss/mean margin；
 - 这些都是偏好建模，不等于完整RLHF/PPO，尚需后续独立训练和验证。
+
+
+## 17:52—17:53：隔离依赖修复与受控真机测试准备
+
+- 为避免复现DPO遇到的bitsandbytes导入问题，`run_posttrain_a_reward_model.sh`支持 `QLORA_EXTRA_PYTHONPATH` 指向单独安装的bitsandbytes overlay，并在冻结完整2048/256偏好数据SHA、GPU占用检查之后、模型加载之前验证`torch.cuda.is_available()`和真实 `bitsandbytes`版本；不改全局/共享Python环境。
+- GitHub新增 `scripts/queue_train008a_after_dpo.sh`，严格等待已确认的DPO parent PID，且必须验证正式DPO新的Adapter/训练数据SHA/256heldout eval已完成且数值有限，才允许奖励模型smoke（32训练/16验证）调用4090。若验证失败则拒绝，绝不标记成成功。
+- Tang `/home/you/projects/CodeRL-Lab-track-rm` 是基于GitHub `81bf0a8994f171cbeb0ba7922feea97f9d472a44` 的 detached真机测试工作树，项目`data/generated/posttrain-h4-v1`通过符号链接读取先前 A 的冻结数据；16项CPU专项测试与真实数据2048/256 SHA通过。
+- 本机队列从17:53启动，等待DPO parent PID `843075`，状态 `waiting_for_frozen_TRAIN007C_result`。**仍未开始任何RM优化步骤**；不预填偏好准确率或完成时间。代码/配置/过程记录始终以GitHub为唯一事实源，真实权重留Tang。
