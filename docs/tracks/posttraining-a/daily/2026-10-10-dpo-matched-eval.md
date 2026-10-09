@@ -28,3 +28,14 @@
 - Tang在05:06拉取Github源 `e6cd2dbdea6813541ce64d63e511bd9499d876f6`，专项CPU 7项通过、真实两份Adapter weights及manifest/source SHA核对通过，RTX 4090仍空闲；原队列状态以明确失败原因标记，原日志未覆盖。
 - **05:06:51** 在独立新路径 `artifacts/train007d-matched-preference-retry` 启动真实252-pair SFT/DPO GPU评测，重跑日志 `artifacts/train007d-matched-preference-retry-20261010.log`。该评测只做forward不训练；只有全部252对、两份adapter的逐题输出完整后才能报告配对accuracy/Bootstrap。
 - 截止本日志初次写入，**新的GPU配对结果尚待实际生成**；不把失败队列文件改成成功，也不以单独DPO eval_reward_accuracy取代真正SFT基线。
+
+## 05:09 SFT/DPO 252对真实GPU配对评测完整结项
+
+- 05:06:51启动独立run于 `artifacts/train007d-matched-preference-retry/`，GitHub源commit `e6cd2dbdea6813541ce64d63e511bd9499d876f6`，Tang NVIDIA RTX4090 Laptop，NF4+BF16 base使用一个Qwen3-1.7B加载SFT、DPO两个来自正式实验的只读Adapter。
+- 实际评分先SFT再DPO，固定UltraFeedback heldout原始256→TRL `keep_start`过滤后252，全量没有选择性剔除；每个Adapter各完成252条成对logprob记录，共 **504条记录**。GPU运行完成后进程退出、无CUDA任务残留。
+- **冻结平均Token logprob偏好准确率：SFT 139/252=55.15873%，DPO 139/252=55.15873%**；辅指标总Token logprob准确率两者均118/252=46.82540%。
+- wrong(SFT)→correct(DPO) **0**；correct(SFT)→wrong(DPO) **0**；20,000次/seed42配对bootstrap观察效应0，经验样本重采样95% CI [0,0]。**此退化区间只表示固定252对所有排序事件均相同，不代表统计学证明不同样本/数据集下等价。**
+- 为排除相同Adapter误加载：对真机`task_logps.jsonl` 504条记录做逐题数值比较，**252/252** 的 mean-token排序margin都变化（绝对差>1e-9），其中246/252变化超过1e-4；平均绝对margin变化0.0068094553、最大0.0621432，说明DPO确实改变策略输出概率，却没有令任一偏好排序标签翻转。
+- 机器可读摘要 `results/train007d-matched-preference/summary.json`，全量差值与文件完整性聚合 `results/train007d-matched-preference/probability_change_audit.json`；本机 summary SHA `6f94b00a4754f8fde5ec7df46f0751a82dfeec7c5009507c9db15c3eda176b46`，504行逐题logp SHA `ced869cd995825299da208bb06bc97663e1a8d997224c034a92b4537e021e6bf`。
+- 结果不能与DPO训练内部`eval_rewards/accuracies=54.365%`简单减法，因为它是不同的参考相对奖励定义，且训练前后的同口径准确率在此实际算出的差就是0。
+- **统计与泛化边界**：本评测依然是训练方案已见的UltraFeedback heldout上的事后诊断；不可根据此负结果对同一数据集调学习率、阈值或回答长度然后冒充独立验证。下一阶段如探索DPO概率变化和排序翻转之间的关系，需要另立数据/模型及预注册方案。
