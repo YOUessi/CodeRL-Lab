@@ -7,7 +7,7 @@ import math
 import pytest
 
 from coderl_lab.analysis.train007d_preference_eval import (
-    MAX_LENGTH, encode_pair, paired_bootstrap, summarize,
+    MAX_LENGTH, adapter_weights_path, encode_pair, paired_bootstrap, sha, summarize,
 )
 
 
@@ -89,3 +89,26 @@ def test_bootstrap_is_paired_reproducible_and_not_per_arm_unpaired():
     assert paired_bootstrap([0]*8,seed=42,iterations=500)["ci95_high"]==0
     with pytest.raises(ValueError):
         paired_bootstrap([4,-1])
+
+
+def test_peft_adapter_hash_resolves_directory_and_file_equivalently(tmp_path):
+    directory=tmp_path/"trained_sft"
+    directory.mkdir()
+    weights=directory/"adapter_model.safetensors"
+    weights.write_bytes(b"valid adapter fixture")
+    assert adapter_weights_path(directory)==weights
+    assert adapter_weights_path(weights)==weights
+    assert sha(adapter_weights_path(directory))==sha(adapter_weights_path(weights))
+    with pytest.raises(FileNotFoundError,match="adapter_model.safetensors"):
+        adapter_weights_path(tmp_path/"missing")
+
+
+def test_peft_adapter_hash_rejects_arbitrary_directory_and_wrong_file(tmp_path):
+    directory=tmp_path/"empty"
+    directory.mkdir()
+    with pytest.raises(FileNotFoundError,match="adapter_model.safetensors"):
+        adapter_weights_path(directory)
+    arbitrary=tmp_path/"model.bin"
+    arbitrary.write_bytes(b"not the PEFT frozen adapter")
+    with pytest.raises(FileNotFoundError,match="adapter_model.safetensors"):
+        adapter_weights_path(arbitrary)
