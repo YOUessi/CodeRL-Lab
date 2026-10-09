@@ -1,0 +1,77 @@
+name: TRAIN-007D paired SFT DPO heldout preflight
+
+on:
+  push:
+    branches:
+      - exp/train007d-matched-sft-dpo-preference-eval
+    paths:
+      - .github/workflows/train007d-matched-preflight.yml
+      - src/coderl_lab/analysis/train007d_preference_eval.py
+      - tests/test_train007d_preference_eval.py
+      - scripts/run_train007d_matched_eval.sh
+  workflow_dispatch:
+
+jobs:
+  same-pairs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install analysis tests and official Qwen tokenizer
+        run: python -m pip install -e ".[dev]" "transformers==5.18.0"
+      - name: Run CPU test contracts
+        run: pytest -q tests/test_train007d_preference_eval.py
+      - name: Download fixed UltraFeedback 2048/256 snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data/generated/posttrain-h4-v1
+          gh run download 37725387735 \
+            --repo YOUessi/CodeRL-Lab \
+            --name posttraining-frozen-h4-v1 \
+            --dir data/generated/posttrain-h4-v1
+      - name: Run exact frozen 256 to 252 tokenization audit
+        run: |
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          from transformers import AutoTokenizer
+          from coderl_lab.analysis.train007d_preference_eval import (
+              encode_pair, MODEL, MODEL_REVISION, HELDOUT_SHA,TRAIN_SHA,sha,read_jsonl,
+          )
+          data=Path("data/generated/posttrain-h4-v1")
+          assert sha(data/"dpo_train.jsonl")==TRAIN_SHA
+          assert sha(data/"dpo_validation.jsonl")==HELDOUT_SHA
+          tok=AutoTokenizer.from_pretrained(MODEL,revision=MODEL_REVISION,trust_remote_code=True)
+          all_rows=read_jsonl(data/"dpo_validation.jsonl")
+          assert len(all_rows)==256
+          kept=[(i,encode_pair(tok,row)) for i,row in enumerate(all_rows)]
+          kept=[(i,p) for i,p in kept if p is not None]
+          assert len(kept)==252,len(kept)
+          assert all(p["chosen_length"]>0 and p["rejected_length"]>0 for _,p in kept)
+          summary={
+              "experiment":"TRAIN-007D","status":"frozen_tokenization_only_no_GPU",
+              "raw_heldout_pairs":256,"effective_heldout_pairs":len(kept),
+              "filtered_heldout_pairs":4,
+              "source_sha256":HELDOUT_SHA,
+              "model_revision":MODEL_REVISION,
+              "max_length":1024,
+              "no_private_tests":True,"no_model_generation":True,
+          }
+          out=Path("artifacts/train007d")
+          out.mkdir(parents=True,exist_ok=True)
+          (out/"cpu_preflight.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print(json.dumps(summary,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: train007d-frozen-heldout-tokenization
+          path: artifacts/train007d/cpu_preflight.json
+          retention-days: 30
+          if-no-files-found: error
