@@ -340,6 +340,12 @@ def run_dpo(
         num_train_epochs=epochs,
         max_steps=requested_max_steps,
         per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=int(train_cfg.get("per_device_eval_batch_size", 8)),
+        eval_accumulation_steps=(
+            int(train_cfg["eval_accumulation_steps"])
+            if train_cfg.get("eval_accumulation_steps") is not None else None
+        ),
+        prediction_loss_only=bool(train_cfg.get("prediction_loss_only", False)),
         gradient_accumulation_steps=grad_accum,
         learning_rate=float(train_cfg["learning_rate"]),
         warmup_steps=warmup_steps,
@@ -424,6 +430,11 @@ def run_dpo(
             len(evaluation_dataset) if evaluation_dataset is not None else 0
         ),
         "num_train_epochs": epochs,
+        "eval_memory_policy": {
+            "per_device_eval_batch_size": int(args.per_device_eval_batch_size),
+            "eval_accumulation_steps": args.eval_accumulation_steps,
+            "prediction_loss_only": bool(args.prediction_loss_only),
+        },
         "checkpoint_policy": {
             "save_strategy": save_strategy,
             "save_steps": int(train_cfg.get("save_steps", 500)) if save_strategy == "steps" else None,
