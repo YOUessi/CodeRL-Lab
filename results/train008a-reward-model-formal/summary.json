@@ -1,0 +1,65 @@
+{
+  "experiment": "TRAIN-008A",
+  "status": "formal_complete",
+  "recorded_at_local": "2026-10-10T03:49:42+08:00",
+  "verified_at_local": "2026-10-10T05:03:41+08:00",
+  "source_git_commit": "89cd3a413a0cca1ecc9046bbc776fd2fd8cb9a7b",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "model_revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "method": "NF4 LoRA pairwise reward model with scalar sequence-classification head",
+  "data": {
+    "source": "HuggingFaceH4/ultrafeedback_binarized",
+    "revision": "daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2",
+    "training_pairs": 2048,
+    "heldout_pairs": 256,
+    "training_sha256": "945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77",
+    "heldout_sha256": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450",
+    "source_manifest_sha256": "a624fe75898fab7d478a347071b4e72e66007bf61d61d5e51474c569165017f8",
+    "full_snapshot_validated": true,
+    "train_eval_prompt_overlap": 0
+  },
+  "runtime": {
+    "optimizer_steps": 256,
+    "expected_steps": 256,
+    "one_epoch": true,
+    "mean_training_loss": 0.7108690377608582,
+    "elapsed_seconds": 2222.098666181031,
+    "peak_reserved_gpu_bytes": 3038773248,
+    "resumed_from": null,
+    "checkpoint_steps_retained": [
+      160,
+      192,
+      224,
+      256
+    ]
+  },
+  "heldout_before": {
+    "pairs": 256,
+    "correct": 115,
+    "preference_accuracy": 0.44921875,
+    "ties": 0,
+    "mean_margin": -0.10064703738316894,
+    "mean_pairwise_loss": 0.859702802048663
+  },
+  "heldout_after": {
+    "pairs": 256,
+    "correct": 145,
+    "preference_accuracy": 0.56640625,
+    "ties": 0,
+    "mean_margin": 0.14656266733072698,
+    "mean_pairwise_loss": 0.6970158363951752
+  },
+  "observed_heldout_preference_accuracy_delta": 0.1171875,
+  "new_adapter_sha256": "586fb4cb21bb3408507d6e179d1bd858aca35d7c3e46b1dbef84234d3adbd28c",
+  "real_weights_sha256_matches_record": true,
+  "local_paths": {
+    "run_summary": "/home/you/projects/CodeRL-Lab-track-rm/artifacts/posttrain-a/train008a-reward-model/run_summary.json",
+    "adapter": "/home/you/projects/CodeRL-Lab-track-rm/artifacts/posttrain-a/train008a-reward-model/adapter_model.safetensors"
+  },
+  "limitations": [
+    "Single fixed heldout split and one training seed; not a prospective independent holdout.",
+    "Reward head newly initialized before training; model-specific results cannot establish PPO or RLHF gains.",
+    "Accuracy improvement is observed on this particular 256-pair preference set, not proof of causal/general human preference quality.",
+    "Only public-safe aggregates and file hashes are in GitHub; full weight files/checkpoints remain on Tang."
+  ]
+}
