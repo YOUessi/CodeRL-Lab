@@ -40,6 +40,19 @@ def sha(path:Path)->str:
     return h.hexdigest()
 
 
+def adapter_weights_path(path:Path)->Path:
+    """Normalize the PEFT directory used for loading to its single weight file.
+
+    The GPU runner passes adapter directories for PeftModel.from_pretrained;
+    the CPU preflight passes the actual safetensors paths. Both must hash the
+    same adapter_model.safetensors, never attempt to read a directory.
+    """
+    result=path/"adapter_model.safetensors" if path.is_dir() else path
+    if not result.is_file() or result.name!="adapter_model.safetensors":
+        raise FileNotFoundError("expected frozen PEFT adapter_model.safetensors")
+    return result
+
+
 def read_json(path:Path)->dict[str,Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -78,8 +91,8 @@ def verify_frozen_sources(*,manifest_path:Path,heldout_path:Path,
         sft.get("saved_adapter_sha256")!=ADAPTERS["sft"],
         dpo.get("sft_adapter_sha256")!=ADAPTERS["sft"],
         dpo.get("output_adapter_sha256")!=ADAPTERS["dpo"],
-        sha(sft_adapter)!=ADAPTERS["sft"],
-        sha(dpo_adapter)!=ADAPTERS["dpo"],
+        sha(adapter_weights_path(sft_adapter))!=ADAPTERS["sft"],
+        sha(adapter_weights_path(dpo_adapter))!=ADAPTERS["dpo"],
     )):
         raise ValueError("one or more frozen DPO/SFT/data/model SHA contracts changed")
     return {
