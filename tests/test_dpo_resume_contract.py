@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from coderl_lab.train.dpo import parse_args
+from coderl_lab.train.dpo import parse_args, initialize_dpo_training_identity
 from coderl_lab.train.sft import build_training_identity, initialize_training_identity
 
 
@@ -72,3 +72,51 @@ def test_frozen_dpo_identity_includes_adapter_weights_and_preference_data(tmp_pa
         output_dir=output, identity=identity,
         resume_from_checkpoint=p,
     ) == p.resolve()
+
+
+def test_safe_retry_exact_two_files_preserves_bytes(tmp_path: Path) -> None:
+    root = tmp_path / "dpo"
+    root.mkdir()
+    cfg = root / "frozen_config.yaml"
+    cfg.write_text("id: TRAIN-007C\n", encoding="utf-8")
+    from hashlib import sha256
+    identity = {"config_sha256": sha256(cfg.read_bytes()).hexdigest(),
+                "source_sft_adapter_sha256": "PINNED",
+                "train_rows": 32, "heldout_rows": 16}
+    recorded = root / "training_identity.json"
+    recorded.write_text(json.dumps(identity))
+    before = [cfg.read_bytes(), recorded.read_bytes()]
+    assert initialize_dpo_training_identity(
+        output_dir=root, identity=identity, resume_from_checkpoint=None,
+        retry_pretraining_failure=True,
+    ) is None
+    assert [cfg.read_bytes(), recorded.read_bytes()] == before
+
+
+def test_safe_retry_rejects_accidental_optimizer_or_changed_identity(tmp_path: Path) -> None:
+    from hashlib import sha256
+    root=tmp_path / "dpo"
+    root.mkdir()
+    cfg=root/"frozen_config.yaml"
+    cfg.write_text("id: TRAIN-007C\n")
+    identity={"config_sha256":sha256(cfg.read_bytes()).hexdigest(),
+              "source_sft_adapter_sha256":"PINNED"}
+    (root/"training_identity.json").write_text(json.dumps(identity))
+    with pytest.raises(ValueError,match="identity mismatch"):
+        initialize_dpo_training_identity(
+          output_dir=root,identity={**identity,"source_sft_adapter_sha256":"BAD"},
+          resume_from_checkpoint=None,retry_pretraining_failure=True)
+    (root/"optimizer.pt").write_bytes(b"some optimizer data")
+    with pytest.raises(ValueError,match="unexpected files"):
+        initialize_dpo_training_identity(
+          output_dir=root,identity=identity,
+          resume_from_checkpoint=None,retry_pretraining_failure=True)
+
+
+def test_pretraining_retry_and_optimizer_resume_mutually_exclusive(tmp_path: Path):
+    with pytest.raises(ValueError, match="exclusive"):
+        initialize_dpo_training_identity(
+            output_dir=tmp_path,identity={},
+            resume_from_checkpoint=tmp_path/"checkpoint-32",
+            retry_pretraining_failure=True,
+        )
