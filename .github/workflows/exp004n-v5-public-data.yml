@@ -1,0 +1,105 @@
+name: EXP-004N frozen v5 public-only dataset
+
+on:
+  push:
+    branches:
+      - exp/livecodebench-verifier-gated
+    paths:
+      - .github/workflows/exp004n-v5-public-data.yml
+  workflow_dispatch:
+
+jobs:
+  public-only-dataset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU data tooling
+        run: python -m pip install -e ".[data,dev]"
+      - name: Verify v5/v6 parser behavior
+        run: pytest -q tests/test_livecodebench_adapter.py
+      - name: Build pinned v5-only public benchmark
+        run: |
+          python -m coderl_lab.datasets.livecodebench \
+            --fine-grained-version v5 \
+            --output-dir artifacts/exp004n/data
+      - name: Verify no private tests exported, exact pinned source
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          m = json.loads(Path("artifacts/exp004n/data/manifest.json").read_text())
+          pub = Path("artifacts/exp004n/data/public_tasks.jsonl")
+          assert m["fine_grained_version"] == "v5"
+          assert m["source_filename"] == "test5.jsonl"
+          assert m["source_revision"] == "0fe84c3912ea0c4d4a78037083943e8f0c4dd505"
+          assert m["private_tests_exported"] is False
+          assert m["private_tests_decoded"] is False
+          assert m["tasks"] > 0
+          assert hashlib.sha256(pub.read_bytes()).hexdigest() == m["public_view_sha256"]
+          rows = [json.loads(x) for x in pub.read_text().splitlines() if x.strip()]
+          assert len(rows) == m["tasks"]
+          assert len(set(x["question_id"] for x in rows)) == len(rows)
+          assert all("private_test_cases" not in row for row in rows)
+          print("EXP-004N public-only metadata verified; tasks:",len(rows))
+          print("Frozen public SHA256:",m["public_view_sha256"])
+          print("Dataset v5 source SHA256:",m["source_sha256"])
+          PY
+      - name: Build original v6 PUBLIC-ONLY comparison with identical pinned source
+        run: |
+          SOURCE_V6="$(python - <<'PY'
+          from huggingface_hub import hf_hub_download
+          print(hf_hub_download(
+              repo_id="livecodebench/code_generation_lite",
+              filename="test6.jsonl",
+              repo_type="dataset",
+              revision="0fe84c3912ea0c4d4a78037083943e8f0c4dd505",
+          ))
+          PY
+          )"
+          python -m coderl_lab.datasets.livecodebench \
+            --fine-grained-version v6 \
+            --source "$SOURCE_V6" \
+            --source-revision "0fe84c3912ea0c4d4a78037083943e8f0c4dd505" \
+            --output-dir artifacts/exp004n/data-v6-control
+      - name: Freeze v5-only vs v6 source-ID and normalized statement overlap
+        run: |
+          python -m coderl_lab.datasets.livecodebench_disjoint \
+            --v5-public artifacts/exp004n/data/public_tasks.jsonl \
+            --v6-public artifacts/exp004n/data-v6-control/public_tasks.jsonl \
+            --v5-manifest artifacts/exp004n/data/manifest.json \
+            --v6-manifest artifacts/exp004n/data-v6-control/manifest.json \
+            --output-dir artifacts/exp004n/data-disjoint
+      - name: Verify v6 control remained exactly the already frozen EXP-004L view
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m = json.loads(Path("artifacts/exp004n/data-v6-control/manifest.json").read_text())
+          assert m["tasks"] == 175
+          assert m["source_sha256"] == "bb4c364f71921c4495a6ad15abe1a927350b720009f4933e2e71f8af0f6fd1f5"
+          assert m["public_view_sha256"] == "f9fd88d4e1b35b4f6720ca548c2e2d1187ad53b5fb5723ef4999a40b79d7c399"
+          d = json.loads(Path("artifacts/exp004n/data-disjoint/disjoint_manifest.json").read_text())
+          assert d["original_v5_tasks"] == 167
+          assert d["comparison_v6_tasks"] == 175
+          assert d["disjoint_v5_tasks"] > 0
+          assert d["question_id_intersection_after_filter"] == 0
+          assert d["normalized_problem_text_intersection_after_filter"] == 0
+          print("V5/V6 isolated before hidden correctness access:", d["disjoint_v5_tasks"])
+          PY
+      - name: Archive public-only data + manifest (never raw private file)
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp004n-pinned-v5-public
+          path: |
+            artifacts/exp004n/data/public_tasks.jsonl
+            artifacts/exp004n/data/manifest.json
+            artifacts/exp004n/data-disjoint/disjoint_v5_public_tasks.jsonl
+            artifacts/exp004n/data-disjoint/disjoint_manifest.json
+          retention-days: 30
+          if-no-files-found: error

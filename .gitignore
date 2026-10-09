@@ -44,3 +44,6 @@ rollouts/
 
 # Keep refined experiment outputs under results/
 results/**/raw/
+
+# External pinned evaluation repositories
+.external/

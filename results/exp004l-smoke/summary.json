@@ -1,0 +1,169 @@
+{
+  "tasks": 12,
+  "eligible_tasks": 9,
+  "gate_triggered_tasks": 9,
+  "public_pass_tasks": 1,
+  "conditions": {
+    "baseline": {
+      "correct_tasks": 1,
+      "correct_fraction": 0.08333333333333333,
+      "delta_vs_baseline": null,
+      "transitions_vs_baseline": null
+    },
+    "gated_low_destabilize": {
+      "correct_tasks": 1,
+      "correct_fraction": 0.08333333333333333,
+      "delta_vs_baseline": 0,
+      "transitions_vs_baseline": {
+        "wrong_to_correct": 0,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 1,
+        "wrong_to_wrong": 11
+      }
+    },
+    "gated_high_destabilize": {
+      "correct_tasks": 1,
+      "correct_fraction": 0.08333333333333333,
+      "delta_vs_baseline": 0,
+      "transitions_vs_baseline": {
+        "wrong_to_correct": 0,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 1,
+        "wrong_to_wrong": 11
+      }
+    },
+    "always_low_destabilize": {
+      "correct_tasks": 1,
+      "correct_fraction": 0.08333333333333333,
+      "delta_vs_baseline": 0,
+      "transitions_vs_baseline": {
+        "wrong_to_correct": 0,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 1,
+        "wrong_to_wrong": 11
+      }
+    }
+  },
+  "contrasts": {
+    "gated_low_destabilize_minus_baseline": {
+      "tasks": 12,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_high_destabilize_minus_baseline": {
+      "tasks": 12,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "always_low_destabilize_minus_baseline": {
+      "tasks": 12,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_low_destabilize_minus_gated_high_destabilize": {
+      "tasks": 12,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_low_destabilize_minus_always_low_destabilize": {
+      "tasks": 12,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    }
+  },
+  "strata": {
+    "platform:atcoder": {
+      "tasks": 6,
+      "baseline_correct": 1,
+      "gated_low_correct": 1
+    },
+    "platform:leetcode": {
+      "tasks": 6,
+      "baseline_correct": 0,
+      "gated_low_correct": 0
+    },
+    "difficulty:easy": {
+      "tasks": 4,
+      "baseline_correct": 1,
+      "gated_low_correct": 1
+    },
+    "difficulty:hard": {
+      "tasks": 4,
+      "baseline_correct": 0,
+      "gated_low_correct": 0
+    },
+    "difficulty:medium": {
+      "tasks": 4,
+      "baseline_correct": 0,
+      "gated_low_correct": 0
+    }
+  },
+  "gate_triggered_subset": {
+    "tasks": 9,
+    "baseline_correct": 0,
+    "gated_low_correct": 0,
+    "low_transitions": {
+      "wrong_to_correct": 0,
+      "correct_to_wrong": 0,
+      "correct_to_correct": 0,
+      "wrong_to_wrong": 9
+    },
+    "low_minus_baseline": {
+      "tasks": 9,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    }
+  },
+  "public_pass_protection": {
+    "tasks": 1,
+    "gated_low_changed": 0,
+    "gated_high_changed": 0,
+    "always_low_changed": 0
+  },
+  "posthoc_gate_audit": {
+    "baseline_wrong_tasks": 11,
+    "gate_selected_tasks": 9,
+    "gate_selected_hidden_wrong": 9,
+    "gate_precision": 1,
+    "gate_recall": 0.8181818181818182,
+    "public_fail_precision": 1
+  },
+  "primary_success": false,
+  "claim_limit": "engineering smoke only, not efficacy evidence",
+  "frozen_inputs": {
+    "experiment": "EXP-004L",
+    "phase": "frozen-before-private-tests",
+    "expected_tasks": 12,
+    "runner_sha256": "3e646e5ab8296ac33d1e4848c8f869d65321c41889ae07b7831177913a1158e5",
+    "dataset_source_revision": "0fe84c3912ea0c4d4a78037083943e8f0c4dd505",
+    "dataset_source_sha256": "bb4c364f71921c4495a6ad15abe1a927350b720009f4933e2e71f8af0f6fd1f5",
+    "public_view_sha256": "f9fd88d4e1b35b4f6720ca548c2e2d1187ad53b5fb5723ef4999a40b79d7c399",
+    "official_evaluator_commit": "28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24",
+    "private_tests_accessed": false
+  },
+  "private_tests_accessed_only_after_freeze": true
+}

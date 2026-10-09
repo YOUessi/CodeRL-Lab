@@ -1,0 +1,175 @@
+{
+  "tasks": 175,
+  "eligible_tasks": 159,
+  "gate_triggered_tasks": 148,
+  "public_pass_tasks": 17,
+  "conditions": {
+    "baseline": {
+      "correct_tasks": 14,
+      "correct_fraction": 0.08,
+      "delta_vs_baseline": null,
+      "transitions_vs_baseline": null
+    },
+    "gated_low_destabilize": {
+      "correct_tasks": 15,
+      "correct_fraction": 0.08571428571428572,
+      "delta_vs_baseline": 0.005714285714285713,
+      "transitions_vs_baseline": {
+        "wrong_to_correct": 1,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 14,
+        "wrong_to_wrong": 160
+      }
+    },
+    "gated_high_destabilize": {
+      "correct_tasks": 14,
+      "correct_fraction": 0.08,
+      "delta_vs_baseline": 0,
+      "transitions_vs_baseline": {
+        "wrong_to_correct": 0,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 14,
+        "wrong_to_wrong": 161
+      }
+    },
+    "always_low_destabilize": {
+      "correct_tasks": 15,
+      "correct_fraction": 0.08571428571428572,
+      "delta_vs_baseline": 0.005714285714285713,
+      "transitions_vs_baseline": {
+        "wrong_to_correct": 1,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 14,
+        "wrong_to_wrong": 160
+      }
+    }
+  },
+  "contrasts": {
+    "gated_low_destabilize_minus_baseline": {
+      "tasks": 175,
+      "observed_delta": 0.005714285714285714,
+      "ci95_low": 0,
+      "ci95_high": 0.017142857142857144,
+      "probability_positive": 0.63425,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_high_destabilize_minus_baseline": {
+      "tasks": 175,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "always_low_destabilize_minus_baseline": {
+      "tasks": 175,
+      "observed_delta": 0.005714285714285714,
+      "ci95_low": 0,
+      "ci95_high": 0.017142857142857144,
+      "probability_positive": 0.63425,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_low_destabilize_minus_gated_high_destabilize": {
+      "tasks": 175,
+      "observed_delta": 0.005714285714285714,
+      "ci95_low": 0,
+      "ci95_high": 0.017142857142857144,
+      "probability_positive": 0.63425,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_low_destabilize_minus_always_low_destabilize": {
+      "tasks": 175,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    }
+  },
+  "strata": {
+    "platform:atcoder": {
+      "tasks": 112,
+      "baseline_correct": 12,
+      "gated_low_correct": 13
+    },
+    "platform:leetcode": {
+      "tasks": 63,
+      "baseline_correct": 2,
+      "gated_low_correct": 2
+    },
+    "difficulty:easy": {
+      "tasks": 43,
+      "baseline_correct": 11,
+      "gated_low_correct": 12
+    },
+    "difficulty:hard": {
+      "tasks": 80,
+      "baseline_correct": 0,
+      "gated_low_correct": 0
+    },
+    "difficulty:medium": {
+      "tasks": 52,
+      "baseline_correct": 3,
+      "gated_low_correct": 3
+    }
+  },
+  "gate_triggered_subset": {
+    "tasks": 148,
+    "baseline_correct": 0,
+    "gated_low_correct": 1,
+    "low_transitions": {
+      "wrong_to_correct": 1,
+      "correct_to_wrong": 0,
+      "correct_to_correct": 0,
+      "wrong_to_wrong": 147
+    },
+    "low_minus_baseline": {
+      "tasks": 148,
+      "observed_delta": 0.006756756756756757,
+      "ci95_low": 0,
+      "ci95_high": 0.02027027027027027,
+      "probability_positive": 0.6328,
+      "iterations": 20000,
+      "seed": 42
+    }
+  },
+  "public_pass_protection": {
+    "tasks": 17,
+    "gated_low_changed": 0,
+    "gated_high_changed": 0,
+    "always_low_changed": 8
+  },
+  "posthoc_gate_audit": {
+    "baseline_wrong_tasks": 161,
+    "gate_selected_tasks": 148,
+    "gate_selected_hidden_wrong": 148,
+    "gate_precision": 1,
+    "gate_recall": 0.9192546583850931,
+    "public_fail_precision": 1
+  },
+  "primary_success": false,
+  "claim_limit": "formal 175-task external-distribution replication",
+  "frozen_inputs": {
+    "experiment": "EXP-004L",
+    "phase": "frozen-before-private-tests",
+    "expected_tasks": 175,
+    "runner_sha256": "506ebd7eb08519a44d2988dc76dd855a43c7ccd454059d131e97079375c3879a",
+    "dataset_source_revision": "0fe84c3912ea0c4d4a78037083943e8f0c4dd505",
+    "dataset_source_sha256": "bb4c364f71921c4495a6ad15abe1a927350b720009f4933e2e71f8af0f6fd1f5",
+    "public_view_sha256": "f9fd88d4e1b35b4f6720ca548c2e2d1187ad53b5fb5723ef4999a40b79d7c399",
+    "official_evaluator_commit": "28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24",
+    "private_tests_accessed": false
+  },
+  "private_tests_accessed_only_after_freeze": true,
+  "candidate_resource_limit_counts": {
+    "baseline": 1,
+    "gated_low_destabilize": 1,
+    "gated_high_destabilize": 1,
+    "always_low_destabilize": 1
+  }
+}

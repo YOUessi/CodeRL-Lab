@@ -1,0 +1,98 @@
+{
+  "experiment": "EXP-004N",
+  "stage": "public_distribution_before_model_outcomes",
+  "uses_private_tests": false,
+  "uses_generated_answers": false,
+  "v5_public_sha256": "e695ba9fa2ce35abc8db2f3360bf711930746cd55843890177ecd518c0a4c98d",
+  "v6_public_sha256": "f9fd88d4e1b35b4f6720ca548c2e2d1187ad53b5fb5723ef4999a40b79d7c399",
+  "overlap_task_id": 0,
+  "overlap_normalized_problem": 0,
+  "v5": {
+    "tasks": 167,
+    "platform_counts": {
+      "atcoder": 105,
+      "leetcode": 62
+    },
+    "difficulty_counts": {
+      "easy": 41,
+      "hard": 74,
+      "medium": 52
+    },
+    "public_test_cases": 441,
+    "public_tests_per_task_mean": 2.6407185628742513,
+    "question_chars_mean": 1476.2215568862275,
+    "question_chars_median": 1396,
+    "question_chars_max": 3612,
+    "starter_chars_mean": 32.73053892215569,
+    "with_starter_count": 62,
+    "by_difficulty": {
+      "easy": {
+        "tasks": 41,
+        "question_chars_mean": 1200.0975609756097,
+        "with_starter": 17,
+        "public_tests": 115
+      },
+      "hard": {
+        "tasks": 74,
+        "question_chars_mean": 1648.0135135135135,
+        "with_starter": 17,
+        "public_tests": 185
+      },
+      "medium": {
+        "tasks": 52,
+        "question_chars_mean": 1449.4615384615386,
+        "with_starter": 28,
+        "public_tests": 141
+      }
+    },
+    "earliest_contest_date": "2024-09-22T00:00:00",
+    "latest_contest_date": "2025-01-04T18:30:00"
+  },
+  "v6": {
+    "tasks": 175,
+    "platform_counts": {
+      "atcoder": 112,
+      "leetcode": 63
+    },
+    "difficulty_counts": {
+      "easy": 43,
+      "hard": 80,
+      "medium": 52
+    },
+    "public_test_cases": 463,
+    "public_tests_per_task_mean": 2.645714285714286,
+    "question_chars_mean": 1404.8057142857142,
+    "question_chars_median": 1322,
+    "question_chars_max": 3823,
+    "starter_chars_mean": 31.782857142857143,
+    "with_starter_count": 63,
+    "by_difficulty": {
+      "easy": {
+        "tasks": 43,
+        "question_chars_mean": 984.6279069767442,
+        "with_starter": 17,
+        "public_tests": 116
+      },
+      "hard": {
+        "tasks": 80,
+        "question_chars_mean": 1605.5125,
+        "with_starter": 20,
+        "public_tests": 205
+      },
+      "medium": {
+        "tasks": 52,
+        "question_chars_mean": 1443.4807692307693,
+        "with_starter": 26,
+        "public_tests": 142
+      }
+    },
+    "earliest_contest_date": "2025-01-04T00:00:00",
+    "latest_contest_date": "2025-04-06T00:00:00"
+  },
+  "v6_minus_v5_difficulty_fraction": {
+    "easy": 0.00020530367835758234,
+    "hard": 0.014029084687767313,
+    "medium": -0.014234388366124895
+  },
+  "interpretation_limit": "Observable task composition only. Prompt characters/difficulty are not correctness, ability or contaminated-model measures."
+}
