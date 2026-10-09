@@ -1,0 +1,71 @@
+name: Track A formal post-training data snapshot
+
+on:
+  push:
+    branches:
+      - feat/posttraining-track-a-data-qlora
+    paths:
+      - .github/workflows/posttraining-data-full.yml
+  workflow_dispatch:
+
+jobs:
+  build-frozen-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned data runtime
+        run: python -m pip install -e ".[data,dev]"
+      - name: Stream complete frozen UltraChat SFT splits (4096 + 256)
+        run: |
+          python -m coderl_lab.datasets.posttrain_h4 \
+            --stage sft --seed 42 \
+            --output-dir data/generated/posttrain-h4-v1
+      - name: Stream complete frozen UltraFeedback DPO splits (2048 + 256)
+        run: |
+          python -m coderl_lab.datasets.posttrain_h4 \
+            --stage dpo --seed 42 \
+            --output-dir data/generated/posttrain-h4-v1
+      - name: Verify complete scans, source revisions, record counts and SHA-256
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          pairs = [
+            ("sft", 4096, 256, "b7fe606ecdbf71e8537946a8d9de5ccf0f6da48b"),
+            ("dpo", 2048, 256, "daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2"),
+          ]
+          for stage, train, val, rev in pairs:
+              root = Path("data/generated/posttrain-h4-v1")
+              m = json.loads((root / f"{stage}_manifest.json").read_text())
+              assert m["full_scan"] is True, "formal run must scan complete HF splits"
+              assert m["scan_limit"] is None
+              assert m["dataset_revision"] == rev
+              assert m["prompt_overlap"] == 0
+              assert m["test_or_private_examples_in_training"] is False
+              for kind, expected in (("train", train), ("validation", val)):
+                  p = root / f"{stage}_{kind}.jsonl"
+                  assert m[kind]["rows"] == expected
+                  assert hashlib.sha256(p.read_bytes()).hexdigest() == m[kind]["sha256"]
+                  assert sum(bool(x.strip()) for x in p.open()) == expected
+              print(stage, "FORMAL SNAPSHOT PASS", m["train"]["sha256"], m["validation"]["sha256"])
+          PY
+      - name: Retain bounded frozen samples and manifests outside Git
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: posttraining-frozen-h4-v1
+          path: |
+            data/generated/posttrain-h4-v1/sft_train.jsonl
+            data/generated/posttrain-h4-v1/sft_validation.jsonl
+            data/generated/posttrain-h4-v1/sft_manifest.json
+            data/generated/posttrain-h4-v1/dpo_train.jsonl
+            data/generated/posttrain-h4-v1/dpo_validation.jsonl
+            data/generated/posttrain-h4-v1/dpo_manifest.json
+          if-no-files-found: error
+          retention-days: 30

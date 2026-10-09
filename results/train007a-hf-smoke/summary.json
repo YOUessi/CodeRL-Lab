@@ -1,0 +1,45 @@
+{
+  "experiment": "TRAIN-007A-SMOKE",
+  "date": "2026-10-08",
+  "result_status": "real_cuda_smoke_passed_not_formal",
+  "source_repo": "HuggingFaceH4/ultrachat_200k",
+  "source_revision": "b7fe606ecdbf71e8537946a8d9de5ccf0f6da48b",
+  "source_kind": "first64 streaming smoke selected by SHA256; not full scan",
+  "train_examples": 32,
+  "validation_examples": 8,
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "model_revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "quantization": {
+    "mode": "nf4",
+    "double_quant": true,
+    "compute_dtype": "bfloat16"
+  },
+  "trainable_parameters": 17432576,
+  "optimizer_steps": 4,
+  "training_loss": 1.2440648972988129,
+  "train_runtime_seconds": 12.5155,
+  "evaluation": {
+    "torch": "2.10.0+cu128",
+    "transformers": "5.18.0",
+    "trl": "1.14.1",
+    "peft": "0.21.2"
+  },
+  "validation_losses": [
+    {
+      "step": 4,
+      "eval_loss": 0.9588361382484436
+    }
+  ],
+  "gpu_peak_allocated_bytes": 3636730368,
+  "gpu_peak_reserved_bytes": 4049600512,
+  "adapter_sha256": "c12dc41271400fc2f610d44eb9617813d4c729a10bb1bc122954bc75bd036a16",
+  "train_sha256": "f702e61f2695168b448aa13924f3f59684e279a175fe9a7b15cf839aef164602",
+  "validation_sha256": "9542c6863834533d7599a48ce8bf1a4e4cbe802595d02ec7d154be3e29e92c38",
+  "full_4096_training_completed": false,
+  "versioned_input_sha_recorded": true,
+  "caveats": [
+    "The run uses only a 32/8 smoke subset; train loss does not establish model quality improvement.",
+    "Peak GPU memory is for this four-step mini-run, not full-length TRAIN-007A or DPO.",
+    "Smoked model adapter remains on Tang and is not merged into official 4096-sample SFT."
+  ]
+}

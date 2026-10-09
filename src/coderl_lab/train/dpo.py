@@ -11,6 +11,11 @@ from typing import Any
 
 import yaml
 
+from coderl_lab.train.sft import (
+    build_training_identity,
+    initialize_training_identity,
+)
+
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [
@@ -97,6 +102,38 @@ def prepare_rows(
     return rows
 
 
+def initialize_dpo_training_identity(
+    *,
+    output_dir: Path,
+    identity: dict[str, Any],
+    resume_from_checkpoint: Path | None,
+    retry_pretraining_failure: bool,
+) -> Path | None:
+    """Retry only before any optimizer step, without altering frozen files."""
+    if retry_pretraining_failure and resume_from_checkpoint is not None:
+        raise ValueError("pre-training retry and optimizer resume are exclusive")
+    if not retry_pretraining_failure:
+        return initialize_training_identity(
+            output_dir=output_dir, identity=identity,
+            resume_from_checkpoint=resume_from_checkpoint,
+        )
+    if not output_dir.is_dir():
+        raise FileNotFoundError("existing DPO pre-training directory missing")
+    actual = {p.name for p in output_dir.iterdir()}
+    if actual != {"frozen_config.yaml", "training_identity.json"}:
+        raise ValueError(
+            "pre-training retry refused: unexpected files or optimizer state: "
+            + ", ".join(sorted(actual))
+        )
+    previous = json.loads((output_dir / "training_identity.json").read_text(encoding="utf-8"))
+    if previous != identity:
+        raise ValueError("DPO frozen training identity mismatch; refusing retry")
+    frozen_config = output_dir / "frozen_config.yaml"
+    if hashlib.sha256(frozen_config.read_bytes()).hexdigest() != identity["config_sha256"]:
+        raise ValueError("DPO frozen config SHA mismatch")
+    return None
+
+
 def run_dpo(
     *,
     config_path: Path,
@@ -105,6 +142,10 @@ def run_dpo(
     output_dir: Path | None = None,
     max_pairs: int | None = None,
     max_steps: int | None = None,
+    eval_preferences_path: Path | None = None,
+    max_eval_pairs: int | None = None,
+    resume_from_checkpoint: Path | None = None,
+    retry_pretraining_failure: bool = False,
 ) -> dict[str, Any]:
     try:
         import peft
@@ -134,6 +175,37 @@ def run_dpo(
     )
     dataset = Dataset.from_list(rows)
 
+    # The legacy EXP-004B configuration remains train-only. New Track A
+    # experiments must pass a *separate* held-out preference split.
+    if eval_preferences_path is None and cfg.get("data", {}).get("heldout_validation"):
+        eval_preferences_path = Path(str(cfg["data"]["heldout_validation"]))
+    evaluation_dataset = None
+    if eval_preferences_path is not None:
+        eval_raw = load_jsonl(eval_preferences_path)
+        if max_eval_pairs is not None:
+            if max_eval_pairs <= 0:
+                raise ValueError("max_eval_pairs must be positive")
+            eval_raw = eval_raw[:max_eval_pairs]
+        train_raw = load_jsonl(preferences_path)
+        train_prompts = {str(row["prompt"]) for row in train_raw}
+        evaluation_prompts = {str(row["prompt"]) for row in eval_raw}
+        if train_prompts & evaluation_prompts:
+            raise ValueError("DPO train/held-out validation prompt overlap")
+        if not eval_raw:
+            raise ValueError("DPO held-out validation cannot be empty")
+        for index, entry in enumerate(eval_raw):
+            if not (str(entry.get("chosen", "")).strip()
+                    and str(entry.get("rejected", "")).strip()
+                    and str(entry.get("prompt", "")).strip()):
+                raise ValueError(f"empty DPO eval preference row {index}")
+            if str(entry["chosen"]) == str(entry["rejected"]):
+                raise ValueError(f"identical DPO eval preference row {index}")
+        eval_prepared = prepare_rows(
+            eval_preferences_path, seed=seed,
+            max_pairs=max_eval_pairs,
+        )
+        evaluation_dataset = Dataset.from_list(eval_prepared)
+
     model_name = str(model_cfg["name_or_path"])
     revision = str(model_cfg["revision"])
     dtype_name = str(model_cfg.get("dtype", "bfloat16"))
@@ -155,6 +227,19 @@ def run_dpo(
         raise ValueError(
             f"SFT adapter SHA mismatch: expected {expected_sha}, got {adapter_sha}"
         )
+    train_identity = build_training_identity(
+        config_path=config_path,
+        data_path=preferences_path,
+        heldout_path=eval_preferences_path,
+        train_rows=len(dataset),
+        heldout_rows=len(evaluation_dataset) if evaluation_dataset is not None else 0,
+    )
+    train_identity["source_sft_adapter_sha256"] = adapter_sha
+    checkpoint_to_resume = initialize_dpo_training_identity(
+        output_dir=final_output, identity=train_identity,
+        resume_from_checkpoint=resume_from_checkpoint,
+        retry_pretraining_failure=retry_pretraining_failure,
+    )
 
     random.seed(seed)
     torch.manual_seed(seed)
@@ -170,13 +255,44 @@ def run_dpo(
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    base_model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        revision=revision,
-        dtype=dtype,
-        trust_remote_code=True,
-    )
+    # Track A's preference policy must use the same base precision pathway as
+    # the checkpoint produced by TRAIN-007A. Legacy EXP-004B stays BF16.
+    quant_cfg = dict(cfg.get("quantization", {}))
+    quant_mode = str(quant_cfg.get("mode", "none"))
+    if quant_mode not in {"none", "nf4"}:
+        raise ValueError(f"unsupported DPO quantization mode: {quant_mode}")
+    base_kwargs: dict[str, Any] = {
+        "revision": revision,
+        "dtype": dtype,
+        "trust_remote_code": True,
+    }
+    if quant_mode == "nf4":
+        if not torch.cuda.is_available():
+            raise RuntimeError("NF4 DPO requires a CUDA GPU")
+        try:
+            import bitsandbytes  # noqa: F401
+            from peft import prepare_model_for_kbit_training
+            from transformers import BitsAndBytesConfig
+        except ImportError as exc:
+            raise RuntimeError(
+                "NF4 DPO requires a bitsandbytes installation"
+            ) from exc
+        base_kwargs["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=bool(quant_cfg.get("double_quant", True)),
+            bnb_4bit_compute_dtype=dtype,
+        )
+        base_kwargs["device_map"] = {"": torch.cuda.current_device()}
+    base_model = AutoModelForCausalLM.from_pretrained(model_name, **base_kwargs)
     base_model.config.use_cache = False
+    if quant_mode == "nf4":
+        base_model = prepare_model_for_kbit_training(
+            base_model,
+            use_gradient_checkpointing=bool(
+                train_cfg.get("gradient_checkpointing", True)
+            ),
+        )
 
     model = PeftModel.from_pretrained(
         base_model,
@@ -210,11 +326,26 @@ def run_dpo(
         max_steps=requested_max_steps,
     )
 
+    save_strategy = str(train_cfg.get("save_strategy", "no"))
+    if save_strategy not in {"no", "epoch", "steps"}:
+        raise ValueError(f"unsupported DPO save strategy: {save_strategy}")
+    if save_strategy == "steps":
+        if int(train_cfg.get("save_steps", 0)) <= 0:
+            raise ValueError("DPO step checkpointing requires save_steps > 0")
+        if int(train_cfg.get("save_total_limit", 0)) < 2:
+            raise ValueError("DPO must retain at least 2 step checkpoints")
+
     args = DPOConfig(
         output_dir=str(final_output),
         num_train_epochs=epochs,
         max_steps=requested_max_steps,
         per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=int(train_cfg.get("per_device_eval_batch_size", 8)),
+        eval_accumulation_steps=(
+            int(train_cfg["eval_accumulation_steps"])
+            if train_cfg.get("eval_accumulation_steps") is not None else None
+        ),
+        prediction_loss_only=bool(train_cfg.get("prediction_loss_only", False)),
         gradient_accumulation_steps=grad_accum,
         learning_rate=float(train_cfg["learning_rate"]),
         warmup_steps=warmup_steps,
@@ -224,7 +355,13 @@ def run_dpo(
         loss_type=str(train_cfg.get("loss_type", "sigmoid")),
         max_length=int(train_cfg.get("max_length", 1024)),
         logging_steps=int(train_cfg.get("logging_steps", 1)),
-        save_strategy=str(train_cfg.get("save_strategy", "no")),
+        save_strategy=save_strategy,
+        save_steps=int(train_cfg.get("save_steps", 500)),
+        save_total_limit=(
+            int(train_cfg["save_total_limit"])
+            if train_cfg.get("save_total_limit") is not None else None
+        ),
+        eval_strategy="epoch" if evaluation_dataset is not None else "no",
         seed=seed,
         data_seed=seed,
         bf16=dtype_name == "bfloat16",
@@ -240,11 +377,17 @@ def run_dpo(
         ref_model=None,
         args=args,
         train_dataset=dataset,
+        eval_dataset=evaluation_dataset,
         processing_class=tokenizer,
     )
 
     started = time.perf_counter()
-    result = trainer.train()
+    result = trainer.train(
+        resume_from_checkpoint=(
+            str(checkpoint_to_resume)
+            if checkpoint_to_resume is not None else None
+        )
+    )
     elapsed = time.perf_counter() - started
 
     trainer.save_model(str(final_output))
@@ -276,8 +419,29 @@ def run_dpo(
         "output_dir": str(final_output),
         "model": model_name,
         "requested_model_revision": revision,
+        "quantization": {
+            "mode": quant_mode,
+            "double_quant": bool(quant_cfg.get("double_quant", True))
+            if quant_mode == "nf4" else None,
+            "compute_dtype": dtype_name if quant_mode == "nf4" else None,
+        },
         "num_pairs": len(dataset),
+        "num_heldout_preference_pairs": (
+            len(evaluation_dataset) if evaluation_dataset is not None else 0
+        ),
         "num_train_epochs": epochs,
+        "eval_memory_policy": {
+            "per_device_eval_batch_size": int(args.per_device_eval_batch_size),
+            "eval_accumulation_steps": args.eval_accumulation_steps,
+            "prediction_loss_only": bool(args.prediction_loss_only),
+        },
+        "checkpoint_policy": {
+            "save_strategy": save_strategy,
+            "save_steps": int(train_cfg.get("save_steps", 500)) if save_strategy == "steps" else None,
+            "save_total_limit": int(train_cfg.get("save_total_limit", 0)) if save_strategy == "steps" else None,
+            "resumed_from": str(checkpoint_to_resume) if checkpoint_to_resume is not None else None,
+            "identity": train_identity,
+        },
         "max_steps": requested_max_steps,
         "warmup_ratio_requested": warmup_ratio,
         "warmup_steps": warmup_steps,
@@ -324,6 +488,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--output-dir", type=Path)
     p.add_argument("--max-pairs", type=int)
     p.add_argument("--max-steps", type=int)
+    p.add_argument("--eval-preferences", type=Path)
+    p.add_argument("--max-eval-pairs", type=int)
+    p.add_argument("--resume-from-checkpoint", type=Path)
+    p.add_argument("--retry-pretraining-failure", action="store_true",
+                   help="verify pretraining-only failure files without overwrite")
     return p.parse_args()
 
 
@@ -336,6 +505,10 @@ def main() -> None:
         output_dir=args.output_dir,
         max_pairs=args.max_pairs,
         max_steps=args.max_steps,
+        eval_preferences_path=args.eval_preferences,
+        max_eval_pairs=args.max_eval_pairs,
+        resume_from_checkpoint=args.resume_from_checkpoint,
+        retry_pretraining_failure=args.retry_pretraining_failure,
     )
 
 

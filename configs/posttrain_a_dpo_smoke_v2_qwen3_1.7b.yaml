@@ -1,0 +1,60 @@
+experiment:
+  id: TRAIN-007C
+  track: A-posttraining
+  name: ultrafeedback-preference-dpo-32x16-smoke-v2-eval-memory-pinned
+
+model:
+  name_or_path: Qwen/Qwen3-1.7B-Base
+  revision: ea980cb0a6c2ae4b936e82123acc929f1cec04c1
+  dtype: bfloat16
+
+quantization:
+  mode: nf4
+  double_quant: true
+
+initial_policy:
+  sft_adapter: artifacts/posttrain-a/train007a-qlora-ultrachat
+  # Must be replaced from the *actual* newly trained adapter by a validated
+  # prepare script, not a reused MBPP/SFT or arbitrary manually typed hash.
+  expected_sha256: REQUIRES_VERIFIED_TRAIN007A_CHECKPOINT
+
+data:
+  source: HuggingFaceH4/ultrafeedback_binarized
+  revision: daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2
+  manifest: data/generated/posttrain-h4-v1/dpo_manifest.json
+  preferences: data/generated/posttrain-h4-v1/dpo_train.jsonl
+  heldout_validation: data/generated/posttrain-h4-v1/dpo_validation.jsonl
+  expected_train_pairs: 2048
+  expected_validation_pairs: 256
+
+training:
+  output_dir: artifacts/posttrain-a/train007c-dpo-smoke-v2
+  seed: 42
+  num_train_epochs: 1
+  max_steps: -1
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  eval_accumulation_steps: 1
+  prediction_loss_only: true
+  gradient_accumulation_steps: 8
+  learning_rate: 0.000001
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  lr_scheduler_type: cosine
+  gradient_checkpointing: true
+  logging_steps: 1
+  save_strategy: steps
+  save_steps: 32
+  save_total_limit: 4
+  beta: 0.1
+  loss_type: sigmoid
+  max_length: 1024
+
+evaluation:
+  eval_strategy: epoch
+  metrics:
+    - eval_loss
+    - eval_rewards_accuracies
+    - eval_rewards_margins
+    - adapter_sha256
+    - peak_gpu_memory

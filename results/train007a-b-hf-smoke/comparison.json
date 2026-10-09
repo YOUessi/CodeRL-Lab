@@ -1,0 +1,30 @@
+{
+  "experiment": "TRAIN-007A-vs-007B-smoke",
+  "date": "2026-10-08",
+  "type": "actual_cuda_matched_data_smoke",
+  "sample_definition": "UltraChat first64 scanned, 32 train +8 heldout, identical SHA256",
+  "sample_hash": "f702e61f2695168b448aa13924f3f59684e279a175fe9a7b15cf839aef164602",
+  "validation_hash": "9542c6863834533d7599a48ce8bf1a4e4cbe802595d02ec7d154be3e29e92c38",
+  "qat": {
+    "quantization": "nf4",
+    "steps": 4,
+    "train_loss": 1.2440648972988129,
+    "eval_loss": 0.9588361382484436,
+    "train_runtime_seconds": 12.5155,
+    "peak_reserved_bytes": 4049600512
+  },
+  "bf16": {
+    "quantization": "none",
+    "steps": 4,
+    "train_loss": 1.1864025294780731,
+    "eval_loss": 0.9038249850273132,
+    "train_runtime_seconds": 10.368,
+    "peak_reserved_bytes": 5005901824
+  },
+  "full_scale_result": false,
+  "inference": [
+    "Real NF4 and BF16 LoRA training both ran on RTX 4090 without OOM",
+    "Both produced saved adapter weights and held-out evaluation logs",
+    "The training run is too small for a robust quality ranking; BF16/NF4 differences cannot be extrapolated to 4096 samples."
+  ]
+}
