@@ -168,7 +168,8 @@ def test_retry_rejects_changed_adapter_and_frozen_config(tmp_path: Path) -> None
         freeze_dpo_config(**paths, expected_sft_train_examples=2, verify_existing=True)
     assert paths["output_path"].read_bytes() == stored
 
-    (tmp_path / "next").mkdir()\n    paths = fixture_bundle(tmp_path / "next")
+    (tmp_path / "next").mkdir()
+    paths = fixture_bundle(tmp_path / "next")
     run_freeze(paths)
     paths["output_path"].write_text(paths["output_path"].read_text() + "# modified")
     with pytest.raises(ValueError, match="differs"):
