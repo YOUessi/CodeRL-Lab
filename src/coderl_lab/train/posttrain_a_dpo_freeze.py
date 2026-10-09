@@ -50,10 +50,13 @@ def freeze_dpo_config(
     validation_preferences_path: Path,
     output_path: Path,
     expected_sft_train_examples: int = 4096,
+    verify_existing: bool = False,
 ) -> dict[str, Any]:
     """Fail closed on model, adapter, dataset version, size or split leakage."""
-    if output_path.exists():
+    if output_path.exists() and not verify_existing:
         raise FileExistsError(f"frozen config already exists: {output_path}")
+    if verify_existing and not output_path.is_file():
+        raise FileNotFoundError("no frozen DPO config to verify")
 
     cfg = yaml.safe_load(template_path.read_text(encoding="utf-8"))
     summary = json.loads(sft_summary_path.read_text(encoding="utf-8"))
@@ -122,8 +125,14 @@ def freeze_dpo_config(
     cfg["data"]["train_sha256"] = train["sha256"]
     cfg["data"]["heldout_sha256"] = heldout["sha256"]
     cfg["data"]["manifest_sha256"] = sha256_file(manifest_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    expected_text = yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False)
+    if verify_existing:
+        actual_text = output_path.read_text(encoding="utf-8")
+        if actual_text != expected_text:
+            raise ValueError("existing DPO frozen config differs from verified source inputs")
+    else:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(expected_text, encoding="utf-8")
     return {
         "experiment": "TRAIN-007C",
         "runtime_config": str(output_path),
@@ -146,6 +155,7 @@ def main() -> None:
     p.add_argument("--train-preferences", type=Path, default=Path("data/generated/posttrain-h4-v1/dpo_train.jsonl"))
     p.add_argument("--validation-preferences", type=Path, default=Path("data/generated/posttrain-h4-v1/dpo_validation.jsonl"))
     p.add_argument("--output", type=Path, default=Path("artifacts/posttrain-a/train007c-dpo-ultrafeedback/frozen_config.yaml"))
+    p.add_argument("--verify-existing", action="store_true", help="audit saved frozen config byte-for-byte; never rewrite it")
     a = p.parse_args()
     summary = freeze_dpo_config(
         template_path=a.template,
@@ -155,6 +165,7 @@ def main() -> None:
         train_preferences_path=a.train_preferences,
         validation_preferences_path=a.validation_preferences,
         output_path=a.output,
+        verify_existing=a.verify_existing,
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
