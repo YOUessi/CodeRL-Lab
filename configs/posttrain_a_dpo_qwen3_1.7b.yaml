@@ -33,6 +33,9 @@ training:
   num_train_epochs: 1
   max_steps: -1
   per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  eval_accumulation_steps: 1
+  prediction_loss_only: true
   gradient_accumulation_steps: 8
   learning_rate: 0.000001
   warmup_ratio: 0.03
