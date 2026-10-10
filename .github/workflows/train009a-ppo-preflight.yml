@@ -1,0 +1,79 @@
+name: TRAIN-009A PPO train-only prompts and math audit
+
+on:
+  push:
+    branches:
+      - feat/train009a-online-ppo-clip-rlhf
+    paths:
+      - .github/workflows/train009a-ppo-preflight.yml
+      - configs/train009a_ppo_clip_rlhf_smoke.yaml
+      - src/coderl_lab/train/ppo_math.py
+      - src/coderl_lab/train/ppo_data.py
+      - src/coderl_lab/train/ppo_online.py
+      - tests/test_train009a_ppo_math.py
+      - tests/test_train009a_ppo_data.py
+      - scripts/run_train009a_ppo_clip_smoke.sh
+  workflow_dispatch:
+
+jobs:
+  frozen-ppo-smoke-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU-only tests and YAML
+        run: python -m pip install -e ".[dev]"
+      - name: Test true PPO-Clip and GAE equations without training
+        run: pytest -q tests/test_train009a_ppo_math.py tests/test_train009a_ppo_data.py
+      - name: Download exact previously frozen UltraChat/UltraFeedback snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data/generated/posttrain-h4-v1
+          gh run download 37725387735 \
+            --repo YOUessi/CodeRL-Lab \
+            --name posttraining-frozen-h4-v1 \
+            --dir data/generated/posttrain-h4-v1
+      - name: Check all source hashes and disjoint PPO rollout/probe prompts
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from coderl_lab.train.ppo_data import freeze_online_ppo_prompts
+          train,freeze=freeze_online_ppo_prompts(
+              data_root=Path('data/generated/posttrain-h4-v1'),n=12,seed=42,
+          )
+          assert len(train)==12
+          assert freeze['selection_overlaps_reward_training']==0
+          assert freeze['selection_overlaps_any_heldout']==0
+          assert freeze['excluded_reward_training_prompt_count']>=1
+          assert len({p['prompt_sha256'] for p in train})==12
+          import yaml
+          cfg=yaml.safe_load(Path('configs/train009a_ppo_clip_rlhf_smoke.yaml').read_text())
+          assert cfg['data']['n_rollout_prompts']==8 and cfg['data']['n_probe_prompts']==4
+          assert cfg['ppo']['max_steps']==4
+          summary={
+              'experiment':'TRAIN-009A',
+              'status':'CPU_preflight_only_no_policy_or_reward_GPU_training',
+              'selected_train_prompt_sha256':[p['prompt_sha256'] for p in train[:8]],
+              'selected_probe_prompt_sha256':[p['prompt_sha256'] for p in train[8:]],
+              'selection_provenance':freeze,
+              'private_or_hidden_tests_read':False,
+          }
+          root=Path('artifacts/train009a')
+          root.mkdir(parents=True,exist_ok=True)
+          (root/'cpu_preflight.json').write_text(json.dumps(summary,indent=2)+'\n')
+          print('PPO frozen train-only prompt audit PASS',len(train))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: train009a-ppo-real-h4-trainonly-cpu-preflight
+          path: artifacts/train009a/cpu_preflight.json
+          if-no-files-found: error
+          retention-days: 30

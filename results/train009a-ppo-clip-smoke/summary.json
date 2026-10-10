@@ -1,0 +1,110 @@
+{
+  "experiment": "TRAIN-009A",
+  "status": "real_cuda_ppo_clip_smoke_not_formal",
+  "method": "token-level PPO-Clip with trainable scalar critic and GAE",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "model_revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "steps": 4,
+  "unique_train_prompts": 8,
+  "heldout_probe_prompts_reserved_not_trained": 4,
+  "training_episodes": 16,
+  "generated_tokens": 512,
+  "actual_optimizer_minibatch_steps": 32,
+  "initial_SFT_reference_logprob_max_abs_difference": 0,
+  "mean_raw_reward_model_score": 1.00653076171875,
+  "mean_sampled_on_policy_KL_to_SFT_reference": -0.0007224594518220329,
+  "mean_PPO_clipped_fraction": 0.0048828125,
+  "policy_adapter_sha256": "0b302778bcd44a2c01830c93e749eb098b9be7f75ff84cb81d314856b50bec70",
+  "policy_adapter_path": "artifacts/posttrain-a/train009a-ppo-clip-smoke/policy_adapter/policy/adapter_model.safetensors",
+  "value_head_sha256": "a946efd327a9203e0dae8b31971f5502ea519807ffc8cd4d1735ab41fc5c73dd",
+  "optimizer_state_sha256": "241496b5efd00fc60095266d08afae23189837c0c56d48992718a43cbaacba86",
+  "source_identity": {
+    "experiment": "TRAIN-009A",
+    "kind": "real_on_policy_PPO-Clip_with_value_head_4step_smoke",
+    "config_sha256": "1576b948478eb683e8ff9cc17f3f8413e5d231497b0402a017d34d5ba344d203",
+    "sft_adapter_sha256": "d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d",
+    "reward_adapter_sha256": "586fb4cb21bb3408507d6e179d1bd858aca35d7c3e46b1dbef84234d3adbd28c",
+    "sft_training_summary_sha256": "4f9efb90702bd8c3ddd4bfebcb5079f32b741c27d3471ffa94b73e2234dcab26",
+    "reward_training_summary_sha256": "36be6d51720dec46a70b053e99754c37359c0a83efba4a7679c3d45db38fe5c7",
+    "frozen_data": {
+      "selection_rule": "SHA256(seed|PPO|promptSHA) ascending before outcomes",
+      "seed": 42,
+      "training_prompt_count": 12,
+      "selected_prompt_sha256": [
+        "36808588741773d69204705bc8d313ce0925b930c9ad52084753218c803ffed3",
+        "b335ab87cac242ca7fda6e0b4993212b59624e06c8f1856b072096e0fefa20b0",
+        "ebdac47eac2c8a860499a383dc3422ff4a87478ef012e3e107f68d2fc370d98f",
+        "fabbf3635afe52502ebd2b8676d033042de80d36d0310ebc0cbd7cac452b2ba9",
+        "ce8184e95a2ef0840ec19acd5829bace85a889b47270bc3a9faaee16ba175893",
+        "2717609a0544d9bfac54c5da72251152c521f2c82e29542b1147447bee22d022",
+        "eae4cd64eb838cccffb4b824ee1e2ce9649190b3f53df364012722047be3e572",
+        "f7eb9e892dbcd04db9b3730660e157204a25fff6ac9d219376883c2063804df9",
+        "f62c0d0dd48e7f77634fdcf496b8a51946ebe2aaa756bba2cc722d3960e9f9e4",
+        "0ac89d32d2dc627df94e9a7a6a4b51dc890a863e807d10f5ab3131269caa4303",
+        "fa7d2f0f0c05c479aa84df75b31d99efc4efccd5376c8cd3abd742d601ab17b5",
+        "28531e5caabdc61d870d7fc7a000b149e277ca87440c4a08dff67e0d6d81c966"
+      ],
+      "prompt_source": "UltraChat SFT train 4096 only",
+      "excluded_reward_training_prompt_count": 1,
+      "selection_overlaps_reward_training": 0,
+      "selection_overlaps_any_heldout": 0,
+      "file_sha256": {
+        "sft_train": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+        "sft_validation": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+        "dpo_train": "945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77",
+        "dpo_validation": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450"
+      },
+      "source_revisions": {
+        "sft": "b7fe606ecdbf71e8537946a8d9de5ccf0f6da48b",
+        "reward": "daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2"
+      },
+      "no_hidden_or_private_cases_in_training": true
+    },
+    "train_prompt_sha256": [
+      "36808588741773d69204705bc8d313ce0925b930c9ad52084753218c803ffed3",
+      "b335ab87cac242ca7fda6e0b4993212b59624e06c8f1856b072096e0fefa20b0",
+      "ebdac47eac2c8a860499a383dc3422ff4a87478ef012e3e107f68d2fc370d98f",
+      "fabbf3635afe52502ebd2b8676d033042de80d36d0310ebc0cbd7cac452b2ba9",
+      "ce8184e95a2ef0840ec19acd5829bace85a889b47270bc3a9faaee16ba175893",
+      "2717609a0544d9bfac54c5da72251152c521f2c82e29542b1147447bee22d022",
+      "eae4cd64eb838cccffb4b824ee1e2ce9649190b3f53df364012722047be3e572",
+      "f7eb9e892dbcd04db9b3730660e157204a25fff6ac9d219376883c2063804df9"
+    ],
+    "probe_prompt_sha256": [
+      "f62c0d0dd48e7f77634fdcf496b8a51946ebe2aaa756bba2cc722d3960e9f9e4",
+      "0ac89d32d2dc627df94e9a7a6a4b51dc890a863e807d10f5ab3131269caa4303",
+      "fa7d2f0f0c05c479aa84df75b31d99efc4efccd5376c8cd3abd742d601ab17b5",
+      "28531e5caabdc61d870d7fc7a000b149e277ca87440c4a08dff67e0d6d81c966"
+    ],
+    "no_private_or_hidden_tests": true,
+    "no_heldout_preference_labels_used_for_policy_gradient": true,
+    "is_formal_benchmark": false,
+    "seed": 42
+  },
+  "elapsed_seconds_wall": 76.11916765896603,
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 4090 Laptop GPU",
+    "peak_reserved_bytes": 5165285376
+  },
+  "claim_limits": [
+    "Only four small on-policy PPO updates, not a benchmark-quality online RLHF run.",
+    "The frozen reward model is a learned imperfect proxy; optimizing it can reward-hack without human quality gains.",
+    "No heldout preference labels, LCB private cases or MBPP hidden tests used during optimization.",
+    "PPO reward score movement is not independent test accuracy; generalization requires new data and a preregistered baseline.",
+    "The reserved probe prompts are not used for gradient updates; probe quality testing is separately scoped."
+  ],
+  "result_type": "verified_real_cuda_eng_smoke",
+  "execution_started_at_local": "2026-10-10T11:12:28+08:00",
+  "archived_from": "/home/you/projects/CodeRL-Lab-track-ppo/artifacts/posttrain-a/train009a-ppo-clip-smoke/run_summary.json",
+  "source_executing_git_sha": "9e48f2ece93ce22cb6038bae3d54bf8538573632",
+  "verified_adapter_update": "392 of 392 comparable SFT LoRA tensors changed in saved policy adapter",
+  "lora_changed_tensors": 392,
+  "lora_total_tensors": 392,
+  "largest_absolute_policy_weight_change": 0.00014779716730117798,
+  "critic_weight_nonzero_l2": 0.041777338832616806,
+  "optimizer_parameter_states": 394,
+  "reference_initial_logprob_verified_equal": true,
+  "frozen_reward_adapter_sha_unmodified": true,
+  "no_public_or_private_preference_labels_consumed_for_PPO": true,
+  "caveat": "4steps/16 sampled responses show real PPO execution and adapter updates only, not generalized human preference or task correctness improvement."
+}
