@@ -1,0 +1,67 @@
+{
+  "experiment": "TRAIN-009A",
+  "variant": "v3: explicit smoke-only truncated-gradient plumbing",
+  "date_local": "2026-10-10",
+  "status": "completed_real_online_GRPO_gradient_smoke_only_NOT_PPO",
+  "source_git_commit": "737c247850616189576273de5884b48756a6f46e",
+  "gpu": "Tang RTX 4090 Laptop GPU",
+  "algorithm": "GRPO (group-relative policy-gradient with frozen learned RM and SFT reference KL)",
+  "optimizer_steps": 2,
+  "rollouts_scored": 8,
+  "distinct_completions": 8,
+  "empty_completions": 0,
+  "sft_initial_adapter_sha256": "d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d",
+  "frozen_reward_adapter_sha256": "586fb4cb21bb3408507d6e179d1bd858aca35d7c3e46b1dbef84234d3adbd28c",
+  "new_policy_adapter_sha256": "4869d985ed30562312751f38ed5883f46bf7671c0847587253930e66ad965cb3",
+  "new_policy_differs_from_SFT": true,
+  "frozen_reward_model_unchanged": true,
+  "reference_copied_SFT_parameters_verified": 392,
+  "reference_adapter_trainable_parameters": 0,
+  "source_snapshot_shas": {
+    "ultrachat_training": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+    "ultrachat_validation": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+    "ultrafeedback_reward_training": "945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77",
+    "ultrafeedback_reward_validation": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450"
+  },
+  "prompt_pool": {
+    "raw_ultrachat_train": 4096,
+    "excluded_RM_prompt_overlap": 1,
+    "eligible": 4095,
+    "smoke_selected": 16,
+    "smoke_prompt_hashes_sha256": "9e3378a4bd91b79683e975ec91bee260455c505ee8983e2e3f813a9d08203cf7"
+  },
+  "config": {
+    "training_config_sha256": "82b87c17b17ccec426515fd280f69eb2a13218f0ff1cd7f3a44bd0e5a4498fb0",
+    "num_generations_per_prompt": 4,
+    "num_online_steps": 2,
+    "max_prompt_tokens": 480,
+    "max_completion_tokens": 256,
+    "reward_bound": "tanh(raw/2)",
+    "kl_beta": 0.02,
+    "mask_truncated_completions": false,
+    "exclusively_smoke_gradient_testing": true
+  },
+  "gradient_norms": [
+    0.55078125,
+    0.7265625
+  ],
+  "measured_KL": [
+    0.001453191856853664,
+    0.0017677771393209696
+  ],
+  "train_loss": 0.00003221631050109863,
+  "reward_callback_mean": -0.12685656966514597,
+  "reward_callback_std_mean": 0.4425266722473409,
+  "reward_saturation_fraction": 0,
+  "duplicate_rollout_fraction": 0,
+  "all_generated_completions_hit_256_token_cap": true,
+  "naturally_terminated_completions": 0,
+  "elapsed_seconds_wall": 69.03337716596434,
+  "peak_gpu_reserved_bytes": 6125780992,
+  "caveats": [
+    "TRL rollout count and 2 nonzero optimizer gradients verified, LoRA weight SHA changed: genuine online policy parameter training occurred.",
+    "All 8 completions were truncated at 256 tokens; smoke explicitly unmasked truncated output to validate mechanics only, so it does not establish valid completed-answer quality.",
+    "No human preference, task accuracy or reward-hacking robust evaluation was completed; no formal online RLHF run and no PPO objective.",
+    "Do not choose hyperparameters from heldout metrics; next formal experiment needs terminal-completion coverage and independent controls."
+  ]
+}
