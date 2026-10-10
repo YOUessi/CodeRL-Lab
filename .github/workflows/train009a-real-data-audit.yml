@@ -1,0 +1,83 @@
+name: TRAIN-009A frozen online RLHF prompt eligibility and reward contract
+
+on:
+  push:
+    branches:
+      - feat/train009a-learned-reward-grpo
+    paths:
+      - .github/workflows/train009a-real-data-audit.yml
+      - src/coderl_lab/datasets/train009a_online_prompts.py
+      - src/coderl_lab/train/learned_reward_grpo.py
+      - configs/train009a_learned_reward_grpo.yaml
+      - tests/test_train009a_learned_reward_grpo.py
+  workflow_dispatch:
+
+jobs:
+  frozen-real-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU audit/testing environment
+        run: python -m pip install -e ".[dev]"
+      - name: Unit tests for data leakage and reward score contract
+        run: pytest -q tests/test_train009a_learned_reward_grpo.py
+      - name: Fetch exact frozen H4 source snapshot, not new data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data/generated/posttrain-h4-v1
+          gh run download 37725387735 \
+            --repo YOUessi/CodeRL-Lab \
+            --name posttraining-frozen-h4-v1 \
+            --dir data/generated/posttrain-h4-v1
+      - name: Test actual source/heldout prompt disjointness before using any reward labels
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import yaml
+          from coderl_lab.datasets.train009a_online_prompts import frozen_prompt_pool
+          from coderl_lab.train.learned_reward_grpo import validate_grpo_contract
+          root=Path("data/generated/posttrain-h4-v1")
+          policy=yaml.safe_load(Path("configs/train009a_learned_reward_grpo.yaml").read_text())
+          assert validate_grpo_contract(policy,smoke=True)["optimizer_steps"]==1
+          smoke,smoke_audit=frozen_prompt_pool(root=root,seed=42,max_train_prompts=16)
+          whole,full_audit=frozen_prompt_pool(root=root,seed=42)
+          assert len(smoke)==16 and len(whole)>1000
+          assert whole[:16]==smoke
+          assert full_audit["contains_reward_train_or_validation_prompts"] is False
+          assert full_audit["heldout_SFT_validation_excluded"] is True
+          assert full_audit["contains_sft_response_targets"] is False
+          assert smoke_audit["eligible_train_prompts"]==full_audit["eligible_train_prompts"]
+          result={
+            "experiment":"TRAIN-009A",
+            "phase":"real_H4_prompt_audit_no_training",
+            "smoke":smoke_audit,
+            "full":full_audit,
+            "GPU_policy_updates":0,
+            "raw_user_completions_exported":False,
+            "no_private_tests_accessed":True,
+          }
+          out=Path("artifacts/train009a")
+          out.mkdir(parents=True,exist_ok=True)
+          (out/"real_data_audit.json").write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n")
+          print(json.dumps({
+            "eligible_prompts":full_audit["eligible_train_prompts"],
+            "cross_domain_overlap_dropped":full_audit["discarded_train_due_to_rm_any_split_overlap"],
+            "smoke_prompt_count":len(smoke),
+            "ready":True,
+          },indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: train009a-public-safe-real-prompt-audit
+          path: artifacts/train009a/real_data_audit.json
+          if-no-files-found: error
+          retention-days: 30

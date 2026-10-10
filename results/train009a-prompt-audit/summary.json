@@ -1,0 +1,29 @@
+{
+  "experiment": "TRAIN-009A",
+  "phase": "frozen_prompt_only_source_disjointness",
+  "date": "2026-10-10",
+  "source_workflow": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/38020757383",
+  "dataset_source_action": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/37725387735",
+  "sft_ultrachat_raw_training_rows": 4096,
+  "sft_ultrachat_holdout_prompts": 256,
+  "learned_reward_ultrafeedback_training_rows": 2048,
+  "learned_reward_ultrafeedback_holdout_prompts": 256,
+  "cross_source_overlap_exact_prompts_removed": 1,
+  "online_eligible_prompts": 4095,
+  "first_smoke_selected_prompts": 16,
+  "smoke_seed": 42,
+  "smoke_prompt_selection_hash_sha256": "9e3378a4bd91b79683e975ec91bee260455c505ee8983e2e3f813a9d08203cf7",
+  "sources": {
+    "ultrachat_train_sha256": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+    "ultrachat_validation_sha256": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+    "ultrafeedback_train_sha256": "945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77",
+    "ultrafeedback_validation_sha256": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450"
+  },
+  "cuda_training_in_this_audit": false,
+  "no_sft_response_targets_exposed_to_GRPO": true,
+  "no_reward_seen_prompts_in_training": true,
+  "warnings": [
+    "Exact prompt overlap is excluded, not proof of semantic near-duplicate absence across datasets.",
+    "First16 prompts are for smoke only, not an outcome-selected sample or prospective generalization evaluation."
+  ]
+}

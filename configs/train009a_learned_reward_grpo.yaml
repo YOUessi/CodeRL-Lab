@@ -1,0 +1,80 @@
+experiment:
+  id: TRAIN-009A
+  track: A-posttraining
+  name: learned-reward-online-grpo-from-ultrachat-sft
+  interpretation: "on-policy RLHF via GRPO with a separately frozen learned reward, not PPO"
+
+model:
+  name_or_path: Qwen/Qwen3-1.7B-Base
+  revision: ea980cb0a6c2ae4b936e82123acc929f1cec04c1
+  dtype: bfloat16
+  quantization:
+    mode: nf4
+    double_quant: true
+
+initial_policy:
+  adapter: artifacts/posttrain-a/train007a-qlora-ultrachat
+  expected_sha256: d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d
+
+reward_model:
+  adapter: artifacts/posttrain-a/train008a-reward-model
+  expected_sha256: 586fb4cb21bb3408507d6e179d1bd858aca35d7c3e46b1dbef84234d3adbd28c
+  source_experiment: TRAIN-008A
+  source_train_sha256: 945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77
+  source_heldout_sha256: 9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450
+  max_length: 768
+  max_prompt_tokens: 512
+  min_response_tokens: 128
+  bounded_reward: tanh
+  bounded_reward_temperature: 2.0
+  empty_completion_reward: -1.0
+  no_reward_model_parameter_updates: true
+
+data:
+  root: data/generated/posttrain-h4-v1
+  sft_train_sha256: f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b
+  sft_heldout_sha256: a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170
+  exclude_reward_training_prompts: true
+  exclude_reward_heldout_prompts: true
+  exclude_sft_heldout_prompts: true
+
+generation:
+  num_generations: 4
+  max_prompt_length: 512
+  max_completion_length: 96
+  temperature: 0.8
+  top_p: 0.95
+  top_k: 0
+
+training:
+  output_dir: artifacts/posttrain-a/train009a-learned-grpo
+  seed: 42
+  num_train_epochs: 1
+  max_steps: -1
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 1
+  learning_rate: 0.000001
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  lr_scheduler_type: cosine
+  gradient_checkpointing: true
+  logging_steps: 1
+  save_strategy: steps
+  save_steps: 1
+  save_total_limit: 2
+  beta: 0.02
+  reference_adapter: ref
+  loss_type: grpo
+  scale_rewards: group
+  mask_truncated_completions: true
+  log_completions: false
+  report_to: none
+  use_vllm: false
+
+evaluation:
+  holdout_source: ultrachat_test_sft
+  holdout_derived_from_training_prompts: false
+  no_reward_improvement_claim_without_disjoint_eval: true
+  audit_reward_saturation_and_token_length: true
+  baseline: frozen_sft_adapter_with_identical_sampling
+  do_not_use_ultrafeedback_heldout_for_rl_policy_training: true
