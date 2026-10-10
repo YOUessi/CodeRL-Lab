@@ -49,3 +49,12 @@ Reward Model 已训练在 UltraFeedback train2048对，因此其偏好标签及 
 1. CPU真实冻结数据审计已通过，并核对有且仅有1个跨UltraChat/RM prompt重合被过滤。
 2. 在 Tang 的独立GPU验证工作树进行单卡1-step真实online RLHF smoke，先验证SFT ref Adapter副本与Reward真正冻结。
 3. 若smoke真实存在优劣变化，保存运行值；如果发生资源不足、回报恒定、KL偏差或初始化错误，保留错误数据并修复。
+
+
+## 2026-10-10 真实GPU执行后的结论与限制
+
+- v1: 当前TRL1.14.1不接受 `GRPOConfig(max_prompt_length=...)`，模型加载后在训练器构造前失败；改为在模型生成前用真实tokenizer检查每条提示长度，禁止静默截断。
+- v2: 1-step GRPO结构上执行完成，RM真实评分4个completion、ref adapter392组相等，但全部96-token截断且`mask_truncated=true`，**grad_norm=0、新Adapter SHA等于旧SFT SHA**。不能算任何策略更新，失败证据已冻结到 `results/train009a-learned-reward-grpo-smoke-v2/summary.json`。
+- v3: 单独2-step GRPO工程smoke把max_completion改为256并**只在smoke显式解除truncated mask**，训练前保证`KL beta=0.02`与RM LoRA不更新。真机观察grad_norm分别0.55078和0.72656、KL 0.00145和0.00177、新 LoRA hash确实变化、Reward LoRA hash保持不变、无OOM。正式机器数据：`results/train009a-learned-reward-grpo-smoke-v3/summary.json`。
+- **v3仍8/8回答达到长度上限，无自然结束**；只是优化了被截断回答的冻结RM分数，不能声称RLHF改善真实完整回答，更不能把它视为PPO。单seed、一张4090、smoke16提示、2 optimizer steps；正式训练预算和独立验证仍未冻结或运行。
+- 下一步应作为新预注册实验分析 SFT 策略的EOS终止行为，在不靠已看过的奖励正负结果选prompt的条件下固定长短任务和max completion，验证自然终止比例、组间reward方差、零梯度/裁剪风险，之后再决定正式mask=true的online GRPO是否有统计或工程可行性。完整PPO另建Value/GAE/clip必要测试，不与GRPO混用名字。
