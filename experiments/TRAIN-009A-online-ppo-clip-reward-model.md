@@ -53,3 +53,15 @@ L_{clip}(\theta)=
 这是「将SFT、Reward Model与PPO串接起来」的第一版工程冒烟。RM本身只有单seed、同一固定UltraFeedback heldout上的56.64%排序准确率，存在奖励欺骗/训练域外泛化问题。不能把训练中`R_RM`上升宣称真实质量上升，也不能把小规模PPO训练等同大规模PPO研究成果。
 
 后续若进行正式比较，应使用**尚未用于当前方法选择的独立盲测prompt/人工偏好集合**，另行注册无PPO参考策略、不同KL/奖励缩放、训练有无reward权重随机对照等条件；不得基于已见过的LCB v5/v6 private准确率/UltraFeedback heldout反向调本次超参。
+
+
+## 2026-10-10 PPO更新完成后的独立固定探测协议（在探测GPU结果前登记）
+
+已保留的4个probe prompts来自同一4096条UltraChat **SFT train** 源，按此前固定SHA256优先级选择，未参与TRAIN-009A的8个train prompt或16次PPO梯度episode。它们虽然不与PPO train重复，**不是一个新的外部任务分布或无偏人类盲测集**。
+
+- 不以reward成败重选4个prompt；都用与训练相同的`max_prompt_tokens=128`、`max_new_tokens=32`，只将生成策略固定为 greedy `do_sample=False` 以便两臂可控复验。
+- reference为原4096条训练的SFT Adapter，policy为TRAIN-009A完成4步保存的policy Adapter；两者均在同一NF4基础模型上推断。
+- 使用同一个已经完整训练的TRAIN-008A冻结奖励模型，分别对两个回复做标量打分；输出每个prompt的SHA、各回复内容SHA、Token数、原始proxy reward，不记录真实文本到GitHub。
+- 主要统计：4个prompt的greedy输出发生改变的个数，参考和PPO两臂各自的平均**RM代理分数差**，回答长度变动。就算PPO代理分数变高，也**不得宣称真人质量提高**，且该RM本身是PPO训练时的打分器，不是独立检验者。
+- 不使用奖励模型heldout偏好标签、MBPP hidden、LCB private，也不做任何optimizer更新。诊断程序与结果属于 `src/coderl_lab/analysis/train009a_probe.py`、`scripts/run_train009a_reward_probe.sh`，CPU质量门禁检查固定4对、拒绝重复prompt及非有限reward。
+- 本段仅固定测试设计；此处**尚无真实probe结果**，也不随4个结果后验修改PPO学习率/rollout prompt规则。
