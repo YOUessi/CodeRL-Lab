@@ -1,0 +1,71 @@
+experiment:
+  id: TRAIN-009A
+  track: A-posttraining
+  name: frozen-reward-on-policy-token-ppo-clip-critic-smoke
+  status: gpu_smoke_not_formal_rlhf
+
+model:
+  name_or_path: Qwen/Qwen3-1.7B-Base
+  revision: ea980cb0a6c2ae4b936e82123acc929f1cec04c1
+  dtype: bfloat16
+  quantization: nf4
+  double_quant: true
+
+policy:
+  initial_adapter: artifacts/posttrain-a/train007a-qlora-ultrachat
+  expected_adapter_sha256: d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d
+  reference: frozen_identical_sft_adapter
+  update: policy_lora_plus_scalar_value_head
+  dropout_in_ratio_measurement: disabled
+  sampled_eos_behavior: terminate_at_eos
+
+reward:
+  adapter: artifacts/posttrain-a/train008a-reward-model
+  expected_adapter_sha256: 586fb4cb21bb3408507d6e179d1bd858aca35d7c3e46b1dbef84234d3adbd28c
+  reward_model_training_run_status: formal
+  source_data: HuggingFaceH4/ultrafeedback_binarized
+  source_revision: daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2
+  max_length: 768
+  max_prompt_tokens: 512
+  min_response_tokens: 128
+  scalar_scale: 1.0
+  scalar_clip_abs: 2.0
+  empty_generation_reward: -2.0
+
+data:
+  root: data/generated/posttrain-h4-v1
+  rollout_source: UltraChat train_sft only
+  source_revision: b7fe606ecdbf71e8537946a8d9de5ccf0f6da48b
+  exclude_reward_training_prompts: true
+  exclude_all_sft_and_reward_heldout_prompts: true
+  n_rollout_prompts: 8
+  n_probe_prompts: 4
+
+rollout:
+  seed: 42
+  policy_prompt_max_tokens: 128
+  max_new_tokens: 32
+  sampling_temperature: 0.8
+  sampling_top_p: 0.95
+  prompts_per_step: 2
+  rollouts_per_prompt: 2
+
+ppo:
+  max_steps: 4
+  epochs_per_batch: 2
+  clip_epsilon: 0.2
+  gamma: 1.0
+  gae_lambda: 0.95
+  kl_coefficient: 0.02
+  advantage_normalization_epsilon: 0.00000001
+  value_loss_coefficient: 0.5
+  policy_learning_rate: 0.000005
+  value_learning_rate: 0.0001
+  gradient_clip_norm: 1.0
+  trainable_value_head_initialized_to_zero: true
+
+output:
+  dir: artifacts/posttrain-a/train009a-ppo-clip-smoke
+  checkpoint_every_n_steps: 2
+  no_training_on_validation_labels: true
+  artifact_policy: only_hashed_prompts_and_aggregates_in_GitHub
