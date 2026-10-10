@@ -1,0 +1,34 @@
+{
+  "experiment": "TRAIN-009A",
+  "variant": "v2: masked 96-token rollouts",
+  "date_local": "2026-10-10",
+  "status": "INVALID_AS_POLICY_UPDATE",
+  "gpu": "Tang RTX 4090 Laptop GPU",
+  "source_git_commit": "b25e3de7310dffaa853a2f3031786a49fc3b8c43",
+  "initial_sft_adapter_sha256": "d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d",
+  "output_policy_adapter_sha256": "d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d",
+  "learned_reward_adapter_sha256": "586fb4cb21bb3408507d6e179d1bd858aca35d7c3e46b1dbef84234d3adbd28c",
+  "optimizer_steps_reported": 1,
+  "actual_nonzero_gradient_updates": 0,
+  "train_loss": 0,
+  "gradient_norm": 0,
+  "measured_kl": 0,
+  "generation": {
+    "num_generations": 4,
+    "max_completion_length": 96,
+    "completion_truncation_fraction": 1,
+    "terminated_completions": 0
+  },
+  "reward_audit": {
+    "rewarded_rollouts": 4,
+    "group_reward_std": 0.4040545840254654,
+    "bounded_reward_mean": -0.3079673564512649,
+    "duplicate_fraction": 0
+  },
+  "reference_copied_SFT_parameters_verified": 392,
+  "limits": [
+    "TRL reported one step although masks removed all truncated completion tokens.",
+    "LoRA bytes SHA is identical to initial SFT; there was no effective parameter update.",
+    "GPU and reward callback worked, but user must not count this as successful RLHF gradient training."
+  ]
+}
