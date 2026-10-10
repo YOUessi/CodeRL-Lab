@@ -104,11 +104,18 @@ def validate_grpo_contract(cfg:dict[str,Any],*,smoke:bool)->dict[str,Any]:
         cfg["data"]["exclude_sft_heldout_prompts"] is not True,
         training["scale_rewards"]!="group",
         training["loss_type"]!="grpo",
-        training["mask_truncated_completions"] is not True,
+        (
+            training["mask_truncated_completions"] is not True
+            and not (smoke and training.get("gradient_smoke_allow_truncated") is True
+                     and int(gen["max_completion_length"]) >= 160)
+        ),
+        (not smoke and training.get("gradient_smoke_allow_truncated",False) is True),
     )):
         raise ValueError("invalid learned-reward on-policy GRPO contract")
-    # Keep the first real smoke extremely bounded and reproducible.
-    steps=1 if smoke else int(training["max_steps"])
+    # A stopped EOS is important for quality, but 96-token v2 masked all
+    # four samples and produced zero gradients. Allow explicitly documented,
+    # smoke-only truncated gradients to validate *mechanics*, never quality.
+    steps=(2 if training.get("gradient_smoke_allow_truncated",False) else 1) if smoke else int(training["max_steps"])
     if not smoke and steps<1:
         raise ValueError("formal policy updates need a separately frozen positive max_steps")
     if int(training["save_steps"])<1 or int(training["save_total_limit"])<2:
@@ -120,6 +127,7 @@ def validate_grpo_contract(cfg:dict[str,Any],*,smoke:bool)->dict[str,Any]:
         "kl_beta":float(training["beta"]),
         "num_generations":int(gen["num_generations"]),
         "optimizer_steps":steps,
+        "gradient_smoke_allow_truncated":bool(training.get("gradient_smoke_allow_truncated",False)) if smoke else False,
         "validation_heldout_prompts_absent_from_training":True,
     }
 
@@ -391,6 +399,9 @@ def run(
     (output_dir/"log_history.json").write_text(
         json.dumps(log,ensure_ascii=False,indent=2,default=str)+"\n",encoding="utf-8")
     callback_report=callback.aggregate()
+    actual_gradients=[float(v["grad_norm"]) for v in log if v.get("grad_norm") is not None]
+    if not actual_gradients or not all(math.isfinite(v) for v in actual_gradients):
+        raise RuntimeError("GRPO did not record finite real optimizer gradient norm")
     (output_dir/"reward_audit.json").write_text(
         json.dumps({"reward":callback_report,"history":callback.history},ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
 
@@ -402,6 +413,17 @@ def run(
     weight=output_dir/"adapter_model.safetensors"
     if not weight.is_file():
         raise FileNotFoundError("TRAIN-009A policy adapter was not persisted")
+    adapter_sha=sha256(weight)
+    actual_policy_updated=(adapter_sha!=SFT_SHA)
+    nonzero_gradients=any(g>0 for g in actual_gradients)
+    reward_unchanged=sha256(reward_dir/"adapter_model.safetensors")==RM_SHA
+    if not reward_unchanged:
+        raise RuntimeError("Frozen learned Reward Model was unexpectedly modified")
+    if not actual_policy_updated or not nonzero_gradients:
+        raise RuntimeError(
+            "NO_POLICY_UPDATE: rollout returned rewards but trainable LoRA had "
+            "zero effective gradient / unchanged weights. Do not claim RLHF."
+        )
 
     info={
         "experiment":"TRAIN-009A",
@@ -409,7 +431,12 @@ def run(
         "online_algorithm":"GRPO with trained frozen scalar RM; NOT PPO",
         "global_step":trainer.state.global_step,
         "requested_optimizer_steps":contract["optimizer_steps"],
-        "new_policy_adapter_sha256":sha256(weight),
+        "new_policy_adapter_sha256":adapter_sha,
+        "policy_weights_actually_changed":actual_policy_updated,
+        "all_gradient_norms_finite":True,
+        "at_least_one_real_nonzero_policy_gradient":nonzero_gradients,
+        "gradient_norm_values":actual_gradients,
+        "frozen_reward_adapter_unchanged":reward_unchanged,
         "source_sft_adapter_sha256":SFT_SHA,
         "source_reward_adapter_sha256":RM_SHA,
         "reference_policy":reference_audit,
