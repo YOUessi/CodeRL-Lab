@@ -124,6 +124,42 @@ def validate_grpo_contract(cfg:dict[str,Any],*,smoke:bool)->dict[str,Any]:
     }
 
 
+def assert_policy_prompt_token_budget(
+    rows:list[dict[str,str]],
+    tokenizer,
+    *,
+    max_prompt_tokens:int,
+)->dict[str,Any]:
+    """Fail closed rather than silently use a removed GRPOConfig argument.
+
+    The installed TRL 1.14.1 does not accept max_prompt_length, so we must
+    explicitly validate actual Qwen tokenized text before any policy rollout.
+    Formal data must undergo a separate preregistered length-based selection.
+    """
+    if max_prompt_tokens<8 or not rows:
+        raise ValueError("invalid prompt token budget or no input rows")
+    sizes=[]
+    for row in rows:
+        p=row["prompt"]
+        n=len(tokenizer(text=p)["input_ids"])
+        sizes.append(n)
+    over=[n for n in sizes if n>max_prompt_tokens]
+    if over:
+        raise ValueError(
+            f"TRAIN-009A {len(over)} prompt(s) exceed explicit "
+            f"{max_prompt_tokens}-token actor budget; "
+            "no silent truncation or outcome-conditioned drop"
+        )
+    return {
+        "prompts":len(rows),
+        "max_length_tokens":max(sizes),
+        "mean_length_tokens":statistics.mean(sizes),
+        "cap_tokens":max_prompt_tokens,
+        "overlong_prompts":0,
+        "silently_truncated":False,
+    }
+
+
 class BoundedLearnedReward:
     """Dependency-injected callable: testable without CUDA or TRL.
 
@@ -270,6 +306,8 @@ def run(
     tokenizer=AutoTokenizer.from_pretrained(MODEL,revision=REVISION,trust_remote_code=True)
     if tokenizer.pad_token_id is None: tokenizer.pad_token=tokenizer.eos_token
     tokenizer.padding_side="left"
+    prompt_length_audit=assert_policy_prompt_token_budget(
+        rows,tokenizer,max_prompt_tokens=int(cfg["generation"]["max_prompt_length"]))
     qcfg=BitsAndBytesConfig(load_in_4bit=True,bnb_4bit_quant_type="nf4",
         bnb_4bit_use_double_quant=True,bnb_4bit_compute_dtype=torch.bfloat16)
 
@@ -327,7 +365,8 @@ def run(
         save_steps=int(t["save_steps"]),save_total_limit=int(t["save_total_limit"]),
         seed=seed,data_seed=seed,
         bf16=True,gradient_checkpointing=bool(t["gradient_checkpointing"]),
-        max_prompt_length=int(g["max_prompt_length"]),
+        # TRL 1.14.1 has no max_prompt_length kwarg: the exact tokenizer
+        # budget is checked explicitly above, before any rollout.
         max_completion_length=int(g["max_completion_length"]),
         num_generations=int(g["num_generations"]),
         temperature=float(g["temperature"]),top_p=float(g["top_p"]),
@@ -376,6 +415,7 @@ def run(
         "reference_policy":reference_audit,
         "reward_audit":callback_report,
         "training_identity":identity,
+        "actual_policy_prompt_token_budget":prompt_length_audit,
         "metrics":dict(result.metrics),
         "gpu":{
             "name":torch.cuda.get_device_name(0),
