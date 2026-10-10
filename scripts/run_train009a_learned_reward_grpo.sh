@@ -14,7 +14,7 @@ REWARD_DIR="$RM_WORKTREE/artifacts/posttrain-a/train008a-reward-model"
 ARGS=()
 case "$MODE" in
   smoke)
-    OUTPUT="artifacts/posttrain-a/train009a-reward-grpo-smoke"
+    OUTPUT="artifacts/posttrain-a/train009a-reward-grpo-smoke-v2"
     ARGS+=(--smoke --max-train-prompts 16)
     ;;
   formal)
