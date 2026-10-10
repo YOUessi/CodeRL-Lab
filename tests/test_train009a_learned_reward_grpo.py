@@ -10,7 +10,7 @@ import pytest
 import yaml
 
 from coderl_lab.train.learned_reward_grpo import (
-    BoundedLearnedReward, validate_grpo_contract, validate_frozen_models,
+    BoundedLearnedReward, assert_policy_prompt_token_budget, validate_grpo_contract, validate_frozen_models,
 )
 from coderl_lab.datasets import train009a_online_prompts as data
 
@@ -173,3 +173,31 @@ def test_rm_reward_identity_from_formal_manifest(tmp_path:Path,monkeypatch):
     (reward/"adapter_model.safetensors").write_bytes(b"corrupt")
     with pytest.raises(ValueError,match="provenance"):
         validate_frozen_models(config=cfg,policy_dir=policy,reward_dir=reward)
+
+
+class _FakeTokenizer:
+    def __call__(self,*,text:str):
+        return {"input_ids": list(range(len(text)))}
+
+
+def test_actual_policy_prompt_budget_blocks_removed_grpo_config_keyword():
+    rows=[{"prompt":"P"*13},{"prompt":"A"*8},{"prompt":"B"*16}]
+    audit=assert_policy_prompt_token_budget(
+        rows,_FakeTokenizer(),max_prompt_tokens=20,
+    )
+    assert audit["max_length_tokens"]==16
+    assert audit["silently_truncated"] is False
+    assert audit["overlong_prompts"]==0
+    with pytest.raises(ValueError,match="exceed explicit"):
+        assert_policy_prompt_token_budget(
+            rows,_FakeTokenizer(),max_prompt_tokens=15,
+        )
+
+
+def test_smoke_v2_does_not_override_recorded_failed_v1_identity():
+    shell=Path("scripts/run_train009a_learned_reward_grpo.sh").read_text()
+    assert "train009a-reward-grpo-smoke-v2" in shell
+    assert 'test ! -e "$OUTPUT/training_identity.json"' in shell
+    code=Path("src/coderl_lab/train/learned_reward_grpo.py").read_text()
+    assert "max_prompt_length=int(g[" not in code
+    assert "assert_policy_prompt_token_budget(" in code
