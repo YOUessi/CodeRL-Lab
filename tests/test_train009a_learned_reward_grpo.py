@@ -201,3 +201,24 @@ def test_smoke_v2_does_not_override_recorded_failed_v1_identity():
     code=Path("src/coderl_lab/train/learned_reward_grpo.py").read_text()
     assert "max_prompt_length=int(g[" not in code
     assert "assert_policy_prompt_token_budget(" in code
+
+
+def test_separate_v3_smoke_allows_real_gradients_but_formal_still_masks():
+    original=config()
+    v3=yaml.safe_load(Path("configs/train009a_learned_reward_grpo_smoke_v3.yaml").read_text())
+    assert original["training"]["mask_truncated_completions"] is True
+    assert v3["training"]["mask_truncated_completions"] is False
+    assert v3["training"]["gradient_smoke_allow_truncated"] is True
+    assert v3["generation"]["max_completion_length"]==256
+    assert v3["generation"]["max_prompt_length"]==480
+    assert validate_grpo_contract(v3,smoke=True)["optimizer_steps"]==2
+    assert validate_grpo_contract(v3,smoke=True)["kl_beta"]==0.02
+    assert v3["initial_policy"]==original["initial_policy"]
+    assert v3["reward_model"]==original["reward_model"]
+    with pytest.raises(ValueError,match="invalid"):
+        validate_grpo_contract(v3,smoke=False)
+    script=Path("scripts/run_train009a_learned_reward_grpo_smoke_v3.sh").read_text()
+    assert "train009a-reward-grpo-smoke-v3" in script
+    assert 's["policy_weights_actually_changed"] is True' in script
+    assert 's["at_least_one_real_nonzero_policy_gradient"] is True' in script
+    assert 's["frozen_reward_adapter_unchanged"] is True' in script
