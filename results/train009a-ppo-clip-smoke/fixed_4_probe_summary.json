@@ -1,0 +1,83 @@
+{
+  "experiment": "TRAIN-009A-probe",
+  "type": "same_reward_model_fixed_greedy_untrained_prompt_smoke",
+  "probe_count": 4,
+  "changed_greedy_outputs": 2,
+  "mean_frozen_RM_score_reference": 0.8720703125,
+  "mean_frozen_RM_score_ppo": 0.6318359375,
+  "mean_reward_proxy_score_difference": -0.240234375,
+  "score_differences_per_probe": [
+    -1.375,
+    0,
+    0,
+    0.4140625
+  ],
+  "mean_response_tokens_reference": 32,
+  "mean_response_tokens_ppo": 32,
+  "no_human_labels_used": true,
+  "no_optimizer_updates": true,
+  "limits": [
+    "Only four pre-frozen prompts that were not optimized by PPO; this is not an independent external generalization benchmark.",
+    "The same imperfect reward proxy is used for both RL training and post-run scoring; improvements are NOT evidence of human preference.",
+    "Greedy decoding may remain identical despite probability/LoRA changes; no-change does not prove models are equivalent.",
+    "No UltraFeedback heldout labels, MBPP hidden tests or LCB private tests are used."
+  ],
+  "frozen_inputs": {
+    "SFT_adapter_sha256": "d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d",
+    "reward_adapter_sha256": "586fb4cb21bb3408507d6e179d1bd858aca35d7c3e46b1dbef84234d3adbd28c",
+    "PPO_adapter_sha256": "0b302778bcd44a2c01830c93e749eb098b9be7f75ff84cb81d314856b50bec70",
+    "PPO_training_identity_sha256": "ce06d1031bc968b2fd32ffff52094434c73a3ec9c1215b6a2be319548049af12",
+    "prompt_sha256": [
+      "f62c0d0dd48e7f77634fdcf496b8a51946ebe2aaa756bba2cc722d3960e9f9e4",
+      "0ac89d32d2dc627df94e9a7a6a4b51dc890a863e807d10f5ab3131269caa4303",
+      "fa7d2f0f0c05c479aa84df75b31d99efc4efccd5376c8cd3abd742d601ab17b5",
+      "28531e5caabdc61d870d7fc7a000b149e277ca87440c4a08dff67e0d6d81c966"
+    ],
+    "source_policy": "unchangedSFT-vs-4stepPPO, greedily decoded cap32"
+  },
+  "probe_rows": [
+    {
+      "prompt_sha256": "f62c0d0dd48e7f77634fdcf496b8a51946ebe2aaa756bba2cc722d3960e9f9e4",
+      "reference_answer_sha256": "dc3547d91a7b14ba0bc8f59e0fa50c5d2ee02a9e73ee476de0a6b071e0a5558d",
+      "reference_tokens": 32,
+      "reference_score": 2.734375,
+      "ppo_answer_sha256": "b335616d7dc6c5e5465da2158c269878de7c464edd9840a16eba0ebe03eb7509",
+      "ppo_tokens": 32,
+      "ppo_score": 1.359375
+    },
+    {
+      "prompt_sha256": "0ac89d32d2dc627df94e9a7a6a4b51dc890a863e807d10f5ab3131269caa4303",
+      "reference_answer_sha256": "4816b4e218655bfcddb88c75ae16fe6509ce998125e389c29f4b5fcd6956d1ca",
+      "reference_tokens": 32,
+      "reference_score": -0.578125,
+      "ppo_answer_sha256": "4816b4e218655bfcddb88c75ae16fe6509ce998125e389c29f4b5fcd6956d1ca",
+      "ppo_tokens": 32,
+      "ppo_score": -0.578125
+    },
+    {
+      "prompt_sha256": "fa7d2f0f0c05c479aa84df75b31d99efc4efccd5376c8cd3abd742d601ab17b5",
+      "reference_answer_sha256": "ca89ef721412c6c68c5b80f999dfc99b2fe2e36523942d7242668e11266265ba",
+      "reference_tokens": 32,
+      "reference_score": -0.66015625,
+      "ppo_answer_sha256": "ca89ef721412c6c68c5b80f999dfc99b2fe2e36523942d7242668e11266265ba",
+      "ppo_tokens": 32,
+      "ppo_score": -0.66015625
+    },
+    {
+      "prompt_sha256": "28531e5caabdc61d870d7fc7a000b149e277ca87440c4a08dff67e0d6d81c966",
+      "reference_answer_sha256": "d79b5a622614a37cd5b2e2e473cdbe0447732eed5360409cc5f89a80a386f5d9",
+      "reference_tokens": 32,
+      "reference_score": 1.9921875,
+      "ppo_answer_sha256": "b1e26a3879a017879100bd95c9903c0882a6118e45ed4289ba89f80894f38a98",
+      "ppo_tokens": 32,
+      "ppo_score": 2.40625
+    }
+  ],
+  "gpu": {
+    "device": "NVIDIA GeForce RTX 4090 Laptop GPU",
+    "peak_reserved_bytes": 3038773248
+  },
+  "source_git_sha": "1775d47e62a65069b98c94f0d49e7fcf40aadbbf",
+  "verified_date_local": "2026-10-10 11:19 +08:00",
+  "conclusion_boundary": "postPPO frozen RM proxy dropped on 4 preselected untrained PPO prompts; no human quality claim or generalization inference"
+}
