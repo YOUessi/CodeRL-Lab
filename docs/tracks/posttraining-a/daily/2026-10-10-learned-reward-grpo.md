@@ -38,3 +38,15 @@ Track A已真实完成：TRAIN-007A UltraChat4096 NF4 SFT；TRAIN-007C UltraFeed
 
 当前所有实验仍是一个单seed小模型，reward head只在UltraFeedback固定偏好数据表现出改善，在线rollout的RM reward与人的偏好/实答质量不能直接等同。后续正式RLHF应先独立固定rollout budget、completion质量约束、SFT on-policy基线、RM奖励黑客化审计、新heldout及KL阈值；不把“能生成奖励”和“能提高真实任务准确率”混为一谈。新的PPO需显式value head/GAE/clipped policy/value objectives，不能从现有GRPO冒称PPO。
 
+
+
+## 11:40—11:42：Smoke v3 真实2步策略梯度成功，但所有回答依然未自然结束
+
+- Tang冻结 `TRAIN-009A` v3 Source Git SHA `737c247850616189576273de5884b48756a6f46e`；配置SHA `82b87c17b17ccec426515fd280f69eb2a13218f0ff1cd7f3a44bd0e5a4498fb0`，原SFT Adapter SHA、Reward Model Adapter SHA与全部四个 H4 原始文件SHA、4095有效prompt/16-smoke的选择SHA都未改。
+- 实际 GRPOTrainer `2/2` optimizer steps、2次**真实冻结Reward Model**计算callback，共8条生成，no empty, no duplicates；group reward mean std约0.4425，平均bounded reward约-0.12686，原RM模型在训练前后权重SHA完全一致。
+- **实际梯度不为零：第1步grad_norm=0.55078125、第2步0.7265625**；reference KL分别 `0.00145319186`、`0.00176777714`，train_loss约`3.22e-5`。训练后LoRA真实新SHA `4869d985ed30562312751f38ed5883f46bf7671c0847587253930e66ad965cb3` **不同于源SFT SHA**，新Adapter已真实持久化。
+- 训练器复制的**392组原SFT/reference LoRA参数在首步前经torch.equal逐组一致**、reference无trainable参数；非“假KL到裸Base模型”。
+- GPU peak reserved=6,125,780,992 bytes，训练墙钟约69.03秒，执行完成后CUDA模型进程退出；资源无异常。
+- **重大限制：v3 8/8 completion都达到256 Token cap，EOS自然终止0条**。因只为证明梯度通路，单独Smoke v3取消了mask_truncated（而正式默认仍mask=true）；故不得从本次reward、KL或LoRA变更声称完整响应质量提升、有效策略泛化或已完成PPO。
+- 机器可读训练结果：`results/train009a-learned-reward-grpo-smoke-v3/summary.json`；v2零梯度负面结果：`results/train009a-learned-reward-grpo-smoke-v2/summary.json`；完整prompt交叉过滤：`results/train009a-prompt-audit/summary.json`。
+- 结论：现已真正完成从SFT policy + **另行训练的RM** → online sample → RM评分 → GRPO grad step/KL → 新策略Adapter落盘的**工程级闭环**。但要进入具有质量保证的formal RLHF，下一块应先**修复终止/长度行为**并运行独立heldout/负面对照，不能把v3截断策略延伸到formal。
