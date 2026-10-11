@@ -56,6 +56,9 @@ def frozen_32():
             rows.append({
                 "split":cohort,
                 "prompt_sha256":hashlib.sha256(f"{cohort}-{i}".encode()).hexdigest(),
+                "prompt_tokens":100,
+                "original_prompt_tokens":100,
+                "left_truncated_prompt_tokens":0,
                 "trace":boundary_stats(ids),
             })
     return rows
