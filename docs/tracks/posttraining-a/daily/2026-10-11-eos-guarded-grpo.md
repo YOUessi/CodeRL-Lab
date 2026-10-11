@@ -22,3 +22,13 @@ TRAIN-009A真实使用两份预训练权重（UltraChat正式QLoRA SFT及UltraFe
 - 如果全2步的4/8条rollouts仍然没EOS：这属于有效的终止率负结果，保留日志与缺少训练更新，不强行降低“完成”要求。后续如需调EOS行为应使用独立EOS-aware SFT数据与无污染测试，不能靠反复调seed挑成功。
 - 当前这条支线沿用TRAIN-009A的GRPORunner，GitHub 新配置 `configs/train009c_eos_guarded_grpo_smoke.yaml`、回调扩展 `learned_reward_grpo.py`、单卡入口 `scripts/run_train009c_eos_guarded_grpo_smoke.sh` 和 `tests/test_train009c_eos_guard.py`；全部位于GitHub独立分支，硬件仅用于真实CUDA。
 - 结果如成功需上传仅聚合的数值和哈希，不上传prompt文本、raw completion或模型权重；如失败需保存异常与冻结身份，不伪造optimizer/accuracy。
+
+
+## 22:05—22:10：严格自然EOS + 截断mask 的真机2步GRPO完整失败复盘
+
+- Tang受独占锁在22:05:57+08实际运行代码 `827b95c6bceed804895907525c8c6851c4a9d1e6`；CPU 14项专项测试已通过，源16个训练prompt、真实TRAIN-007A SFT Adapter SHA、TRAIN-008A冻结RM Adapter SHA全部校验通过。测试配置固定2 optimizer steps、4rollouts/group，max_completion=512、mask_truncated=true、RM仅对真正EOS支付分数。
+- 第1/2步实际生成共**8条回答，全部达到512token cap且自然EOS数为0**。TRL步数记录2/2但两步 `grad_norm=[0,0]`、KL=[0,0]、learned reward回调均输出固定截断惩罚-1（组内reward std=0），因此无法发生有效训练。
+- 严格成功验收触发 `RuntimeError: ALL_TRUNCATED: no naturally terminated completion; refusing RLHF success`。**没有正式`run_summary.json`，没有声称任何新策略有效**。Trainer仍保存`checkpoint-1`/`checkpoint-2`的模型/optimizer作为失败现场，但其2步checkpoint-2 Adapter真实SHA与原SFT一致：`d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d`，证明没有实际参数更新。
+- 失败机器摘要已经保存在GitHub `results/train009c-eos-guarded-grpo-smoke/failed_result.json`，原始Tensor/log只在Tang；没有删除或覆盖旧失败。
+- **为什么TRAIN-009B 512token终止率13/16与本轮0/8并不矛盾**：009B对每个提示按其索引单独固定`torch.manual_seed(42+i)`并采样一次，009C使用TRL独立group采样、全局状态与多代输入；并非同一条逐Token生成序列或相同RNG，实现内部可能还有采样/批处理区别。因此009B的样本比例是终止率诊断，不能当成“GRPO每一批自然EOS保证”。
+- 工程判断：对于未自然EOS的所有样本，简单把截断mask打开会令训练梯度归零，关闭mask又只能证明截断响应有梯度，无法支撑完成答案质量。下一阶段需要从预先声明的**策略终止机制**入手（比如数据终止标签/SFT EOS补充、固定已存在的自然终止口径、增加多组独立rollout统计），而非继续在当前8条上挑seed或按私有奖励修改强度。
