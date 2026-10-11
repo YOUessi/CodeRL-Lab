@@ -59,12 +59,20 @@ jobs:
               'train_smoke':[len(tok(text=r['prompt'])['input_ids']) for r in train],
               'sft_heldout':[len(tok(text=r['prompt'])['input_ids']) for r in heldout],
           }
-          assert all(0<n<=480 for group in lengths.values() for n in group),lengths
+          assert all(0<n<=480 for n in lengths['train_smoke']),lengths
+          # The original fixed heldout SHA16 choice has two >480-token prompts.
+          # Keep BOTH and apply the same deterministic last-480-token context
+          # policy at inference. No model-score/hidden outcome based exclusion.
+          assert sum(n>480 for n in lengths['sft_heldout'])==2,lengths
+          assert sorted(n for n in lengths['sft_heldout'] if n>480)==[622,898]
           result={
               'experiment':'TRAIN-009B','phase':'real_frozen_data_preflight_no_GPU',
               'train_prompts':16,'heldout_prompts':16,
               'train_max_tokens':max(lengths['train_smoke']),
               'heldout_max_tokens':max(lengths['sft_heldout']),
+              'heldout_left_truncated_prompts':sum(n>480 for n in lengths['sft_heldout']),
+              'prompt_budget_tokens':480,
+              'overlong_prompt_policy':'keep_last_480_tokens_without_changing_fixed_cohort',
               'model_revision':REVISION,'sft_adapter_sha256':SFT_SHA,
               'default_eos_token_id':151643,'independent_im_end_token_id':151645,
               'budgets':[96,256,512],
