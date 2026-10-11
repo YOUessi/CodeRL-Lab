@@ -102,6 +102,8 @@ def validate_grpo_contract(cfg:dict[str,Any],*,smoke:bool)->dict[str,Any]:
         cfg["data"]["exclude_reward_training_prompts"] is not True,
         cfg["data"]["exclude_reward_heldout_prompts"] is not True,
         cfg["data"]["exclude_sft_heldout_prompts"] is not True,
+        (bool(reward.get("require_natural_eos",False)) and
+         training["mask_truncated_completions"] is not True),
         training["scale_rewards"]!="group",
         training["loss_type"]!="grpo",
         (
@@ -115,7 +117,12 @@ def validate_grpo_contract(cfg:dict[str,Any],*,smoke:bool)->dict[str,Any]:
     # A stopped EOS is important for quality, but 96-token v2 masked all
     # four samples and produced zero gradients. Allow explicitly documented,
     # smoke-only truncated gradients to validate *mechanics*, never quality.
-    steps=(2 if training.get("gradient_smoke_allow_truncated",False) else 1) if smoke else int(training["max_steps"])
+    steps=(
+        int(training.get("smoke_optimizer_steps",2 if training.get("gradient_smoke_allow_truncated",False) else 1))
+        if smoke else int(training["max_steps"])
+    )
+    if smoke and not 1<=steps<=4:
+        raise ValueError("strict online GRPO smoke must request 1..4 optimizer steps")
     if not smoke and steps<1:
         raise ValueError("formal policy updates need a separately frozen positive max_steps")
     if int(training["save_steps"])<1 or int(training["save_total_limit"])<2:
@@ -128,6 +135,7 @@ def validate_grpo_contract(cfg:dict[str,Any],*,smoke:bool)->dict[str,Any]:
         "num_generations":int(gen["num_generations"]),
         "optimizer_steps":steps,
         "gradient_smoke_allow_truncated":bool(training.get("gradient_smoke_allow_truncated",False)) if smoke else False,
+        "natural_eos_required":bool(reward.get("require_natural_eos",False)),
         "validation_heldout_prompts_absent_from_training":True,
     }
 
@@ -174,7 +182,8 @@ class BoundedLearnedReward:
     All outcomes logged as aggregates, never leak raw prompt/completion text.
     """
     def __init__(self, *, score_one:Callable[[str,str],float],
-                 temperature:float=2.0,empty_reward:float=-1.0):
+                 temperature:float=2.0,empty_reward:float=-1.0,
+                 require_natural_eos:bool=False,eos_token_id:int=151643):
         if temperature<=0 or not math.isfinite(temperature):
             raise ValueError("invalid reward temperature")
         if not (-1<=empty_reward<=1):
@@ -182,19 +191,38 @@ class BoundedLearnedReward:
         self.score_one=score_one
         self.temperature=temperature
         self.empty_reward=empty_reward
+        self.require_natural_eos=bool(require_natural_eos)
+        self.eos_token_id=int(eos_token_id)
         self.history:list[dict[str,Any]]=[]
 
     def __call__(self,prompts:list[str],completions:list[str],
                  completion_ids=None,log_metric=None,log_extra=None,**kwargs)->list[float]:
         if not prompts or len(prompts)!=len(completions):
             raise ValueError("GRPO reward receives unequal/empty prompt groups")
-        raw=[];reward=[];empty=0;chars=[]
-        for prompt,completion in zip(prompts,completions,strict=True):
+        natural=[True]*len(prompts)
+        if self.require_natural_eos:
+            if completion_ids is None:
+                raise ValueError("natural-EOS guarded GRPO must receive completion token IDs")
+            original_ids=completion_ids.tolist() if hasattr(completion_ids,"tolist") else completion_ids
+            if len(original_ids)!=len(prompts):
+                raise ValueError("GRPO completion_ids batch does not match reward inputs")
+            natural=[]
+            for ids in original_ids:
+                if not isinstance(ids,(list,tuple)):
+                    raise TypeError("GRPO reward completion_ids must be a row of token IDs")
+                natural.append(self.eos_token_id in [int(tok) for tok in ids])
+        raw=[];reward=[];empty=0;truncated=0;chars=[]
+        for i,(prompt,completion) in enumerate(zip(prompts,completions,strict=True)):
             if not isinstance(prompt,str) or not prompt.strip():
                 raise ValueError("empty online rollout prompt")
             if not isinstance(completion,str):
                 raise TypeError("non-text sampled completion")
             chars.append(len(completion))
+            if not natural[i]:
+                truncated+=1
+                raw.append(None)
+                reward.append(self.empty_reward)
+                continue
             if not completion.strip():
                 empty+=1
                 raw.append(None)
@@ -209,6 +237,9 @@ class BoundedLearnedReward:
         audit={
             "rollouts":len(prompts),
             "empty_completions":empty,
+            "natural_eos_terminated":len(prompts)-truncated if self.require_natural_eos else None,
+            "truncated_completions":truncated if self.require_natural_eos else None,
+            "termination_fraction":(len(prompts)-truncated)/len(prompts) if self.require_natural_eos else None,
             "raw_reward_mean":statistics.mean(live) if live else None,
             "raw_reward_min":min(live) if live else None,
             "raw_reward_max":max(live) if live else None,
@@ -234,6 +265,14 @@ class BoundedLearnedReward:
             "callback_invocations":len(self.history),
             "rewarded_rollouts":sum(row["rollouts"] for row in self.history),
             "empty_completions":sum(row["empty_completions"] for row in self.history),
+            "natural_eos_terminated":(
+                sum(row["natural_eos_terminated"] for row in self.history)
+                if self.require_natural_eos else None
+            ),
+            "truncated_completions":(
+                sum(row["truncated_completions"] for row in self.history)
+                if self.require_natural_eos else None
+            ),
             "avg_bounded_reward_mean":statistics.mean(row["bounded_reward_mean"] for row in self.history),
             "avg_bounded_reward_std":statistics.mean(row["bounded_reward_std"] for row in self.history),
             "avg_nearly_saturated_fraction":statistics.mean(row["nearly_saturated_fraction"] for row in self.history),
@@ -348,7 +387,9 @@ def run(
     callback=BoundedLearnedReward(
         score_one=score_one,
         temperature=float(rc["bounded_reward_temperature"]),
-        empty_reward=float(rc["empty_completion_reward"]))
+        empty_reward=float(rc["empty_completion_reward"]),
+        require_natural_eos=bool(rc.get("require_natural_eos",False)),
+        eos_token_id=int(rc.get("eos_token_id",151643)))
 
     # Quantized trained SFT initial policy. TRL copies its default LoRA into
     # a frozen "ref" LoRA for KL when beta>0, verified before first update.
@@ -399,6 +440,11 @@ def run(
     (output_dir/"log_history.json").write_text(
         json.dumps(log,ensure_ascii=False,indent=2,default=str)+"\n",encoding="utf-8")
     callback_report=callback.aggregate()
+    if bool(rc.get("require_natural_eos",False)) and (
+        callback_report["natural_eos_terminated"] is None
+        or callback_report["natural_eos_terminated"]<1
+    ):
+        raise RuntimeError("ALL_TRUNCATED: no naturally terminated completion; refusing RLHF success")
     actual_gradients=[float(v["grad_norm"]) for v in log if v.get("grad_norm") is not None]
     if not actual_gradients or not all(math.isfinite(v) for v in actual_gradients):
         raise RuntimeError("GRPO did not record finite real optimizer gradient norm")
