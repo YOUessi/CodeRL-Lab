@@ -41,7 +41,7 @@ def validate_frozen_models(
     policy_dir:Path,
     reward_dir:Path,
 )->dict[str,Any]:
-    if config["experiment"]["id"]!="TRAIN-009A":
+    if config["experiment"]["id"] not in {"TRAIN-009A","TRAIN-009C"}:
         raise ValueError("wrong experiment ID")
     if config["model"]["name_or_path"]!=MODEL or config["model"]["revision"]!=REVISION:
         raise ValueError("wrong pinned base checkpoint")
@@ -87,7 +87,7 @@ def validate_frozen_models(
 def validate_grpo_contract(cfg:dict[str,Any],*,smoke:bool)->dict[str,Any]:
     training=cfg["training"];gen=cfg["generation"];reward=cfg["reward_model"]
     if any((
-        cfg["experiment"]["id"]!="TRAIN-009A",
+        cfg["experiment"]["id"] not in {"TRAIN-009A","TRAIN-009C"},
         cfg["model"]["quantization"]["mode"]!="nf4",
         float(training["beta"])<=0,
         training["reference_adapter"]!="ref",
@@ -341,7 +341,7 @@ def run(
     if not smoke and max_train_prompts is not None:
         raise ValueError("formal online RLHF cannot cherry-pick a training subset")
     output_dir.mkdir(parents=True,exist_ok=True)
-    identity={"experiment":"TRAIN-009A","smoke":smoke,
+    identity={"experiment":cfg["experiment"]["id"],"smoke":smoke,
               "source_config_sha256":sha256(config_path),"trained_models":verified,
               "prompt_pool":source,"contract":contract}
     (output_dir/"training_identity.json").write_text(
@@ -472,7 +472,7 @@ def run(
         )
 
     info={
-        "experiment":"TRAIN-009A",
+        "experiment":cfg["experiment"]["id"],
         "status":"smoke_only" if smoke else "formal",
         "online_algorithm":"GRPO with trained frozen scalar RM; NOT PPO",
         "global_step":trainer.state.global_step,
