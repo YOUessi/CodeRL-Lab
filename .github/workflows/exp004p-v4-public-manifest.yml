@@ -6,6 +6,9 @@ on:
     paths:
       - '.github/workflows/exp004p-v4-public-manifest.yml'
       - 'src/coderl_lab/datasets/exp004p_public_v4.py'
+  pull_request:
+    branches:
+      - exp/exp004o-transfer-boundaries
   workflow_dispatch:
 
 jobs:
