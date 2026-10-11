@@ -24,3 +24,16 @@ TRAIN-009A 已验证“真实冻结RM → SFT初始Actor → 在线GRPO生成与
 只在 **所有32条** 真实完成后报告split×token cap终止率。如果512有明显自然EOS，而96/256更多被截断，可以再独立冻结下一轮`mask_truncated=true`、只为EOS完整回答发放RM奖励的GRPO机械验收。不得针对这些EOS结果挑出看起来能自然结束的提示做成功示范。
 
 验证自然终止比训练动态更弱：模型EOS并不等于内容正确、合理、人类偏好好，RM分数升高也不是独立价值评估。必须把EOS数据、奖励饱和/欺骗和独立holdout三种指标分开。
+
+
+## 22:04：32条真正GPU生成全部完成，冻结结果
+
+- 16条train与16条原本SFT heldout prompt均完成单次固定温度`temperature=0.8, top_p=0.95, top_k=0`采样，每条真实SFT模型至多512tokens。所有窗口从同一采样轨迹对应prefix导出，绝非挑后重复生成。
+- **TRAIN前缀：**96tokens自然EOS2/16（12.5%）、256tokens 8/16（50.0%）、512tokens 13/16（81.25%）。
+- **SFT heldout：**96tokens自然EOS1/16（6.25%）、256tokens 8/16（50.0%）、512tokens 12/16（75.0%）。
+- **独立`<|im_end|>=151645`**：两组所有预算观测均0，不应随意解释成自然结束；默认`<|endoftext|>=151643`是本次唯一自然终止判据。
+- 16个验证prompt中原始Token长度898、622的两个被固定`keep last 480`处理，没有删除、替换或挑选；train16都未发生截断。该输入处理对终止率有一定影响，必须在结果限制中写明。
+- 真机GPU NVIDIA GeForce RTX4090 Laptop完成后进程退出，峰值预留显存`1616904192` bytes。逐行**只存哈希与Token统计**的trace SHA-256 `b24bd75fab09d87ceaf54a583d744bdb7e151563c71d50a0b83aadcd76b95bcc`，全量来源/模型版本身份从`frozen_inputs.json`冻结后未变；无原prompt与模型completion文本上传GitHub。
+- 正式机器可读结果：`results/train009b-termination-audit/summary.json`；真实GitHub Source code/CPU工作流`38144602512`已通过，Tang本机8项专用测试通过。
+- 初步判断：此前GRPO 96tokens及256tokens大量masked零梯度，并非只因学得RM没有奖励方差；生成预算是实际重要瓶颈。但上述统计是固定的32条（以及某些heldout左截断）上的终止率诊断，不证明512tokens下GRPO一定有非零梯度，也不保证自然EOS回答语义正确。
+- 基于这一诊断独立冻结`TRAIN-009C`，保持`mask_truncated_completions=true`，只为真EOS响应支付学得RM奖励并尝试严格的2-step GPU机械验收，不以本次诊断选个别成功样本。
