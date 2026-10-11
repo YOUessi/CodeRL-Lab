@@ -1,0 +1,107 @@
+{
+  "experiment": "TRAIN-009B",
+  "kind": "frozen_generation_only_terminal_audit",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "model_revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "sft_adapter_sha256": "d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d",
+  "seed": 42,
+  "decode": "Qwen3 SFT sampled temperature0.8 top_p0.95 top_k0; one 512-token rollout per source prompt",
+  "default_eos_id": 151643,
+  "im_end_probe_id": 151645,
+  "source_prompts": {
+    "train_smoke": 16,
+    "sft_heldout": 16
+  },
+  "source_label_leakage": false,
+  "no_training": true,
+  "no_hidden_test_use": true,
+  "metrics": {
+    "train_smoke": {
+      "96": {
+        "prompts": 16,
+        "default_eos_terminated": 2,
+        "hit_cap": 14,
+        "im_end_seen": 0,
+        "mean_tokens": 90.625,
+        "prompt_left_truncated_rows": 0,
+        "max_raw_prompt_tokens": 132
+      },
+      "256": {
+        "prompts": 16,
+        "default_eos_terminated": 8,
+        "hit_cap": 8,
+        "im_end_seen": 0,
+        "mean_tokens": 211.3125,
+        "prompt_left_truncated_rows": 0,
+        "max_raw_prompt_tokens": 132
+      },
+      "512": {
+        "prompts": 16,
+        "default_eos_terminated": 13,
+        "hit_cap": 3,
+        "im_end_seen": 0,
+        "mean_tokens": 292.25,
+        "prompt_left_truncated_rows": 0,
+        "max_raw_prompt_tokens": 132
+      }
+    },
+    "sft_heldout": {
+      "96": {
+        "prompts": 16,
+        "default_eos_terminated": 1,
+        "hit_cap": 15,
+        "im_end_seen": 0,
+        "mean_tokens": 94.5625,
+        "prompt_left_truncated_rows": 2,
+        "max_raw_prompt_tokens": 898
+      },
+      "256": {
+        "prompts": 16,
+        "default_eos_terminated": 8,
+        "hit_cap": 8,
+        "im_end_seen": 0,
+        "mean_tokens": 200.75,
+        "prompt_left_truncated_rows": 2,
+        "max_raw_prompt_tokens": 898
+      },
+      "512": {
+        "prompts": 16,
+        "default_eos_terminated": 12,
+        "hit_cap": 4,
+        "im_end_seen": 0,
+        "mean_tokens": 291,
+        "prompt_left_truncated_rows": 2,
+        "max_raw_prompt_tokens": 898
+      }
+    }
+  },
+  "limits": [
+    "Derived 96/256 caps from the exact same sampled 512-token prefix; not independent generated responses.",
+    "Default Qwen3-1.7B Base EOS is endoftext(151643). im_end(151645) is separately counted but NOT silently treated as EOS.",
+    "All measures are terminal rates on frozen source prompts only, not answer correctness or generalization.",
+    "Prompt selection fixed by SHA42, not cherry-picked based on model EOS results."
+  ],
+  "frozen_inputs": {
+    "experiment": "TRAIN-009B",
+    "sft_sha": "d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d",
+    "source_train_sha": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+    "source_valid_sha": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+    "reward_train_sha": "945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77",
+    "reward_valid_sha": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450",
+    "prompt_hash_pairs": "cfa316d3762b5436c317654e10f49167958be7406c8068d334ca9eb6ef0085bf",
+    "selection": "seed42 top SHA16 from TRAIN009A smoke and SFT heldout; excl RM train/test",
+    "decode": {
+      "temperature": 0.8,
+      "top_p": 0.95,
+      "top_k": 0,
+      "max_new_tokens": 512
+    },
+    "policy_prompt_cap_tokens": 480,
+    "prompt_policy": "for every frozen source item preserve its last <=480 tokens; no outcome based row filtering"
+  },
+  "actual_trace_sha256": "b24bd75fab09d87ceaf54a583d744bdb7e151563c71d50a0b83aadcd76b95bcc",
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 4090 Laptop GPU",
+    "peak_reserved_bytes": 1616904192
+  }
+}

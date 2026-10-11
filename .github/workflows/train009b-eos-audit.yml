@@ -1,0 +1,92 @@
+name: TRAIN-009B real frozen terminal-cohort preflight
+
+on:
+  push:
+    branches:
+      - exp/train009b-termination-budget-diagnostics
+    paths:
+      - .github/workflows/train009b-eos-audit.yml
+      - src/coderl_lab/analysis/train009b_termination_audit.py
+      - tests/test_train009b_termination_audit.py
+  workflow_dispatch:
+
+jobs:
+  frozen-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only CPU dev and tokenizer
+        run: python -m pip install -e ".[dev]" "transformers==5.18.0"
+      - name: Verify actual EOS semantics and frozen-budget math
+        run: pytest -q tests/test_train009b_termination_audit.py
+      - name: Fetch exact frozen SFT/reward source snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data/generated/posttrain-h4-v1
+          gh run download 37725387735 \
+            --repo YOUessi/CodeRL-Lab \
+            --name posttraining-frozen-h4-v1 \
+            --dir data/generated/posttrain-h4-v1
+      - name: Freeze both cohorts before any GPU model response inspection
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+          from transformers import AutoTokenizer
+          from coderl_lab.analysis.train009b_termination_audit import (
+              MODEL,REVISION,SAMPLE_SEED,SFT_SHA,
+              frozen_holdout,
+          )
+          from coderl_lab.datasets.train009a_online_prompts import frozen_prompt_pool
+          root=Path('data/generated/posttrain-h4-v1')
+          train,audit=frozen_prompt_pool(root=root,max_train_prompts=16)
+          heldout=frozen_holdout(root,count=16)
+          assert len(train)==len(heldout)==16
+          assert audit['eligible_train_prompts']==4095
+          assert len({r['prompt_sha256'] for r in train+heldout})==32
+          tok=AutoTokenizer.from_pretrained(MODEL,revision=REVISION,trust_remote_code=True)
+          assert tok.eos_token_id==151643
+          assert tok.convert_tokens_to_ids('<|im_end|>')==151645
+          lengths={
+              'train_smoke':[len(tok(text=r['prompt'])['input_ids']) for r in train],
+              'sft_heldout':[len(tok(text=r['prompt'])['input_ids']) for r in heldout],
+          }
+          assert all(0<n<=480 for n in lengths['train_smoke']),lengths
+          # The original fixed heldout SHA16 choice has two >480-token prompts.
+          # Keep BOTH and apply the same deterministic last-480-token context
+          # policy at inference. No model-score/hidden outcome based exclusion.
+          assert sum(n>480 for n in lengths['sft_heldout'])==2,lengths
+          assert sorted(n for n in lengths['sft_heldout'] if n>480)==[622,898]
+          result={
+              'experiment':'TRAIN-009B','phase':'real_frozen_data_preflight_no_GPU',
+              'train_prompts':16,'heldout_prompts':16,
+              'train_max_tokens':max(lengths['train_smoke']),
+              'heldout_max_tokens':max(lengths['sft_heldout']),
+              'heldout_left_truncated_prompts':sum(n>480 for n in lengths['sft_heldout']),
+              'prompt_budget_tokens':480,
+              'overlong_prompt_policy':'keep_last_480_tokens_without_changing_fixed_cohort',
+              'model_revision':REVISION,'sft_adapter_sha256':SFT_SHA,
+              'default_eos_token_id':151643,'independent_im_end_token_id':151645,
+              'budgets':[96,256,512],
+              'no_new_model_generation':True,
+              'no_private_tests':True,
+          }
+          out=Path('artifacts/train009b')
+          out.mkdir(parents=True,exist_ok=True)
+          (out/'cohort_preflight.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: train009b-real-frozen-cohort-preflight
+          path: artifacts/train009b/cohort_preflight.json
+          if-no-files-found: error
+          retention-days: 30
