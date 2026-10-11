@@ -110,6 +110,13 @@ def torch_gae(*,rewards,values,valid_mask,terminal_mask,
         raise ValueError("terminal marker on padding")
     if (~valid).all(dim=1).any():
         raise ValueError("empty sampled completion is not PPO data")
+    for row in range(valid.shape[0]):
+        idx=torch.nonzero(valid[row],as_tuple=False).flatten()
+        if not torch.equal(idx,torch.arange(len(idx),device=idx.device)):
+            raise ValueError("PPO sampled completion tokens must form contiguous prefix")
+        eos=torch.nonzero(term[row],as_tuple=False).flatten()
+        if eos.numel()>1 or (eos.numel()==1 and eos[0]!=idx[-1]):
+            raise ValueError("natural terminal EOS must mark final valid token")
     with torch.no_grad():
         # Returns and advantages are frozen rollout targets: never backprop
         # through old value estimates to update policy or the value baseline.
