@@ -7,17 +7,17 @@ from pathlib import Path
 
 def main():
     p=argparse.ArgumentParser()
-    p.add_argument("--model",default="Qwen/Qwen2.5-7B-Instruct-AWQ")
-    p.add_argument("--revision",default="b25037543e9394b818fdfca67ab2a00ecc7dd641")
+    p.add_argument("--model",default="Qwen/Qwen2.5-7B-Instruct")
+    p.add_argument("--revision",default="a09a35458c702b33eeacc393d103063234e8bc28")
     p.add_argument("--local-files-only",action="store_true",default=True)
     p.add_argument("--output",type=Path,default=Path("artifacts/exp7b/preflight.json"))
     args=p.parse_args()
     import torch
-    from transformers import AutoTokenizer, AutoModelForCausalLM
+    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
     from coderl_lab.datasets.livecodebench import PINNED_LCB_DATASET_REVISION
     start=time.monotonic()
     tokenizer=AutoTokenizer.from_pretrained(args.model,revision=args.revision,local_files_only=True)
-    model=AutoModelForCausalLM.from_pretrained(args.model,revision=args.revision,local_files_only=True,device_map="auto",torch_dtype="auto")
+    model=AutoModelForCausalLM.from_pretrained(args.model,revision=args.revision,local_files_only=True,device_map="auto",torch_dtype=torch.float16,quantization_config=BitsAndBytesConfig(load_in_4bit=True,bnb_4bit_quant_type="nf4",bnb_4bit_compute_dtype=torch.float16))
     model.eval()
     messages=[{"role":"user","content":"Write a Python function add(a, b) that returns the sum of two integers. Reply with only the function code."}]
     prompt=tokenizer.apply_chat_template(messages,tokenize=False,add_generation_prompt=True)
