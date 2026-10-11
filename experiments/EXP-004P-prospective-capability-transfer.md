@@ -66,3 +66,12 @@ Do not change max_new_tokens, bias, threshold, public test budget, or prompt usi
 
 ## Resource and stop conditions
 GPU work uses Tang only once needed. Stop and record inability to run if external GPU compute is busy, checkpoint SHA mismatches, public/private boundary is violated, or the official evaluator is unavailable. No invented outcomes or implied asynchronous execution.
+
+
+## 2026-10-11: actual public-data source check / protocol amendment (before any new outputs)
+- The currently inspected official `code_generation_lite` source exposes fine-grained `test.jsonl` through `test6.jsonl`; **no available v7 slice was confirmed**. Do not fabricate one.
+- A historical v4-only cohort (`test4.jsonl`) is chosen as the reproducible **independent cohort feasibility track**, compared with used v5/v6 IDs and normalized statement hashes at pinned source revision `0fe84c3912ea0c4d4a78037083943e8f0c4dd505`.
+- **Important protocol correction:** v4 predates v5/v6. It is not a prospectively later or contamination-free temporal holdout. Any v4 hidden evaluation must be labeled *historical independent-cohort exploratory replication*, not the original prospectively newer-distribution confirmatory primary study.
+- Original prospective post-v6 primary remains **blocked** until a verifiably newer independent benchmark with executable public/private evaluation is identified and pinned. Do not replace that primary with v4 silently.
+- New public-only code: `src/coderl_lab/datasets/exp004p_public_v4.py` and `tests/test_exp004p_public_v4.py`. Their existence does not establish that all raw data were downloaded or the unit tests passed.
+- No new generation or private outcomes have been produced as part of this amendment.
