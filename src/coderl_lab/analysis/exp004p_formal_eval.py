@@ -45,8 +45,8 @@ def validate_frozen_input(
     lcb_repo: Path,
     runner_path: Path,
 ) -> dict[str, Any]:
-    if expected_tasks not in (12, 101):
-        raise ValueError("EXP-004P requires exactly 12 smoke or 101 formal tasks")
+    if expected_tasks not in (2, 12, 101):
+        raise ValueError("EXP-004P requires 2/12 smoke or 101 formal tasks")
     if runner["experiment"] != "EXP-004P":
         raise ValueError("wrong experiment")
     if runner.get("private_tests_accessed") is not False:
@@ -87,7 +87,7 @@ def validate_frozen_input(
     if len(tasks) != expected_tasks or set(tasks) - set(public_rows):
         raise ValueError("missing/extra or duplicate runner tasks")
     if expected_tasks == 101 and set(tasks) != set(public_rows):
-        raise ValueError("formal runner did not cover the full v6 distribution")
+        raise ValueError("formal runner did not cover the full historical v4 cohort")
 
     for qid, task in tasks.items():
         if task.get("question_id") != qid:
@@ -244,7 +244,7 @@ def summarize(
     ci = summary["contrasts"]["gated_low_destabilize_minus_baseline"]
     summary["primary_success"] = ci["ci95_low"] > 0
     summary["claim_limit"] = (
-        "formal 101-task external-distribution replication"
+        "exploratory historical v4 independent-cohort evaluation (not prospective)"
         if len(rows) == 101 else "engineering smoke only, not efficacy evidence"
     )
     return summary
@@ -423,7 +423,7 @@ def main() -> None:
     parser.add_argument("--source-jsonl", type=Path)
     parser.add_argument("--lcb-repo", type=Path, default=Path(".external/livecodebench"))
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--expected-tasks", type=int, choices=(12, 101), required=True)
+    parser.add_argument("--expected-tasks", type=int, choices=(2, 12, 101), required=True)
     parser.add_argument("--iterations", type=int, default=20000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--timeout", type=int, default=6)
