@@ -1,5 +1,5 @@
 experiment:
-  id: TRAIN-009A
+  id: TRAIN-009C
   track: A-posttraining
   name: learned-reward-GRPO-true-EOS-masked-gradient-smoke-v4
   interpretation: "on-policy RLHF via GRPO with a separately frozen learned reward, not PPO"
