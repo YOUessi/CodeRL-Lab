@@ -1,0 +1,53 @@
+name: EXP-004P v4 public-only manifest
+on:
+  push:
+    branches:
+      - exp/exp004p-prospective-capability-transfer
+    paths:
+      - '.github/workflows/exp004p-v4-public-manifest.yml'
+      - 'src/coderl_lab/datasets/exp004p_public_v4.py'
+  pull_request:
+    branches:
+      - exp/exp004o-transfer-boundaries
+  workflow_dispatch:
+
+jobs:
+  freeze-public-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install data and test extras
+        run: python -m pip install -e '.[dev,data]' huggingface_hub
+      - name: Run public-only unit tests
+        run: python -m pytest -q tests/test_exp004p_public_v4.py
+      - name: Build independent historical v4 manifest
+        run: python -m coderl_lab.datasets.exp004p_public_v4 --output-dir artifacts/exp004p/data | tee exp004p-manifest-log.txt
+      - name: Verify public-only artifact contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('artifacts/exp004p/data')
+          manifest=json.loads((root/'manifest.json').read_text())
+          rows=(root/'public_tasks.jsonl').read_text().splitlines()
+          assert len(rows)==manifest['accepted_count']>0
+          assert manifest['private_tests_exported'] is False
+          assert manifest['private_tests_decoded'] is False
+          assert all('private_test_cases' not in json.loads(x) for x in rows)
+          print('public-only contract passed:',len(rows),'tasks')
+          PY
+      - name: Upload public manifest and provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp004p-public-only-v4-audit
+          path: |
+            artifacts/exp004p/data/manifest.json
+            exp004p-manifest-log.txt
+          if-no-files-found: warn

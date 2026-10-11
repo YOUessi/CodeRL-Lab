@@ -1,0 +1,36 @@
+{
+  "experiment": "EXP-004P",
+  "status": "historical_v4_public_only_frozen",
+  "source_revision": "0fe84c3912ea0c4d4a78037083943e8f0c4dd505",
+  "sources_sha256": {
+    "test4.jsonl": "d711138ddaebfcf5f8ec6a4283ee677298c0f5c5d374a235af92aaf0584510da",
+    "test5.jsonl": "7f77571c2a6df0c2a72a3277650309f67e01e0008e18117e624633df53f81214",
+    "test6.jsonl": "bb4c364f71921c4495a6ad15abe1a927350b720009f4933e2e71f8af0f6fd1f5"
+  },
+  "source_counts": {
+    "test4.jsonl": 101,
+    "test5.jsonl": 167,
+    "test6.jsonl": 175
+  },
+  "accepted_count": 101,
+  "exclusions": {},
+  "selection": "all v4 except same ID or normalized statement in v5/v6; no outcome filtering",
+  "public_sha256": "62239669ec50b2ebee8cad1a0561e072e293a76a9a130d0b214bdbcedf980853",
+  "platform_counts": {
+    "atcoder": 65,
+    "leetcode": 36
+  },
+  "difficulty_counts": {
+    "hard": 45,
+    "easy": 22,
+    "medium": 34
+  },
+  "contest_date_min": "2023-08-26T19:30:00",
+  "contest_date_max": "2024-10-05T19:30:00",
+  "private_tests_decoded": false,
+  "private_tests_exported": false,
+  "hidden_outcomes_used": false,
+  "workflow_run": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/38160834788",
+  "workflow_conclusion": "success",
+  "artifact_id": 11710635541
+}

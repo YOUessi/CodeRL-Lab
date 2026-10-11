@@ -135,7 +135,7 @@ def run_livecodebench_verifier_gated(
             "LiveCodeBench verifier-gated runner requires model dependencies"
         ) from exc
 
-    if experiment_id not in {"EXP-004L", "EXP-004N"}:
+    if experiment_id not in {"EXP-004L", "EXP-004N", "EXP-004P"}:
         raise ValueError(f"unsupported LiveCodeBench experiment: {experiment_id}")
     public_map = load_public_tasks(public_tasks_path)
     question_ids = sorted(public_map)
@@ -348,7 +348,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--public-timeout", type=int, default=6)
     parser.add_argument("--public-memory", default="1g")
     parser.add_argument("--max-tasks", type=int)
-    parser.add_argument("--experiment-id", choices=("EXP-004L", "EXP-004N"), default="EXP-004L")
+    parser.add_argument("--experiment-id", choices=("EXP-004L", "EXP-004N", "EXP-004P"), default="EXP-004L")
     return parser.parse_args()
 
 

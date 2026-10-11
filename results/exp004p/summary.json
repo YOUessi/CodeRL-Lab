@@ -1,0 +1,175 @@
+{
+  "tasks": 101,
+  "eligible_tasks": 94,
+  "gate_triggered_tasks": 90,
+  "public_pass_tasks": 6,
+  "conditions": {
+    "baseline": {
+      "correct_tasks": 3,
+      "correct_fraction": 0.0297029702970297,
+      "delta_vs_baseline": null,
+      "transitions_vs_baseline": null
+    },
+    "gated_low_destabilize": {
+      "correct_tasks": 5,
+      "correct_fraction": 0.04950495049504951,
+      "delta_vs_baseline": 0.019801980198019806,
+      "transitions_vs_baseline": {
+        "wrong_to_correct": 2,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 3,
+        "wrong_to_wrong": 96
+      }
+    },
+    "gated_high_destabilize": {
+      "correct_tasks": 3,
+      "correct_fraction": 0.0297029702970297,
+      "delta_vs_baseline": 0,
+      "transitions_vs_baseline": {
+        "wrong_to_correct": 0,
+        "correct_to_wrong": 0,
+        "correct_to_correct": 3,
+        "wrong_to_wrong": 98
+      }
+    },
+    "always_low_destabilize": {
+      "correct_tasks": 4,
+      "correct_fraction": 0.039603960396039604,
+      "delta_vs_baseline": 0.009900990099009903,
+      "transitions_vs_baseline": {
+        "wrong_to_correct": 2,
+        "correct_to_wrong": 1,
+        "correct_to_correct": 2,
+        "wrong_to_wrong": 96
+      }
+    }
+  },
+  "contrasts": {
+    "gated_low_destabilize_minus_baseline": {
+      "tasks": 101,
+      "observed_delta": 0.019801980198019802,
+      "ci95_low": 0,
+      "ci95_high": 0.04950495049504951,
+      "probability_positive": 0.8658,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_high_destabilize_minus_baseline": {
+      "tasks": 101,
+      "observed_delta": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "probability_positive": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "always_low_destabilize_minus_baseline": {
+      "tasks": 101,
+      "observed_delta": 0.009900990099009901,
+      "ci95_low": -0.019801980198019802,
+      "ci95_high": 0.04950495049504951,
+      "probability_positive": 0.60245,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_low_destabilize_minus_gated_high_destabilize": {
+      "tasks": 101,
+      "observed_delta": 0.019801980198019802,
+      "ci95_low": 0,
+      "ci95_high": 0.04950495049504951,
+      "probability_positive": 0.8658,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "gated_low_destabilize_minus_always_low_destabilize": {
+      "tasks": 101,
+      "observed_delta": 0.009900990099009901,
+      "ci95_low": 0,
+      "ci95_high": 0.0297029702970297,
+      "probability_positive": 0.63685,
+      "iterations": 20000,
+      "seed": 42
+    }
+  },
+  "strata": {
+    "platform:atcoder": {
+      "tasks": 65,
+      "baseline_correct": 0,
+      "gated_low_correct": 1
+    },
+    "platform:leetcode": {
+      "tasks": 36,
+      "baseline_correct": 3,
+      "gated_low_correct": 4
+    },
+    "difficulty:easy": {
+      "tasks": 22,
+      "baseline_correct": 3,
+      "gated_low_correct": 5
+    },
+    "difficulty:hard": {
+      "tasks": 45,
+      "baseline_correct": 0,
+      "gated_low_correct": 0
+    },
+    "difficulty:medium": {
+      "tasks": 34,
+      "baseline_correct": 0,
+      "gated_low_correct": 0
+    }
+  },
+  "gate_triggered_subset": {
+    "tasks": 90,
+    "baseline_correct": 0,
+    "gated_low_correct": 2,
+    "low_transitions": {
+      "wrong_to_correct": 2,
+      "correct_to_wrong": 0,
+      "correct_to_correct": 0,
+      "wrong_to_wrong": 88
+    },
+    "low_minus_baseline": {
+      "tasks": 90,
+      "observed_delta": 0.022222222222222223,
+      "ci95_low": 0,
+      "ci95_high": 0.05555555555555555,
+      "probability_positive": 0.86235,
+      "iterations": 20000,
+      "seed": 42
+    }
+  },
+  "public_pass_protection": {
+    "tasks": 6,
+    "gated_low_changed": 0,
+    "gated_high_changed": 0,
+    "always_low_changed": 3
+  },
+  "posthoc_gate_audit": {
+    "baseline_wrong_tasks": 98,
+    "gate_selected_tasks": 90,
+    "gate_selected_hidden_wrong": 90,
+    "gate_precision": 1,
+    "gate_recall": 0.9183673469387755,
+    "public_fail_precision": 1
+  },
+  "primary_success": false,
+  "claim_limit": "exploratory historical v4 independent-cohort evaluation (not prospective)",
+  "frozen_inputs": {
+    "experiment": "EXP-004P",
+    "phase": "frozen-before-private-tests",
+    "expected_tasks": 101,
+    "runner_sha256": "6a9a5473adb72e02fa641a5e204766cc35598e91282680d6deec969a4953d66e",
+    "dataset_source_revision": "0fe84c3912ea0c4d4a78037083943e8f0c4dd505",
+    "dataset_source_sha256": "d711138ddaebfcf5f8ec6a4283ee677298c0f5c5d374a235af92aaf0584510da",
+    "public_view_sha256": "62239669ec50b2ebee8cad1a0561e072e293a76a9a130d0b214bdbcedf980853",
+    "official_evaluator_commit": "28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24",
+    "private_tests_accessed": false
+  },
+  "private_tests_accessed_only_after_freeze": true,
+  "candidate_resource_limit_counts": {
+    "baseline": 1,
+    "gated_low_destabilize": 1,
+    "gated_high_destabilize": 1,
+    "always_low_destabilize": 1
+  }
+}
