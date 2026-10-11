@@ -56,8 +56,8 @@ def boundary_stats(
     im_end_id:int=ADDITIONAL_IM_END,
     budgets:tuple[int,...]=BUDGETS,
 )->dict[str,Any]:
-    if not token_ids or max(budgets)>512 or min(budgets)<1 or
-       len(set(budgets))!=len(budgets):
+    if (not token_ids or not budgets or max(budgets)>512 or min(budgets)<1
+            or len(set(budgets))!=len(budgets)):
         raise ValueError("invalid cap or empty decoder trace")
     eos_pos=next((i+1 for i,t in enumerate(token_ids) if t==eos_id),None)
     end_turn_pos=next((i+1 for i,t in enumerate(token_ids) if t==im_end_id),None)
