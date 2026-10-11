@@ -6,7 +6,7 @@ import hashlib
 import pytest
 
 from coderl_lab.analysis.train009b_termination_audit import (
-    EXPECTED_MODEL_EOS,ADDITIONAL_IM_END,BUDGETS,boundary_stats,summarize,
+    EXPECTED_MODEL_EOS,ADDITIONAL_IM_END,BUDGETS,boundary_stats,summarize,trunc_prompt_left,
 )
 
 
@@ -79,3 +79,34 @@ def test_partial_heldout_or_duplicate_prompt_fails():
     dup[-1]["prompt_sha256"]=dup[-2]["prompt_sha256"]
     with pytest.raises(ValueError,match="duplicate"):
         summarize(dup)
+
+
+def test_long_heldout_keeps_fixed_final_480_without_drop_or_outcome_selection():
+    ids=list(range(898))
+    kept,dropped=trunc_prompt_left(ids,cap=480)
+    assert dropped==418
+    assert kept==ids[-480:]
+    ids=list(range(622))
+    kept,dropped=trunc_prompt_left(ids,cap=480)
+    assert dropped==142
+    assert kept==ids[-480:]
+    short=list(range(132))
+    unchanged,dropped=trunc_prompt_left(short,cap=480)
+    assert dropped==0
+    assert unchanged==short
+    with pytest.raises(ValueError,match="invalid"):
+        trunc_prompt_left([],cap=480)
+
+
+def test_terminal_aggregates_record_left_truncated_source_rows():
+    rows=frozen_32()
+    rows[-1]["left_truncated_prompt_tokens"]=142
+    rows[-1]["original_prompt_tokens"]=622
+    rows[-1]["prompt_tokens"]=480
+    rows[-2]["left_truncated_prompt_tokens"]=418
+    rows[-2]["original_prompt_tokens"]=898
+    rows[-2]["prompt_tokens"]=480
+    report=summarize(rows)
+    assert report["metrics"]["sft_heldout"]["96"]["prompt_left_truncated_rows"]==2
+    assert report["metrics"]["sft_heldout"]["512"]["max_raw_prompt_tokens"]==898
+    assert report["metrics"]["train_smoke"]["512"]["prompt_left_truncated_rows"]==0
