@@ -1,0 +1,32 @@
+name: TRAIN-010A PPO Torch objective gradient parity
+
+on:
+  push:
+    branches:
+      - feat/train010a-ppo-objective-core
+    paths:
+      - .github/workflows/train010a-ppo-torch-parity.yml
+      - src/coderl_lab/train/ppo_objectives.py
+      - src/coderl_lab/train/ppo_torch_objectives.py
+      - tests/test_ppo_torch_objectives.py
+  workflow_dispatch:
+
+jobs:
+  cpu-torch-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned CPU Torch and testing libraries
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.10.0"
+          python -m pip install -e ".[dev]"
+      - name: Run real differentiable Torch PPO objectives against NumPy oracle
+        run: |
+          python -c "import torch; print('PPO CPU Torch:',torch.__version__)"
+          python -m pytest -q tests/test_ppo_objectives.py tests/test_ppo_torch_objectives.py
