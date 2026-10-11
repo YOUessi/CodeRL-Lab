@@ -1,0 +1,12 @@
+{
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "status": "loaded_and_generated",
+  "elapsed_seconds": 12.49,
+  "device": "cuda:0",
+  "gpu_peak_mib": 5696.1,
+  "generated_tokens": 17,
+  "output": "```python\ndef add(a, b):\n    return a + b\n```",
+  "note": "One trivial code-generation smoke; no pass@k or transfer conclusion.",
+  "lcb_source_revision": "0fe84c3912ea0c4d4a78037083943e8f0c4dd505"
+}
