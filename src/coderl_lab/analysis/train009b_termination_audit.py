@@ -51,6 +51,18 @@ def frozen_holdout(root:Path, *, count:int=16,seed:int=SAMPLE_SEED)->list[dict[s
     return [{"prompt":s,"prompt_sha256":digest_prompt(s)} for s in eligible[:count]]
 
 
+def trunc_prompt_left(token_ids:list[int],*,cap:int=480)->tuple[list[int],int]:
+    """Fixed length-only prompt policy: preserve the most recent context.
+
+    Must be applied to every frozen heldout row, never select/remove a row
+    conditional on model termination or private reward results.
+    """
+    if not token_ids or cap<8:
+        raise ValueError("invalid policy prompt token cap")
+    skipped=max(0,len(token_ids)-cap)
+    return token_ids[skipped:],skipped
+
+
 def boundary_stats(
     token_ids:list[int], *, eos_id:int=EXPECTED_MODEL_EOS,
     im_end_id:int=ADDITIONAL_IM_END,
@@ -105,6 +117,8 @@ def summarize(rows:list[dict[str,Any]],*, budgets:tuple[int,...]=BUDGETS)->dict[
                 "hit_cap":sum(item["would_hit_cap"] for item in b),
                 "im_end_seen":sum(item["im_end_seen_by_cap"] for item in b),
                 "mean_tokens":mean(item["completion_tokens"] for item in b),
+                "prompt_left_truncated_rows":sum(r.get("left_truncated_prompt_tokens",0)>0 for r in cohort),
+                "max_raw_prompt_tokens":max(r.get("original_prompt_tokens",r["prompt_tokens"]) for r in cohort),
             }
     return {
         "experiment":"TRAIN-009B",
@@ -161,6 +175,8 @@ def run(*,root:Path, data_root:Path,sft_dir:Path,
         "prompt_hash_pairs":_hash_rows(pairs),
         "selection":"seed42 top SHA16 from TRAIN009A smoke and SFT heldout; excl RM train/test",
         "decode":{"temperature":0.8,"top_p":0.95,"top_k":0,"max_new_tokens":512},
+        "policy_prompt_cap_tokens":480,
+        "prompt_policy":"for every frozen source item preserve its last <=480 tokens; no outcome based row filtering",
     }
     root.mkdir(parents=True,exist_ok=True)
     identity_path=root/"frozen_inputs.json"
@@ -198,9 +214,12 @@ def run(*,root:Path, data_root:Path,sft_dir:Path,
     for i,(split,row) in enumerate(pairs):
         key=(split,row["prompt_sha256"])
         if key in cache:continue
-        ids=tokenizer(text=row["prompt"],return_tensors="pt")["input_ids"].to(model.device)
-        if ids.shape[1]>480:
-            raise ValueError("frozen sample prompt length exceeds SFT policy budget; refuse silent truncation")
+        all_ids=tokenizer(text=row["prompt"],return_tensors="pt")["input_ids"]
+        raw_prompt_tokens=int(all_ids.shape[1])
+        policy_ids,dropped=trunc_prompt_left(all_ids[0].tolist(),cap=480)
+        ids=torch.tensor([policy_ids],device=model.device,dtype=torch.long)
+        if len(policy_ids)>480 or len(policy_ids)+dropped!=raw_prompt_tokens:
+            raise ValueError("deterministic prompt budget was not preserved")
         torch.manual_seed(SAMPLE_SEED+i)
         torch.cuda.manual_seed_all(SAMPLE_SEED+i)
         with torch.inference_mode():
@@ -213,7 +232,10 @@ def run(*,root:Path, data_root:Path,sft_dir:Path,
         tokens=out[0,ids.shape[1]:].tolist()
         trace=boundary_stats(tokens)
         rec={"split":split,"prompt_sha256":row["prompt_sha256"],
-             "prompt_tokens":int(ids.shape[1]),"trace":trace}
+             "prompt_tokens":int(ids.shape[1]),
+             "original_prompt_tokens":raw_prompt_tokens,
+             "left_truncated_prompt_tokens":dropped,
+             "trace":trace}
         with log.open("a") as f:f.write(json.dumps(rec)+"\n")
         cache[key]=rec
         if (i+1)%4==0:
