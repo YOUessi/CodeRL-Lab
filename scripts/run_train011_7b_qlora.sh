@@ -20,7 +20,7 @@ print("TRAIN-011 genuine frozen UltraChat data SHA verified",flush=True)
 PY
 PYTHONPATH=src "$PYTHON" -m coderl_lab.train.gpu_preflight --min-free-mib 11000
 if [ "${MODE:-smoke}" = smoke ]; then
-  PYTHONPATH=src "$PYTHON" -m coderl_lab.train.sft --config "$CONFIG" --data "$TRAIN" --output-dir artifacts/train011/qlora-ultrachat-smoke --max-samples 32 --max-eval-samples 8 --num-train-epochs 1
+  PYTHONPATH=src "$PYTHON" -m coderl_lab.train.sft --config "$CONFIG" --data "$TRAIN" --output-dir artifacts/train011/qlora-ultrachat-smoke-bf16 --max-samples 32 --max-eval-samples 8 --num-train-epochs 1
 elif [ "${MODE:-}" = formal ]; then
   PYTHONPATH=src "$PYTHON" -m coderl_lab.train.sft --config "$CONFIG" --data "$TRAIN"
 else
