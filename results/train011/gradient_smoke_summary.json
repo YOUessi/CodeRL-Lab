@@ -1,0 +1,23 @@
+{
+  "experiment": "TRAIN-011",
+  "status": "two_step_gradient_smoke",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "data": "2 hand-authored toy engineering examples; NOT UltraChat formal training",
+  "optimizer_steps": 2,
+  "losses": [
+    {
+      "step": 1,
+      "loss": 9.7625732421875,
+      "grad_norm": 5.277166843414307
+    },
+    {
+      "step": 2,
+      "loss": 3.544346809387207,
+      "grad_norm": 6.682319641113281
+    }
+  ],
+  "adapter_sha256": "65d6914caa03316e6f1f18878e83078cbb354ef1570f28b35332498b9ead386c",
+  "cuda_peak_allocated_mib": 5755.5,
+  "note": "Smoke validates finite loss, nonzero gradients, optimizer and adapter save only."
+}
