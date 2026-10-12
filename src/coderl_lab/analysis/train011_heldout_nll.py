@@ -169,7 +169,7 @@ def main() -> None:
                     "reason": "no_completion_token_within_train_max_length_512",
                 }
                 with checkpoint.open("a", encoding="utf-8") as h:
-                    h.write(json.dumps(item, ensure_ascii=False) + "\\n")
+                    h.write(json.dumps(item, ensure_ascii=False) + "\n")
                 saved[i] = item
                 continue
             ids = enc["input_ids"].to(model.device)
