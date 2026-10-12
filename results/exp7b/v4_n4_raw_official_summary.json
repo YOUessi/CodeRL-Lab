@@ -1,0 +1,64 @@
+{
+  "experiment": "EXP-7B-V4-N4-OFFICIAL",
+  "status": "completed",
+  "data_class": "historical v4 exploratory (not prospective)",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "n_tasks": 101,
+  "n_samples": 404,
+  "official_hidden_sample_correct": 0,
+  "official_hidden_sample_pass_fraction": 0,
+  "official_hidden_solved_at4": 0,
+  "official_hidden_pass_at4_task_fraction": 0,
+  "public_solved_at4": 0,
+  "bootstrap_hidden_pass_at4": {
+    "observed": 0,
+    "ci95_low": 0,
+    "ci95_high": 0,
+    "iterations": 20000,
+    "seed": 42
+  },
+  "candidate_resource_limit": 0,
+  "candidate_global_timeout": 0,
+  "frozen_inputs": {
+    "experiment": "EXP-7B-V4-N4-OFFICIAL",
+    "public_view_sha256": "62239669ec50b2ebee8cad1a0561e072e293a76a9a130d0b214bdbcedf980853",
+    "upstream_source_sha256": "d711138ddaebfcf5f8ec6a4283ee677298c0f5c5d374a235af92aaf0584510da",
+    "upstream_source_revision": "0fe84c3912ea0c4d4a78037083943e8f0c4dd505",
+    "official_evaluator_sha": "28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24",
+    "generation_identity_sha256": "8c6feca0fdb3ebe00085147dbe81d700ed84e67678b541e07aa7c3df77bffe4e",
+    "generation_checkpoint_sha256": "6ac29a8fc1044526a9760b5e264ee7d8d8bf3fc46f773d46011f7228f11cda81",
+    "count": 404,
+    "task_count": 101,
+    "private_decoded_before_freeze": false
+  },
+  "private_tests_accessed_only_after_freeze": true,
+  "limitations": "Existing LCB v4 was used for historical diagnostics; this is not a fresh prospective out-of-distribution study. Instruct prompt differs from older Qwen3 Base experiments.",
+  "strata": {
+    "difficulty": {
+      "easy": {
+        "tasks": 22,
+        "solved_at4": 0
+      },
+      "hard": {
+        "tasks": 45,
+        "solved_at4": 0
+      },
+      "medium": {
+        "tasks": 34,
+        "solved_at4": 0
+      }
+    },
+    "platform": {
+      "atcoder": {
+        "tasks": 65,
+        "solved_at4": 0
+      },
+      "leetcode": {
+        "tasks": 36,
+        "solved_at4": 0
+      }
+    }
+  },
+  "validation_warning": "INVALID_AS_MODEL_CAPABILITY_ESTIMATE: 404/404 model completions contain Markdown fences; raw code sent unparsed to Python checker; retrospective syntax audit shows 0/404 raw AST parses. Preserve as engineering failure, not true model accuracy."
+}
