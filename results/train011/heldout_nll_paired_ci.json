@@ -1,0 +1,48 @@
+{
+  "experiment": "TRAIN-011-HELDOUT-PAIRED-CI",
+  "evaluation_protocol": "full256_length512_v2",
+  "input_identity": {
+    "experiment": "TRAIN-011-HELDOUT-NLL",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+    "adapter_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+    "heldout_sha256": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+    "max_length": 512,
+    "seed": 42,
+    "scoring": "completion-only token NLL after concatenated prompt/completion tokenization; offsets select overlapping tokens",
+    "precision": "NF4 double quant + BF16 compute",
+    "no_completion_policy": "predefined length-based no-target samples recorded but not included in token NLL; never filter based on accuracy"
+  },
+  "underlying_metrics": {
+    "total_heldout_examples": 256,
+    "evaluable_examples": 231,
+    "unscorable_due_to_prompt_length": 25,
+    "examples": 231,
+    "target_tokens": 60906,
+    "coverage_fraction": 0.90234375,
+    "base": {
+      "total_nll": 69289.81928348541,
+      "token_weighted_mean_nll": 1.1376517795206615,
+      "perplexity": 3.119434637651404,
+      "mean_sample_nll": 1.1900959937793163
+    },
+    "sft": {
+      "total_nll": 61116.69302588701,
+      "token_weighted_mean_nll": 1.003459314778298,
+      "perplexity": 2.7277015043782105,
+      "mean_sample_nll": 0.9399838650339248
+    },
+    "sft_minus_base_token_mean_nll": -0.13419246474236357,
+    "examples_improved_nll": 231
+  },
+  "uncertainty": {
+    "metric": "SFT - Base token-weighted heldout NLL",
+    "paired_task_bootstrap_95_low": -0.14674646684272577,
+    "paired_task_bootstrap_95_high": -0.12301799853468283,
+    "iterations": 20000,
+    "seed": 42,
+    "scored_examples": 231,
+    "unscorable_prompt_length": 25
+  },
+  "limitations": "Model likelihood on reference completions, not real-user quality or code-task correctness. Some prompts are longer than 512 and have zero scoreable target tokens."
+}
