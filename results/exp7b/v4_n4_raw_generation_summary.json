@@ -1,0 +1,16 @@
+{
+  "experiment": "EXP-7B-V4-PUBLIC-N4",
+  "status": "exploratory_public_only",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "cohort_sha": "62239669ec50b2ebee8cad1a0561e072e293a76a9a130d0b214bdbcedf980853",
+  "tasks": 101,
+  "samples": 404,
+  "public_sample_pass_fraction": 0,
+  "public_solved_at4": 0,
+  "private_tests_accessed": false,
+  "checkpoint_sha256": "6ac29a8fc1044526a9760b5e264ee7d8d8bf3fc46f773d46011f7228f11cda81",
+  "official_evaluator_sha": "28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24",
+  "note": "Public tests only: not hidden Pass@4; historical v4, not prospectively held out.",
+  "validation_warning": "404/404 completions retain Markdown code fences; raw public score 0/404 is not an interpretable model capability estimate."
+}
