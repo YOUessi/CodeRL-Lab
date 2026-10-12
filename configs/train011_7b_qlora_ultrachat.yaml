@@ -5,7 +5,7 @@ experiment:
 model:
   name_or_path: Qwen/Qwen2.5-7B-Instruct
   revision: a09a35458c702b33eeacc393d103063234e8bc28
-  dtype: float16
+  dtype: bfloat16
 data:
   dataset_repo: HuggingFaceH4/ultrachat_200k
   revision: b7fe606ecdbf71e8537946a8d9de5ccf0f6da48b
