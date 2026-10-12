@@ -1,0 +1,40 @@
+{
+  "experiment": "EXP-7B-PUBLIC-SMOKE",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "tasks": 4,
+  "source_public_sha256": "62239669ec50b2ebee8cad1a0561e072e293a76a9a130d0b214bdbcedf980853",
+  "public_pass": 0,
+  "private_tests_accessed": false,
+  "protocol": "7B instruct template greedy max512; descriptive public-only smoke",
+  "rows": [
+    {
+      "question_id": "3026",
+      "public_pass": false,
+      "tokens": 207,
+      "seconds": 9.91,
+      "completion_sha256": "f5cff8c541a724de2aabae3a71cc2416fe847abe93300b26ae0be9c43b9afe60"
+    },
+    {
+      "question_id": "3485",
+      "public_pass": false,
+      "tokens": 96,
+      "seconds": 4.5,
+      "completion_sha256": "cda7c0a03e5fcac2bbacbc27614badf459b51dea2658bd5fb6654cb8d041ea5c"
+    },
+    {
+      "question_id": "3495",
+      "public_pass": false,
+      "tokens": 138,
+      "seconds": 6,
+      "completion_sha256": "8aac10ddb34409acc49c9c7b70b16d682648f2e36d69c9693210a827c2d1b392"
+    },
+    {
+      "question_id": "3496",
+      "public_pass": false,
+      "tokens": 142,
+      "seconds": 6.59,
+      "completion_sha256": "fb4fa48efc828c3114e5fe014756abe575cad60350323dac479b1ee3a86dbecb"
+    }
+  ]
+}
