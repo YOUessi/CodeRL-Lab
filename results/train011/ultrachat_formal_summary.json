@@ -1,0 +1,71 @@
+{
+  "config_path": "configs/train011_7b_qlora_ultrachat.yaml",
+  "data_path": "data/generated/posttrain-h4-v1/sft_train.jsonl",
+  "output_dir": "artifacts/train011/qlora-ultrachat",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "requested_model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "resolved_model_revision": null,
+  "dtype": "bfloat16",
+  "quantization": {
+    "mode": "nf4",
+    "double_quant": true,
+    "compute_dtype": "bfloat16"
+  },
+  "num_examples": 4096,
+  "saved_adapter_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+  "train_data_sha256": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+  "heldout_data_sha256": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+  "num_heldout_validation_examples": 256,
+  "num_train_epochs": 1,
+  "checkpoint_policy": {
+    "save_strategy": "epoch",
+    "save_steps": null,
+    "save_total_limit": null,
+    "resumed_from": null,
+    "identity": {
+      "config_sha256": "1b8efdae0aa00778665477c2be188622ab9460bd91a3b7df23c701f167ed9e16",
+      "training_data_sha256": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+      "heldout_data_sha256": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+      "training_rows": 4096,
+      "heldout_rows": 256
+    }
+  },
+  "warmup_ratio_requested": 0.03,
+  "warmup_steps": 8,
+  "seed": 42,
+  "lora": {
+    "r": 8,
+    "alpha": 16,
+    "dropout": 0,
+    "target_modules": [
+      "q_proj",
+      "v_proj"
+    ],
+    "trainable_parameters": 2523136,
+    "total_parameters": 4355495424,
+    "trainable_fraction": 0.0005792994262137928
+  },
+  "metrics": {
+    "train_runtime": 1992.0455,
+    "train_samples_per_second": 1.855,
+    "train_steps_per_second": 0.116,
+    "total_flos": 60679667066984450,
+    "train_loss": 1.0279011679934216,
+    "epoch": 1
+  },
+  "elapsed_seconds_wall": 1993.169621877023,
+  "versions": {
+    "torch": "2.10.0+cu128",
+    "transformers": "5.18.0",
+    "trl": "1.14.1",
+    "peft": "0.21.2"
+  },
+  "cuda_available": true,
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 4090 Laptop GPU",
+    "peak_allocated_bytes": 9722957824,
+    "peak_reserved_bytes": 10150215680
+  },
+  "record_type": "verified_Tang_formal_training_summary",
+  "assessment": "full_train_complete; heldout generation evaluation pending"
+}
