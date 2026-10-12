@@ -4,7 +4,7 @@ This evaluates PUBLIC testcase success, not private correctness or pass@k.
 The historical v4 cohort is exploratory. Existing LCB v4/v5/v6 hidden outcomes
 are never accessed or used to tune decoding and task selection.
 """
-import argparse,hashlib,json,random
+import argparse,hashlib,json,random,subprocess
 from pathlib import Path
 import torch
 from transformers import AutoModelForCausalLM,AutoTokenizer,BitsAndBytesConfig
@@ -25,6 +25,25 @@ def main():
     if len(rows)!=101: raise ValueError("expected full historical v4 cohort")
     out=args.output_dir
     out.mkdir(parents=True,exist_ok=True)
+    official_sha=subprocess.run(["git","-C",str(args.lcb_repo),"rev-parse","HEAD"],
+        text=True,capture_output=True,check=True).stdout.strip()
+    if official_sha!="28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24":
+        raise ValueError("official LiveCodeBench revision changed")
+    frozen={
+        "experiment":"EXP-7B-V4-N4", "model":MODEL, "revision":REVISION,
+        "cohort_public_sha256":PUBLIC_SHA, "official_evaluator_sha":official_sha,
+        "samples_per_task":4, "max_new_tokens":512,
+        "sampler":"temperature=0.8, top_p=0.95, fixed per-task sample seed",
+        "prompt":"native Instruct, raw generation unmodified",
+        "private_tests_accessed":False,
+        "qualification":"historical v4 exploratory; not prospective"
+    }
+    identity=out/"identity.json"
+    if identity.exists():
+        if json.loads(identity.read_text()) != frozen:
+            raise ValueError("frozen generation identity does not match checkpoint")
+    else:
+        identity.write_text(json.dumps(frozen,indent=2)+"\n")
     checkpoint=out/"checkpoint.jsonl"
     done={}
     if checkpoint.exists():
@@ -32,6 +51,8 @@ def main():
             x=json.loads(line)
             key=(x["question_id"],x["sample_id"])
             if key in done: raise ValueError("duplicate checkpoint record")
+            if "code" not in x or hashlib.sha256(x["code"].encode()).hexdigest()!=x["completion_sha256"]:
+                raise ValueError("checkpoint missing verifiable complete generated code")
             done[key]=x
     tok=AutoTokenizer.from_pretrained(MODEL,revision=REVISION,local_files_only=True)
     cfg=BitsAndBytesConfig(load_in_4bit=True,bnb_4bit_quant_type="nf4",bnb_4bit_use_double_quant=True,bnb_4bit_compute_dtype=torch.float16)
@@ -50,14 +71,14 @@ def main():
                 result=model.generate(**encoded,max_new_tokens=512,do_sample=True,temperature=0.8,top_p=0.95,pad_token_id=tok.eos_token_id)
             code=tok.decode(result[0,encoded["input_ids"].shape[1]:],skip_special_tokens=True).strip()
             outcome=evaluate_code(executor=judge,task=row,code=code)
-            record={"question_id":qid,"sample_id":sample_id,"public_pass":bool(outcome.passed),"completion_sha256":hashlib.sha256(code.encode()).hexdigest(),"tokens":int(result.shape[1]-encoded["input_ids"].shape[1])}
+            record={"question_id":qid,"sample_id":sample_id,"public_pass":bool(outcome.passed),"completion_sha256":hashlib.sha256(code.encode()).hexdigest(),"code":code,"tokens":int(result.shape[1]-encoded["input_ids"].shape[1])}
             with checkpoint.open("a") as f:f.write(json.dumps(record)+"\n")
             done[key]=record
         print(f"public n4 completed task {qid} ({len(done)}/404)",flush=True)
     if len(done)!=404:raise RuntimeError("incomplete full cohort")
     grouped={}
     for (qid,_),r in done.items(): grouped.setdefault(qid,[]).append(r)
-    summary={"experiment":"EXP-7B-V4-PUBLIC-N4","status":"exploratory_public_only","model":MODEL,"revision":REVISION,"cohort_sha":PUBLIC_SHA,"tasks":101,"samples":404,"public_sample_pass_fraction":sum(r["public_pass"] for r in done.values())/404,"public_solved_at4":sum(any(x["public_pass"] for x in group) for group in grouped.values()),"private_tests_accessed":False,"note":"Public tests only: not hidden Pass@4; historical v4, not prospectively held out."}
+    summary={"experiment":"EXP-7B-V4-PUBLIC-N4","status":"exploratory_public_only","model":MODEL,"revision":REVISION,"cohort_sha":PUBLIC_SHA,"tasks":101,"samples":404,"public_sample_pass_fraction":sum(r["public_pass"] for r in done.values())/404,"public_solved_at4":sum(any(x["public_pass"] for x in group) for group in grouped.values()),"private_tests_accessed":False,"checkpoint_sha256":sha256_file(checkpoint),"official_evaluator_sha":official_sha,"note":"Public tests only: not hidden Pass@4; historical v4, not prospectively held out."}
     (out/"summary.json").write_text(json.dumps(summary,indent=2)+"\n")
     print(json.dumps(summary,indent=2),flush=True)
 if __name__=="__main__":main()
