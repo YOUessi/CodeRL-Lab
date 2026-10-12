@@ -1,0 +1,42 @@
+experiment:
+  id: TRAIN-011
+  track: A-posttraining
+  name: qwen2.5-7b-instruct-ultrachat-4096-nf4-qlora-sft
+model:
+  name_or_path: Qwen/Qwen2.5-7B-Instruct
+  revision: a09a35458c702b33eeacc393d103063234e8bc28
+  dtype: float16
+data:
+  dataset_repo: HuggingFaceH4/ultrachat_200k
+  revision: b7fe606ecdbf71e8537946a8d9de5ccf0f6da48b
+  source_split: train_sft
+  train_sft: data/generated/posttrain-h4-v1/sft_train.jsonl
+  heldout_validation: data/generated/posttrain-h4-v1/sft_validation.jsonl
+  manifest: data/generated/posttrain-h4-v1/sft_manifest.json
+  expected_train_rows: 4096
+  expected_validation_rows: 256
+quantization:
+  mode: nf4
+  double_quant: true
+lora:
+  r: 8
+  alpha: 16
+  dropout: 0.0
+  target_modules: [q_proj, v_proj]
+training:
+  output_dir: artifacts/train011/qlora-ultrachat
+  seed: 42
+  num_train_epochs: 1
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 16
+  learning_rate: 0.0001
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  lr_scheduler_type: cosine
+  max_length: 512
+  packing: false
+  gradient_checkpointing: true
+  logging_steps: 1
+  save_strategy: epoch
+evaluation:
+  metrics: [train_loss, evaluation_loss, gpu_peak_reserved]
