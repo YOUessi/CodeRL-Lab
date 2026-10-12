@@ -51,10 +51,21 @@ def select_completion_positions(offsets: list[list[int]], prefix_chars: int) -> 
 def aggregate(rows: list[dict]) -> dict:
     if not rows:
         raise ValueError("empty checkpoint")
+    all_rows = list(rows)
+    rows = [x for x in all_rows if int(x["target_tokens"]) > 0]
+    if not rows:
+        raise ValueError("no heldout samples have any completion tokens at frozen length 512")
     total = sum(int(x["target_tokens"]) for x in rows)
     if total <= 0:
         raise ValueError("no completion tokens")
-    result = {"examples": len(rows), "target_tokens": total}
+    result = {
+        "total_heldout_examples": len(all_rows),
+        "evaluable_examples": len(rows),
+        "unscorable_due_to_prompt_length": len(all_rows) - len(rows),
+        "examples": len(rows),
+        "target_tokens": total,
+        "coverage_fraction": len(rows) / len(all_rows),
+    }
     for name in ("base", "sft"):
         nll_sum = sum(float(x[f"{name}_sum_nll"]) for x in rows)
         mean_nll = nll_sum / total
@@ -115,6 +126,7 @@ def main() -> None:
         "max_length": 512, "seed": 42,
         "scoring": "completion-only token NLL after concatenated prompt/completion tokenization; offsets select overlapping tokens",
         "precision": "NF4 double quant + BF16 compute",
+        "no_completion_policy": "predefined length-based no-target samples recorded but not included in token NLL; never filter based on accuracy",
     }
     identity_path = args.out / "identity.json"
     if identity_path.exists():
@@ -146,13 +158,20 @@ def main() -> None:
             offsets = enc.pop("offset_mapping")[0].tolist()
             selected = select_completion_positions(offsets, len(prefix))
             if not selected:
-                # Do not silently drop examples when all completion tokens are truncated.
-                record = {
-                    "index": i, "task_id_sha256": hashlib.sha256(str(row["task_id"]).encode()).hexdigest(),
-                    "target_tokens": 0, "reason": "completion_truncated",
+                # The training setup also truncates at 512. Such an input has no
+                # assistant-token loss under the fixed protocol. Record every
+                # index, including non-evaluable examples, without outcome selection.
+                item = {
+                    "index": i,
+                    "task_id_sha256": hashlib.sha256(str(row["task_id"]).encode()).hexdigest(),
+                    "target_tokens": 0,
+                    "truncated_to_max_length": True,
+                    "reason": "no_completion_token_within_train_max_length_512",
                 }
-                # This is a meaningful failure; stop before committing partial data as formal metrics.
-                raise RuntimeError(f"completion truncated on heldout example index {i}; adjust protocol on a NEW version")
+                with checkpoint.open("a", encoding="utf-8") as h:
+                    h.write(json.dumps(item, ensure_ascii=False) + "\\n")
+                saved[i] = item
+                continue
             ids = enc["input_ids"].to(model.device)
             mask = enc["attention_mask"].to(model.device)
             target = ids[:, 1:]
@@ -188,6 +207,7 @@ def main() -> None:
         **identity, "status": "completed",
         "requested_examples": args.max_examples,
         "formal_full_256": args.max_examples == 256,
+        "evaluated_protocol_version": "length_512_v2_all_input_accounted",
         "metrics": aggregate([saved[i] for i in range(args.max_examples)]),
         "elapsed_seconds": round(time.monotonic() - started, 2),
         "cuda_peak_allocated_mib": round(torch.cuda.max_memory_allocated() / 1024**2, 2),
