@@ -1,0 +1,77 @@
+{
+  "experiment": "EXP-014B-SINGLE-AI-BLIND-PROXY",
+  "status": "completed_ai_proxy_not_human_review",
+  "method": "single_GPT6_review_with_helpfulness_and_fact_safety_rubrics",
+  "human_reviewers": 0,
+  "independent_human_review_completed": false,
+  "number_of_AI_assessors": 1,
+  "frozen_tasks": 64,
+  "candidates_per_task": 3,
+  "graded_tasks": 63,
+  "graded_answers": 189,
+  "no_clear_winner": 15,
+  "tie_tasks": 10,
+  "all_answers_unacceptable_tasks": 5,
+  "safety_restricted_tasks": 1,
+  "clear_winner_tasks": 48,
+  "by_arm": {
+    "sft": {
+      "graded_answers": 63,
+      "grade_sum": 177,
+      "grade4_count": 19,
+      "grade0_count": 5,
+      "clear_wins": 20,
+      "partial_tied_win_credits": 3.3333333333333335,
+      "tied_top_membership": 9,
+      "mean_grade_0_to_4": 2.8095238095238093,
+      "win_credit_clear_plus_fractional_ties": 23.333333333333332
+    },
+    "bf16_dpo": {
+      "graded_answers": 63,
+      "grade_sum": 158,
+      "grade4_count": 14,
+      "grade0_count": 5,
+      "clear_wins": 9,
+      "partial_tied_win_credits": 3.3333333333333335,
+      "tied_top_membership": 9,
+      "mean_grade_0_to_4": 2.507936507936508,
+      "win_credit_clear_plus_fractional_ties": 12.333333333333334
+    },
+    "fp32_dpo": {
+      "graded_answers": 63,
+      "grade_sum": 172,
+      "grade4_count": 21,
+      "grade0_count": 5,
+      "clear_wins": 19,
+      "partial_tied_win_credits": 3.3333333333333335,
+      "tied_top_membership": 9,
+      "mean_grade_0_to_4": 2.7301587301587302,
+      "win_credit_clear_plus_fractional_ties": 22.333333333333332
+    }
+  },
+  "pairwise_grade_comparison": {
+    "sft_vs_bf16_dpo": {
+      "first_model_higher": 25,
+      "second_model_higher": 10,
+      "equal_grade": 28
+    },
+    "sft_vs_fp32_dpo": {
+      "first_model_higher": 22,
+      "second_model_higher": 21,
+      "equal_grade": 20
+    },
+    "bf16_dpo_vs_fp32_dpo": {
+      "first_model_higher": 15,
+      "second_model_higher": 22,
+      "equal_grade": 26
+    }
+  },
+  "frozen_blind_packet_sha256": "29eff706811eee7cdf7f095469242f43a3c58b28c0c13239af1ebe40b08955da",
+  "AI_judgments_SHA256_frozen_before_model_key": "b8faab1d58134dcaf51769661ab0ff0cd54924f62e3ea44c602a2af54f62df88",
+  "separate_key_file_sha256": "122ec55371324e4ce380efd791ef41898b1b161270a5ddfb7370950a7a65fe96",
+  "commitment_manifest_sha256": "7cc7167952219eace281783744a9223c8e37816773d2a31b86c761975efd23b6",
+  "review_files_local_only": true,
+  "generated_response_text_exported": false,
+  "disclaimer": "This is ONE AI model's blinded proxy review. Two rubric checks by one AI are NOT equivalent to two independent human reviewers; no human interrater agreement may be claimed. Grades are subjective comparative judgments, not benchmark correctness.",
+  "method_limitations": "Public historical HH prompts; response provenance may be known to pretrained models; no independent human ratings, no interrater reliability, one safety-restricted item and five all-unacceptable cases."
+}
