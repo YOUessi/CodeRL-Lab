@@ -1,0 +1,54 @@
+{
+  "experiment": "EXP-014B-LONG-HH-BLIND-GENERATION",
+  "config": {
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+    "nf4": "double_quant_bf16_compute",
+    "inference_adapter_dtype": "fp32_all_three",
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "max_new_tokens": 512,
+    "sampling": "one_draw_per_task_per_arm_seed42",
+    "template": "qwen_chat_with_final_assistant_generation_prompt"
+  },
+  "data_public_sha256": "c58be29d6040c31e8a1340ca54f7056cf5ff9fc2bfb71ff901433b1114eae557",
+  "generation_source_sha256": "86e2f144ef217d752da203143bac252b4c442e792b2dc66ffa3e7a1cb08dffc3",
+  "arms_sha256": {
+    "sft": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+    "bf16_dpo": "d586d9ef32377189aa7d79b70ea5e37b5d5f26b930a4f60266ca024213f1a185",
+    "fp32_dpo": "471703e1cec7fd322219133c10e09fa62aab2f6950b896688c7c073de1543281"
+  },
+  "num_prompts": 64,
+  "num_outputs": 192,
+  "selection": "frozen_full64",
+  "protocol_revision": "EXP-014B posthoc length-budget-only repair; v1 immutable",
+  "reference_labels_never_accessed": true,
+  "status": "generated_blinded_needs_human_review",
+  "answers_generated": 192,
+  "generation_checkpoint_sha256": "02aaf5659a32bae82d51eb691a7a74362e18de2d09bf429ffdde7dbc72410d26",
+  "source_prompts_sha256": "c58be29d6040c31e8a1340ca54f7056cf5ff9fc2bfb71ff901433b1114eae557",
+  "inference_lora_dtypes": {
+    "sft": [
+      "torch.float32"
+    ],
+    "bf16_dpo": [
+      "torch.float32"
+    ],
+    "fp32_dpo": [
+      "torch.float32"
+    ]
+  },
+  "generated_tokens": {
+    "sft": 17789,
+    "bf16_dpo": 17691,
+    "fp32_dpo": 17896
+  },
+  "peak_allocated_cuda_mib": 5544.8,
+  "elapsed_seconds": 1280.16,
+  "blinded_packets": 64,
+  "blinded_candidate_answers": 192,
+  "review_packet_sha256": "29eff706811eee7cdf7f095469242f43a3c58b28c0c13239af1ebe40b08955da",
+  "key_sha256": "122ec55371324e4ce380efd791ef41898b1b161270a5ddfb7370950a7a65fe96",
+  "raw_text_uploaded": false,
+  "human_review_status": "not_reviewed"
+}
