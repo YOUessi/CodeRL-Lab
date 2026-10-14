@@ -1,6 +1,6 @@
 """CPU quality gates for real precommitted single-AI review aggregation."""
 import pytest
-from coderl_lab.analysis.exp014b_ai_grade_uncertainty import exact_two_sided_sign_test
+from coderl_lab.analysis.exp014b_ai_grade_uncertainty import pval as exact_two_sided_sign_test
 from coderl_lab.analysis.exp014b_ai_blind_review import aggregate
 
 def test_pairwise_sign_probabilities():
