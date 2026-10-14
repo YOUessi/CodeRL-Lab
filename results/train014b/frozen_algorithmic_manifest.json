@@ -1,0 +1,19 @@
+{
+  "experiment": "TRAIN-014B-ALGORITHMIC-GRPO",
+  "source_script_sha256": "fe0240260cf46504df399cb20c26f00996a86bb441683f111c7b624dfe40fa7c",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "model_revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+  "seed": 42,
+  "train_task_count": 36,
+  "heldout_task_count": 12,
+  "train_heldout_spec_overlap": 0,
+  "task_family_count": 6,
+  "train_oracle_only_in_reward_metadata": true,
+  "heldout_oracle_never_seen_by_GRPOTrainer": true,
+  "sha256": {
+    "train": "c076b6a3d685ed1b3b4df20e944be78064f069371a1ef177ed8b2e6342eabfe7",
+    "holdout_public": "009dc276e718d4ec600faa3b885f0f934c225d0dd0637d6d8d3b468caaa6d834",
+    "holdout_oracle": "cfcd2467b8c43fa084a63f7fcf380fe58bd6d483b2530dbbab358b10cd6a822e"
+  },
+  "source_intent": "mid-difficulty deterministic array/string algorithms; exploratory toy tasks, not production coding benchmark"
+}
