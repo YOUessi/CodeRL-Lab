@@ -1,0 +1,85 @@
+{
+  "experiment": "TRAIN-013-FULL237-FP32-VS-BF16-HELDOUT",
+  "verification": "old frozen TRAIN-012 full237 BF16 compared with identical TRAIN-013 FP32 full237",
+  "dataset_sha256": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450",
+  "sft_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+  "bf16_sha256": "d586d9ef32377189aa7d79b70ea5e37b5d5f26b930a4f60266ca024213f1a185",
+  "fp32_sha256": "471703e1cec7fd322219133c10e09fa62aab2f6950b896688c7c073de1543281",
+  "precision_full237_freeze_sha256": "ea8df376bcb418371f81db5fdcb855230616c425e86a55f853937b11df33e32c",
+  "source_code_sha256": "069f18fc048c15821785f0864e8be4855bc6447c4b93ca097d3785adef0a62d6",
+  "truncation_length": 512,
+  "requested_pairs": 256,
+  "calculation": "sum conditional logp of overlapping completion tokens in concatenated prompt+answer; beta .1",
+  "reference_frozen": true,
+  "research_status": "retrospective full237 precision control; previously inspected preference holdout, not blind",
+  "status": "completed",
+  "full256": true,
+  "metrics": {
+    "total_pairs": 256,
+    "scorable_pairs": 245,
+    "unscorable_context512": 11,
+    "sft": {
+      "raw_chosen_preferred": 122,
+      "raw_preference_accuracy": 0.49795918367346936,
+      "mean_chosen_minus_rejected_logp": -9.582471685141932
+    },
+    "bf16": {
+      "raw_chosen_preferred": 122,
+      "raw_preference_accuracy": 0.49795918367346936,
+      "mean_chosen_minus_rejected_logp": -9.620431994114604
+    },
+    "fp32": {
+      "raw_chosen_preferred": 122,
+      "raw_preference_accuracy": 0.49795918367346936,
+      "mean_chosen_minus_rejected_logp": -9.419369900956445
+    },
+    "bf16_minus_initial_sft": {
+      "mean_implicit_reward_margin": -0.0037960308972670113,
+      "positive_implicit_reward_margin_fraction": 0.47346938775510206,
+      "preference_wrong_to_correct": 0,
+      "preference_correct_to_wrong": 0,
+      "paired_implicit_margin_bootstrap": {
+        "observed_mean": -0.0037960308972670113,
+        "ci95_low": -0.014283689005034308,
+        "ci95_high": 0.006478796917565018,
+        "iterations": 20000,
+        "seed": 42
+      }
+    },
+    "fp32_minus_initial_sft": {
+      "mean_implicit_reward_margin": 0.016310178418548753,
+      "positive_implicit_reward_margin_fraction": 0.5714285714285714,
+      "preference_wrong_to_correct": 0,
+      "preference_correct_to_wrong": 0,
+      "paired_implicit_margin_bootstrap": {
+        "observed_mean": 0.016310178418548753,
+        "ci95_low": 0.001430341893312876,
+        "ci95_high": 0.03134017260707154,
+        "iterations": 20000,
+        "seed": 42
+      }
+    },
+    "fp32_minus_bf16": {
+      "implicit_reward_margin_bootstrap": {
+        "observed_mean": 0.02010620931581575,
+        "ci95_low": 0.0055398261912015054,
+        "ci95_high": 0.03451775244912323,
+        "iterations": 20000,
+        "seed": 42
+      },
+      "raw_chosen_preference_accuracy_delta_bootstrap": {
+        "observed_mean": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "iterations": 20000,
+        "seed": 42
+      },
+      "bf16_wrong_fp32_correct": 0,
+      "bf16_correct_fp32_wrong": 0
+    }
+  },
+  "checkpoint_sha256": "2e1420a0a9aab33a1313130b9ca90f2c33b734846b468ab678eaf143bd784b20",
+  "gpu_peak_allocated_mib": 6355.55,
+  "execution_seconds": 325.2,
+  "limitations": "Previously examined public historical preference split, not novel blind test. The score is total completion-token likelihood, length-sensitive, not independent human ratings."
+}
