@@ -1,0 +1,20 @@
+{
+  "experiment": "EXP-014B-AI-REVIEW",
+  "review_type": "single_GPT-6_AI_blind_with_fact_safety_second_rubric_not_two_humans",
+  "dataset": "HH-RLHF helpful-base 64 prompts x3 responses, 512 generation",
+  "source_blind_packet_sha256": "29eff706811eee7cdf7f095469242f43a3c58b28c0c13239af1ebe40b08955da",
+  "blind_ratings_file_sha256": "b8faab1d58134dcaf51769661ab0ff0cd54924f62e3ea44c602a2af54f62df88",
+  "ratings_local_path": "artifacts/exp014b/long64/ai_review/ai_blind_judgements.jsonl",
+  "ratings_before_key_opened": true,
+  "assessed_tasks": 64,
+  "single_clear_winner": 48,
+  "tied": 10,
+  "no_acceptable_response": 5,
+  "safety_read_restricted": 1,
+  "independent_human_reviewers": 0,
+  "human_review_completed": false,
+  "reviewer_ai_ratings_are_not_human_ratings": true,
+  "source_content_and_model_key_remain_local_on_Tang": true,
+  "status": "ratings_frozen_before_unblinding",
+  "notes": "This record commits the blind scores file SHA before model mapping access, avoiding any self-reward after learning which arm produced which answer."
+}
