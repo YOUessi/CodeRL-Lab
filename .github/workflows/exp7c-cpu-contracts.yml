@@ -21,4 +21,4 @@ jobs:
       - name: Test deterministic public-only dataset, prompt and code normalization
         env:
           PYTHONPATH: src
-        run: python -m pytest -q tests/test_exp7c_public_and_sampling.py
+        run: python -m pytest -q tests/test_exp7c_public_and_sampling.py tests/test_exp7c_paired_summary.py
