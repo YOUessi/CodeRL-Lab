@@ -138,7 +138,13 @@ def main():
         bias="none",task_type="CAUSAL_LM",
     )
     # This contains only the 36 TRAIN task/oracle rows. No heldout file content.
-    dataset=Dataset.from_list(read(args.data_dir/"train.jsonl"))
+    train_rows=read(args.data_dir/"train.jsonl")
+    # Apache Arrow cannot mix list-valued and string-valued x in a nested struct.
+    # Keep the frozen tests byte-equivalent by encoding only this metadata
+    # as JSON strings; the reward callback decodes before execution.
+    for record in train_rows:
+        record["test_cases"]=json.dumps(record["test_cases"],sort_keys=True)
+    dataset=Dataset.from_list(train_rows)
     training=GRPOConfig(
         output_dir=str(args.output_dir),
         seed=int(config["experiment"]["seed"]),
