@@ -1,0 +1,35 @@
+{
+  "experiment": "EXP-014",
+  "dataset": "Anthropic/hh-rlhf helpful-base/test.jsonl.gz",
+  "dataset_revision": "65649da1780c54952392cb81400f0e9684641333",
+  "data_sha256": "8be3fc1a13b27901631696f2be6f184c799f1baeaf145f53ac5db24960adc37b",
+  "selection": "sha256(EXP-014|seed=42|full_common_context), sorted ascending",
+  "data_validity_stats": {
+    "source_rows": 2354,
+    "eligible_before_sha_selection": 2194,
+    "over_448_prompt_tokens": 73,
+    "empty_or_too_short_last_user": 66,
+    "invalid_or_misaligned_dialogue": 21
+  },
+  "frozen_preference_pairs": 256,
+  "frozen_generation_prompts": 64,
+  "max_prompt_tokens": 448,
+  "tokenizer_model": "Qwen/Qwen2.5-7B-Instruct",
+  "tokenizer_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "source_preference_labels_accessible_to_generation": false,
+  "new_to_project": true,
+  "independent_of_ultrafeedback_training_source": true,
+  "public_historical_not_forward_temporal": true,
+  "source_data_sha256": "8be3fc1a13b27901631696f2be6f184c799f1baeaf145f53ac5db24960adc37b",
+  "filenames": {
+    "public_prompts": "public_prompts.jsonl",
+    "private_pairs": "private_pairs.jsonl",
+    "generation_prompts": "generation_prompts.jsonl"
+  },
+  "sha256": {
+    "public_prompts": "6ccc68a59e47cf3646ed0df5e37a2850a74520a58a9a0d00ccdbd63cd38312f3",
+    "private_pairs": "7999f9e8cc9ca55b60e50b50c4c57206e01656e523c0fce7704f9c9832c588c7",
+    "generation_prompts": "c58be29d6040c31e8a1340ca54f7056cf5ff9fc2bfb71ff901433b1114eae557"
+  },
+  "raw_text_exported_to_github": false
+}

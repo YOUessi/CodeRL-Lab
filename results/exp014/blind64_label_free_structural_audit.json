@@ -1,0 +1,45 @@
+{
+  "experiment": "EXP-014-GENERATION-STRUCTURAL-AUDIT",
+  "status": "label_free_completed",
+  "tasks": 64,
+  "candidate_answers": 192,
+  "by_model": {
+    "sft": {
+      "responses": 64,
+      "nonempty_answers": 64,
+      "mean_chars": 870.9375,
+      "median_chars": 957,
+      "mean_generated_tokens": 183.890625,
+      "hit_224_generated_token_limit": 43
+    },
+    "bf16_dpo": {
+      "responses": 64,
+      "nonempty_answers": 64,
+      "mean_chars": 865.0625,
+      "median_chars": 961.5,
+      "mean_generated_tokens": 183.5625,
+      "hit_224_generated_token_limit": 44
+    },
+    "fp32_dpo": {
+      "responses": 64,
+      "nonempty_answers": 64,
+      "mean_chars": 888.4375,
+      "median_chars": 952.5,
+      "mean_generated_tokens": 188.1875,
+      "hit_224_generated_token_limit": 43
+    }
+  },
+  "same_exact_answer_task_counts": {
+    "sft_vs_bf16_dpo": 10,
+    "sft_vs_fp32_dpo": 9,
+    "bf16_dpo_vs_fp32_dpo": 6
+  },
+  "quality_judgements_produced": 0,
+  "reviewers_produced": 0,
+  "interpretation": "Response length, stop/cap rate and exact text equality are NOT measures of helpfulness.",
+  "checkpoint_sha256": "42c9c8aaa37492bec6b93787446524b18fdac5525f2870447807750d8fdcc952",
+  "source_generation_sha256": "3325ea1cc2f71eee5b1d17b3b716f082767f5756eeaebc5619aee7214bababe0",
+  "blinded_packets_sha256": "5a8a919a1f5118137bd6dc0bbb77fe0d26a9ffa2ccc7a3b9db804fa911f495e1",
+  "human_ratings_status": "NOT_STARTED",
+  "raw_candidate_responses_exported": false
+}
