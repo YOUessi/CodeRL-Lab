@@ -1,0 +1,54 @@
+{
+  "experiment": "TRAIN-016-7B-SFT-VS-GRPO-HOLDOUT",
+  "status": "corrected_report_v2_from_frozen_original",
+  "repair": "Original code used arm == base rather than arm == sft for SFT solved_at4.",
+  "raw_original_score_summary_sha256": "496b4dcd135cbcc16885790f99bf98218d4b762ba606862fc157f4319938488a",
+  "raw_96_Docker_verdicts_sha256": "bd8d3fbd317325dc06e529c6538bec4cc96c3516f77b5b75f27007a02e3f46ad",
+  "raw_96_generations_sha256": "5816dda9e019a492e2096f03c82c1084d5d99cc2fd6529a1afdb5d7b588a6ed2",
+  "model_arms": [
+    "sft",
+    "grpo"
+  ],
+  "regenerated_codes": false,
+  "executed_new_Docker_tests": false,
+  "historical_small_synthetic_exploratory_benchmark": true,
+  "tasks": 12,
+  "candidates": 96,
+  "scores_by_arm": {
+    "sft": {
+      "candidate_correct": 34,
+      "solved_at1": 8,
+      "solved_at4": 11,
+      "partial_reward_mean": 0.8573716666666668
+    },
+    "grpo": {
+      "candidate_correct": 35,
+      "solved_at1": 10,
+      "solved_at4": 12,
+      "partial_reward_mean": 0.8557684375
+    }
+  },
+  "paired_task_bootstrap": {
+    "pass_at1_diff": {
+      "estimate": 0.16666666666666666,
+      "ci95_low": 0,
+      "ci95_high": 0.4166666666666667,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "pass_at4_diff": {
+      "estimate": 0.08333333333333333,
+      "ci95_low": 0,
+      "ci95_high": 0.25,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "candidate_correct_fraction_diff": {
+      "estimate": 0.020833333333333332,
+      "ci95_low": -0.041666666666666664,
+      "ci95_high": 0.08333333333333333,
+      "iterations": 20000,
+      "seed": 42
+    }
+  }
+}

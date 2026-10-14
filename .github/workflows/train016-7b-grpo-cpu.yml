@@ -1,0 +1,22 @@
+name: TRAIN-016 7B GRPO Contract Tests
+on:
+  push:
+    branches: [feat/train016-7b-grpo-qlora]
+  pull_request:
+    branches: [feat/train014b-grpo-algorithmic]
+  workflow_dispatch:
+jobs:
+  frozen-7b-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU dependencies
+        run: python -m pip install --disable-pip-version-check pytest PyYAML
+      - name: Verify exact 7B SFT warmstart and corrected 96-verdict statistics
+        env:
+          PYTHONPATH: src
+        run: python -m pytest -q tests/test_train016_7b_continuity.py tests/test_train016_7b_scoring_repair.py

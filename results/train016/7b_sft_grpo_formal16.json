@@ -1,0 +1,72 @@
+{
+  "experiment": "TRAIN-016",
+  "preflight": "verified",
+  "config_sha256": "0a8fb200cebdcc2e1423598fcc0a2160b725ee10233cf6663b75e2fd459d9ca6",
+  "train_sha256": "c076b6a3d685ed1b3b4df20e944be78064f069371a1ef177ed8b2e6342eabfe7",
+  "holdout_public_sha256": "009dc276e718d4ec600faa3b885f0f934c225d0dd0637d6d8d3b468caaa6d834",
+  "holdout_oracle_sha256": "cfcd2467b8c43fa084a63f7fcf380fe58bd6d483b2530dbbab358b10cd6a822e",
+  "model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "sandbox_docker_image_sha256": "sha256:d3846bce6e97d0ef5c32fc023300d5e39251ad791e6fdfaee41d2ba75246766e",
+  "train_tasks": 36,
+  "heldout_tasks": 12,
+  "heldout_seen_during_optimizer_updates": false,
+  "initial_sft_adapter_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+  "warm_started_from_train011_7b_sft": true,
+  "run_kind": "formal",
+  "optimizer_steps": 16,
+  "source_file_sha256": "117746fc2f9cfc9ac825644dfa1eb248287f39b8577d24bc6a6befe1e8804b01",
+  "reward_source_sha256": "579caa37f754c8057b19e87fa7d6edd0f2ffa25a7b04f86d46b118aa23f96701",
+  "execution": "real_GPU_TRL_GRPOTrainer_with_docker_verifiable_code_reward",
+  "status": "real_GPU_GRPO_completed",
+  "global_step": 16,
+  "trainer_max_steps": 16,
+  "trainable_parameters": 2523136,
+  "trainable_adapter_dtype_before_post_trainer_cast": [
+    "torch.bfloat16"
+  ],
+  "initial_SFT_parameter_elements_changed_after_grpo": 1759205,
+  "warm_start_source_sft_adapter_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+  "backbone_quantization": "NF4_double_quant_BF16",
+  "trainable_lora_dtype": [
+    "torch.float32"
+  ],
+  "source_prompt_count": 36,
+  "docker_reward_calls": 32,
+  "reward_histogram": {
+    "0.64": 1,
+    "0.532": 1,
+    "1.0": 22,
+    "0.0": 1,
+    "0.763158": 1,
+    "0.856": 1,
+    "0.928": 1,
+    "0.686957": 1,
+    "0.1": 2,
+    "0.892": 1
+  },
+  "reward_group_variation_tasks": 7,
+  "full_correct_reward_count": 22,
+  "mean_reward": 0.8593160937500002,
+  "actual_train_metrics": {
+    "train_runtime": 53.9878,
+    "train_samples_per_second": 0.593,
+    "train_steps_per_second": 0.296,
+    "total_flos": 0,
+    "train_loss": -6.891787052154541e-8,
+    "epoch": 0.4444444444444444
+  },
+  "saved_adapter_sha256": "3d84428201f8802cdcde33cb64dd2c46ee4f2538de850cb2240b017ff2a237c8",
+  "reward_attempt_log_sha256": "88cfb20849aae81177ad53ee857a6f71d6081645cc643654863a4ec54608672c",
+  "gpu_peak_allocated_mib": 5826.12,
+  "gpu_peak_reserved_mib": 6344,
+  "train_runtime_seconds": 54.14,
+  "versions": {
+    "torch": "2.10.0+cu128",
+    "trl": "1.14.1",
+    "transformers": "5.18.0",
+    "peft": "0.21.2"
+  },
+  "holds_training_oracle_only": true,
+  "heldout_code_pass_rates_not_yet_measured": true,
+  "interpretive_warning": "A positive reward/GRPO step is not proof of improvement; all-equal group rewards mean no group advantage gradient."
+}
