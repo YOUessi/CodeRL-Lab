@@ -45,7 +45,8 @@ def preflight(cfg:dict, root:Path, config_path:Path)->dict:
         raise ValueError("TRAIN014 model/holdout/reward frozen contract changed")
     for kind in ("train","holdout_public","holdout_oracle"):
         observed=digest(paths[kind])
-        if observed!=manifest["sha256"][kind] or observed!=dataset[kind+"_sha256" if kind!="train" else "train_sha256"]:
+        expected_config_key={"train":"train_sha256","holdout_public":"heldout_public_sha256","holdout_oracle":"heldout_oracle_sha256"}[kind]
+        if observed!=manifest["sha256"][kind] or observed!=dataset[expected_config_key]:
             raise ValueError("TRAIN014 dataset source sha256 changed: "+kind)
     prompts=read(paths["train"])
     holdout_prompt=read(paths["holdout_public"])
