@@ -85,10 +85,6 @@ def verify_before_unblind(*, packets:Path, ratings:Path, commitment:Path)->tuple
         if (not question.get("task_id") or
             set(question.get("candidate_answers",{}))!=set(LETTERS)):
             raise ValueError("incomplete blinded candidate answer")
-    if dict(status_counts)!={k:freeze[k] for k in
-            ("single_clear_winner","tied","no_acceptable_response","safety_read_restricted")
-            for k in []}:
-        pass
     expected={
         "winner":int(freeze["single_clear_winner"]),
         "tied":int(freeze["tied"]),
