@@ -1,0 +1,24 @@
+name: TRAIN-013 Precision CPU Checks
+on:
+  push:
+    branches:
+      - exp/train013-dpo-adapter-precision
+  pull_request:
+    branches:
+      - feat/train012-7b-dpo
+  workflow_dispatch:
+jobs:
+  precision-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU testing dependencies
+        run: python -m pip install --disable-pip-version-check pytest PyYAML
+      - name: Run BF16/FP32 frozen config and paired-metric tests
+        env:
+          PYTHONPATH: src
+        run: python -m pytest -q tests/test_train013_adapter_precision.py tests/test_train013_matched_heldout.py
