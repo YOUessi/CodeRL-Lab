@@ -32,13 +32,14 @@ try:
         for t in p["tests"]:
             val=solve(t["x"])
             if type(val) is not int or val!=t["expected"]:
-                print("__TRAIN014__"+json.dumps({"correct":False,"passed":n,"error":"wrong_answer"}))
+                outcome={"correct":False,"passed":n,"error":"wrong_answer"}
                 break
             n+=1
         else:
-            print("__TRAIN014__"+json.dumps({"correct":True,"passed":n,"error":"none"}))
+            outcome={"correct":True,"passed":n,"error":"none"}
 except BaseException as exc:
-    print("__TRAIN014__"+json.dumps({"correct":False,"passed":0,"error":type(exc).__name__}))
+    outcome={"correct":False,"passed":0,"error":type(exc).__name__}
+print("__TRAIN014__"+json.dumps(outcome))
 '''
 
 def text_sha(s:str)->str:
