@@ -32,8 +32,8 @@ def preflight(cfg:dict, root:Path, config_path:Path)->dict:
     dataset=cfg["dataset"]
     paths={
         "train":root/"train.jsonl",
-        "holdout_public":root/"heldout_public.jsonl",
-        "holdout_oracle":root/"heldout_oracle.jsonl",
+        "holdout_public":root/"holdout_public.jsonl",
+        "holdout_oracle":root/"holdout_oracle.jsonl",
         "manifest":root/"manifest.json",
     }
     manifest=json.loads(paths["manifest"].read_text(encoding="utf-8"))
