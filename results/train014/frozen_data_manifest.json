@@ -1,0 +1,21 @@
+{
+  "experiment": "TRAIN-014-VERIFIABLE-GRPO",
+  "source": "deterministic Python integer transformations",
+  "source_script_sha256": "2a0a33a79f7a1e6469917bf0013eb4b651b0fa2908497afb0426555434438aa3",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "model_revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+  "seed": 42,
+  "train_task_count": 36,
+  "heldout_task_count": 12,
+  "eval_inputs_per_task": 12,
+  "train_heldout_spec_overlap": 0,
+  "generation_prompt_does_not_contain_tests": true,
+  "heldout_oracle_never_seen_by_GRPOTrainer": true,
+  "task_family_count": 6,
+  "sha256": {
+    "train": "47b87d0977276bae46073ae89d20cc7ab68457d2e075207275ddd584779218dd",
+    "holdout_public": "2f8b2a8b1852f9c53f648c77ca5079acceed74010d76981dbf35796a4695b6c8",
+    "holdout_oracle": "a3c0abd389ebe19c5547cf27d1910c3f184e99a51b31c8d6314820eb4840a831"
+  },
+  "warning": "These are deliberately small synthetic arithmetic-code functions, not high-difficulty real programming problems"
+}
