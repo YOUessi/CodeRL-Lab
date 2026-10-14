@@ -29,3 +29,14 @@ def test_paired_ci_synthetic_identity():
     assert outcome["observed_delta"]==0.0
     assert outcome["ci95_low"]==0.0
     assert outcome["ci95_high"]==0.0
+
+
+def test_candidate_main_guard_is_not_executed_when_imported():
+    code = (
+        "def plus_one(x):\n"
+        "    return x+1\n"
+        "if __name__ == '__main__':\n"
+        "    raise RuntimeError('script execution must not run')\n"
+    )
+    test = "def check(candidate):\n    assert candidate(2) == 3"
+    assert sandbox_check(code, test, "plus_one") == (True, "none")
