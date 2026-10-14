@@ -1,0 +1,137 @@
+{
+  "experiment": "EXP-7D-SFT-COVERAGE-MECHANISM-AUDIT",
+  "status": "completed",
+  "dataset": "HumanEval+ historical full164, previous EXP-7C",
+  "qualification": "RETROSPECTIVE_READ_ONLY; neither new holdout nor causal proof of diversity-quality mechanism",
+  "arms": {
+    "base": {
+      "candidates": 656,
+      "sample_correct": 488,
+      "correct_candidates_by_sample_index": [
+        124,
+        124,
+        122,
+        118
+      ],
+      "solved_at_k": [
+        124,
+        136,
+        141,
+        142
+      ],
+      "mean_distinct_raw_code_per_task": 3.1951219512195124,
+      "mean_distinct_python_ast_per_task": 2.957317073170732,
+      "mean_output_tokens": 151.1387195121951,
+      "syntax_valid_candidates": 641,
+      "top_level_entrypoint_present": 641,
+      "token_cap_hits": 15,
+      "correct_count_histogram": {
+        "0": 22,
+        "1": 14,
+        "2": 12,
+        "3": 14,
+        "4": 102
+      }
+    },
+    "sft": {
+      "candidates": 656,
+      "sample_correct": 454,
+      "correct_candidates_by_sample_index": [
+        114,
+        121,
+        112,
+        107
+      ],
+      "solved_at_k": [
+        114,
+        132,
+        137,
+        139
+      ],
+      "mean_distinct_raw_code_per_task": 3.774390243902439,
+      "mean_distinct_python_ast_per_task": 3.5609756097560976,
+      "mean_output_tokens": 137.28963414634146,
+      "syntax_valid_candidates": 637,
+      "top_level_entrypoint_present": 637,
+      "token_cap_hits": 12,
+      "correct_count_histogram": {
+        "0": 25,
+        "1": 11,
+        "2": 18,
+        "3": 33,
+        "4": 77
+      }
+    }
+  },
+  "candidate_level_pair_transitions": {
+    "base_0_sft_0": 130,
+    "base_0_sft_1": 38,
+    "base_1_sft_0": 72,
+    "base_1_sft_1": 416
+  },
+  "task_level_solved4_pair_transitions": {
+    "base_0_sft_0": 17,
+    "base_0_sft_1": 5,
+    "base_1_sft_0": 8,
+    "base_1_sft_1": 134
+  },
+  "exact_mcnemar_task_solved4_p": 0.5810546875,
+  "paired_task_bootstrap": {
+    "candidate_correct_fraction": {
+      "mean_paired_delta": -0.051829268292682924,
+      "ci95_low": -0.0899390243902439,
+      "ci95_high": -0.01524390243902439,
+      "bootstrap_replicates": 20000,
+      "unit": "task",
+      "seed": 42
+    },
+    "solved_at4_fraction": {
+      "mean_paired_delta": -0.018292682926829267,
+      "ci95_low": -0.06097560975609756,
+      "ci95_high": 0.024390243902439025,
+      "bootstrap_replicates": 20000,
+      "unit": "task",
+      "seed": 42
+    },
+    "distinct_raw_code_count_per_task": {
+      "mean_paired_delta": 0.5792682926829268,
+      "ci95_low": 0.4451219512195122,
+      "ci95_high": 0.7134146341463414,
+      "bootstrap_replicates": 20000,
+      "unit": "task",
+      "seed": 42
+    },
+    "distinct_valid_ast_count_per_task": {
+      "mean_paired_delta": 0.6036585365853658,
+      "ci95_low": 0.4695121951219512,
+      "ci95_high": 0.7378048780487805,
+      "bootstrap_replicates": 20000,
+      "unit": "task",
+      "seed": 42
+    },
+    "output_tokens_per_candidate": {
+      "mean_paired_delta": -13.849085365853659,
+      "ci95_low": -20.78201219512195,
+      "ci95_high": -7.2301829268292686,
+      "bootstrap_replicates": 20000,
+      "unit": "task",
+      "seed": 42
+    },
+    "syntax_valid_fraction": {
+      "mean_paired_delta": -0.006097560975609756,
+      "ci95_low": -0.019817073170731708,
+      "ci95_high": 0.009146341463414634,
+      "bootstrap_replicates": 20000,
+      "unit": "task",
+      "seed": 42
+    }
+  },
+  "source_private_test_data_exported": false,
+  "source_candidate_code_exported": false,
+  "interpretive_boundary": "SFT increased code/AST variation in one 7B pair while decreasing correct sample fraction. Association is not a verified causal mediation relationship.",
+  "input_sha256": {
+    "generation_checkpoint": "91306aa04f61325692666a7e4ccd11c7fc462a2f7ec71751aafad5a29776a8c6",
+    "scoring_checkpoint": "a8b4c34985f35f5a442d067f80428b5105797f420043ddd8d5a26f0ace1814e3",
+    "audit_source": "35a8333185d6e81b5f6d9cae67913a0852ddb4d95e54e66c1b95b9e033b31e4e"
+  }
+}
