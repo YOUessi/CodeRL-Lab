@@ -24,7 +24,7 @@ TIMEOUT_SECONDS = 12
 DRIVER = r"""
 import contextlib, io, json, sys
 data=json.load(sys.stdin)
-scope={"__name__":"__main__"}
+scope={"__name__":"__coderl_imported_candidate__"}
 try:
     with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
         exec(compile(data["code"],"<candidate>","exec"),scope,scope)
