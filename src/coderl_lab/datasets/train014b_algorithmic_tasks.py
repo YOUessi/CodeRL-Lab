@@ -98,7 +98,14 @@ def inputs(kind:str,param:int)->list:
     cases=list(ARRS)
     for _ in range(7):
         cases.append([rng.randint(-9,9) for i in range(rng.randint(0,9))])
-    return cases
+    seen=set()
+    unique=[]
+    for value in cases:
+        fingerprint=json.dumps(value)
+        if fingerprint in seen:continue
+        seen.add(fingerprint)
+        unique.append(value)
+    return unique
 
 def build(specs:dict, split:str)->list[dict]:
     rows=[]
