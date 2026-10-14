@@ -1,0 +1,48 @@
+{
+  "experiment": "TRAIN-013-FULL237-PRECISION-AUDIT",
+  "status": "completed",
+  "only_changed_trainable_model_property": "BF16 -> FP32 LoRA trainable storage",
+  "pre_registered_precision_freeze_sha256": "ea8df376bcb418371f81db5fdcb855230616c425e86a55f853937b11df33e32c",
+  "matched_optimizer_steps": 237,
+  "exactly_matching_tokens_each_step": true,
+  "same_frozen_initial_SFT_adapter": true,
+  "reference_policy_frozen": true,
+  "per_arm": {
+    "bf16": {
+      "adapter_sha256": "d586d9ef32377189aa7d79b70ea5e37b5d5f26b930a4f60266ca024213f1a185",
+      "training_loss": 0.6936739854168791,
+      "trainer_runtime_seconds": 1898.5956,
+      "last_loss": 0.6640862822532654,
+      "mean_train_reward_margin": 0.00010652917137528909,
+      "mean_train_reward_accuracy": 0.5015822784810127,
+      "last_reward_margin": 0.0590515173971653,
+      "GPU_peak_reserved_mib": 11770
+    },
+    "fp32": {
+      "adapter_sha256": "471703e1cec7fd322219133c10e09fa62aab2f6950b896688c7c073de1543281",
+      "training_loss": 0.6804273508269073,
+      "trainer_runtime_seconds": 1909.5974,
+      "last_loss": 0.62864089012146,
+      "mean_train_reward_margin": 0.027885933174833486,
+      "mean_train_reward_accuracy": 0.6165611814345991,
+      "last_reward_margin": 0.13431168347597122,
+      "GPU_peak_reserved_mib": 11790
+    }
+  },
+  "parameter_comparison": {
+    "tensors": 112,
+    "compared_trainable_parameters": 2523136,
+    "bf16_parameters_changed": 100175,
+    "bf16_changed_fraction": 0.03970257647625812,
+    "fp32_parameters_changed": 2523115,
+    "fp32_changed_fraction": 0.9999916770241477,
+    "fp32_parameters_changed_after_rounding_to_bf16": 1449447,
+    "fp32_changed_after_rounding_fraction": 0.5744624942928166,
+    "bf16_relative_l2_shift": 0.0003865519797145852,
+    "fp32_relative_l2_shift": 0.0030410759293505703,
+    "bf16_vs_fp32_relative_l2_distance": 0.003005810218580596,
+    "bf16_max_abs_weight_shift": 0.00009441375732421875,
+    "fp32_max_abs_weight_shift": 0.00009265675907954574
+  },
+  "limitations": "Parameter distance and training rewards do not establish new independent preference accuracy. The existing heldout set was inspected before."
+}

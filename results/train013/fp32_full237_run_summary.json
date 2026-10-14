@@ -1,0 +1,84 @@
+{
+  "config_path": "configs/train013_dpo_fp32_full237.yaml",
+  "preferences_path": "data/generated/posttrain-h4-v1/dpo_train.jsonl",
+  "sft_adapter_path": "/home/you/projects/CodeRL-Lab-track-train011/artifacts/train011/qlora-ultrachat",
+  "sft_adapter_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+  "output_dir": "artifacts/train013/fp32_full237",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "requested_model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "quantization": {
+    "mode": "nf4",
+    "double_quant": true,
+    "compute_dtype": "bfloat16"
+  },
+  "num_pairs": 2048,
+  "num_heldout_preference_pairs": 0,
+  "num_train_epochs": 1,
+  "checkpoint_policy": {
+    "save_strategy": "steps",
+    "save_steps": 32,
+    "save_total_limit": 4,
+    "resumed_from": null,
+    "identity": {
+      "config_sha256": "a6a3c5e46e336f07e2f1737518ca1b6eec9588f120a5657606ff1c981b360a1c",
+      "training_data_sha256": "945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77",
+      "heldout_data_sha256": null,
+      "training_rows": 2048,
+      "heldout_rows": 0,
+      "source_sft_adapter_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8"
+    }
+  },
+  "max_steps": -1,
+  "warmup_ratio_requested": 0.03,
+  "warmup_steps": 8,
+  "seed": 42,
+  "beta": 0.1,
+  "loss_type": [
+    "sigmoid"
+  ],
+  "adapter_dropout_override": null,
+  "trainable_adapter_precision": {
+    "requested": "fp32",
+    "trainable_tensors": 112,
+    "trainable_parameters": 2523136,
+    "frozen_reference_tensors": 112,
+    "trainable_dtypes_before": [
+      "torch.bfloat16"
+    ],
+    "trainable_dtypes_after": [
+      "torch.float32"
+    ],
+    "frozen_reference_dtypes": [
+      "torch.float32"
+    ],
+    "paired_ref_initially_identical": true,
+    "optimizer_must_be_created_after_precision_cast": true
+  },
+  "global_step": 237,
+  "trainer_max_steps": 237,
+  "final_epoch": 1,
+  "trainable_parameters": 2523136,
+  "total_parameters": 4358018560,
+  "metrics": {
+    "train_runtime": 1909.5974,
+    "train_samples_per_second": 0.99,
+    "train_steps_per_second": 0.124,
+    "total_flos": 59890016962363390,
+    "train_loss": 0.6804273508269073,
+    "epoch": 1
+  },
+  "elapsed_seconds_wall": 1909.7326431859983,
+  "output_adapter_sha256": "471703e1cec7fd322219133c10e09fa62aab2f6950b896688c7c073de1543281",
+  "versions": {
+    "torch": "2.10.0+cu128",
+    "transformers": "5.18.0",
+    "trl": "1.14.1",
+    "peft": "0.21.2"
+  },
+  "cuda_available": true,
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 4090 Laptop GPU",
+    "peak_allocated_bytes": 11380970496,
+    "peak_reserved_bytes": 12362711040
+  }
+}

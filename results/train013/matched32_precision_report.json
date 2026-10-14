@@ -1,0 +1,95 @@
+{
+  "experiment": "TRAIN-013-MATCHED32-BF16-FP32",
+  "status": "completed",
+  "claimed_scope": "32-step precision mechanics control only; not new blind heldout effectiveness",
+  "train_pairs_source": 2048,
+  "optimizer_steps_each": 32,
+  "sft_weights_identical_before_training": true,
+  "identical_train_token_counts_each_step": true,
+  "same_reference_policy_frozen": true,
+  "only_changed_variable": "trainable_default_LoRA_parameter_storage_dtype",
+  "source_config_sha256": {
+    "bf16": "9c0a38a3627e9627f223c6a83ecbf268f621d26063df59b65c741db6799153ce",
+    "fp32": "0adf521c88c075270e0d8a328ae0ef468354ad4cdf50b073fedc641a9611913e"
+  },
+  "metrics": {
+    "bf16": {
+      "training_loss": 0.6908237412571907,
+      "training_runtime_seconds": 252.9418,
+      "GPU_peak_allocated_mib": 10834.4892578125,
+      "GPU_peak_reserved_mib": 11768,
+      "source_adapter_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+      "output_adapter_sha256": "4f80b4816400ad33ba97f88e142dd5a93aa4d9235dc7c7627ff15e381bf06f55",
+      "adapter_tensor_dtypes": {
+        "requested": "bf16",
+        "trainable_tensors": 112,
+        "trainable_parameters": 2523136,
+        "frozen_reference_tensors": 112,
+        "trainable_dtypes_before": [
+          "torch.bfloat16"
+        ],
+        "trainable_dtypes_after": [
+          "torch.bfloat16"
+        ],
+        "frozen_reference_dtypes": [
+          "torch.float32"
+        ],
+        "paired_ref_initially_identical": true,
+        "optimizer_must_be_created_after_precision_cast": true
+      },
+      "loss_at_step_1": 0.6931471824645996,
+      "loss_at_step_32": 0.6925058364868164,
+      "mean_train_reward_accuracy": 0.484375,
+      "mean_train_reward_margin": 0.005703054953528408,
+      "last_train_reward_margin": 0.0019505270756781101,
+      "mean_train_gradient_norm": 6.2822265625
+    },
+    "fp32": {
+      "training_loss": 0.6882110070437193,
+      "training_runtime_seconds": 255.3913,
+      "GPU_peak_allocated_mib": 10853.7392578125,
+      "GPU_peak_reserved_mib": 11788,
+      "source_adapter_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+      "output_adapter_sha256": "47c296d1f30c51c5ba8b3cd7b514b98dddb7ef535270ad3cec4eb0915bf75d6b",
+      "adapter_tensor_dtypes": {
+        "requested": "fp32",
+        "trainable_tensors": 112,
+        "trainable_parameters": 2523136,
+        "frozen_reference_tensors": 112,
+        "trainable_dtypes_before": [
+          "torch.bfloat16"
+        ],
+        "trainable_dtypes_after": [
+          "torch.float32"
+        ],
+        "frozen_reference_dtypes": [
+          "torch.float32"
+        ],
+        "paired_ref_initially_identical": true,
+        "optimizer_must_be_created_after_precision_cast": true
+      },
+      "loss_at_step_1": 0.6931471824645996,
+      "loss_at_step_32": 0.679020345211029,
+      "mean_train_reward_accuracy": 0.55859375,
+      "mean_train_reward_margin": 0.010906170226917311,
+      "last_train_reward_margin": 0.02878072264138609,
+      "mean_train_gradient_norm": 6.236628711223602
+    }
+  },
+  "adapter_parameter_delta": {
+    "tensors": 112,
+    "compared_trainable_parameters": 2523136,
+    "bf16_parameters_changed": 128761,
+    "bf16_changed_fraction": 0.051032128272118504,
+    "fp32_parameters_changed": 2523037,
+    "fp32_changed_fraction": 0.9999607631138393,
+    "fp32_parameters_changed_after_rounding_to_bf16": 583139,
+    "fp32_changed_after_rounding_fraction": 0.23111675311992694,
+    "bf16_relative_l2_shift": 0.00011460102379995738,
+    "fp32_relative_l2_shift": 0.0006256759079750085,
+    "bf16_vs_fp32_relative_l2_distance": 0.0006134524319396389,
+    "bf16_max_abs_weight_shift": 0.0000152587890625,
+    "fp32_max_abs_weight_shift": 0.00001520104706287384
+  },
+  "limitations": "BF16/FP32 parameter changes alone are not evidence of better preference following or out-of-distribution capabilities; any heldout metrics seen previously are exploratory."
+}

@@ -102,6 +102,59 @@ def prepare_rows(
     return rows
 
 
+
+def enforce_trainable_lora_dtype(model, requested: str) -> dict[str, Any]:
+    """Freeze LoRA reference unchanged, cast only trainable default adapter.
+
+    TRL >=1.14 forces trainable QLoRA parameters to BF16 during DPOTrainer
+    initialization. Calling this only AFTER initialization and BEFORE
+    optimizer creation makes the trainable parameter storage dtype an
+    experimental variable rather than a mistaken config assumption.
+    """
+    if requested not in {"trl_default", "bf16", "fp32"}:
+        raise ValueError(f"unsupported trainable LoRA dtype: {requested}")
+    import torch
+
+    named = dict(model.named_parameters())
+    train = [(name, p) for name, p in named.items() if p.requires_grad]
+    if not train:
+        raise ValueError("DPO trainer has no trainable parameters")
+    original = sorted({str(p.dtype) for _, p in train})
+    reference = [(name, p) for name, p in named.items() if ".ref." in name and ".lora_" in name]
+    if requested != "trl_default":
+        if len(train) != len(reference):
+            raise ValueError("no 1:1 trainable LoRA and frozen reference set")
+        for name, param in train:
+            if ".default." not in name or ".lora_" not in name:
+                raise ValueError(f"unexpected trainable parameter in precision study: {name}")
+            ref = named.get(name.replace(".default.", ".ref."))
+            if ref is None or ref.requires_grad or ref.shape != param.shape:
+                raise ValueError(f"frozen reference missing or mutable: {name}")
+            if not torch.equal(param.detach().to(dtype=ref.dtype), ref.detach()):
+                raise ValueError(f"SFT reference and initial policy differ: {name}")
+        target = torch.bfloat16 if requested == "bf16" else torch.float32
+        for _, param in train:
+            param.data = param.data.to(target)
+    final = sorted({str(p.dtype) for _, p in train})
+    if requested != "trl_default":
+        expected = "torch.bfloat16" if requested == "bf16" else "torch.float32"
+        if final != [expected]:
+            raise ValueError("trainable adapter precision cast not effective")
+    if any(p.requires_grad for _, p in reference):
+        raise ValueError("reference adapter accidentally trainable")
+    return {
+        "requested": requested,
+        "trainable_tensors": len(train),
+        "trainable_parameters": sum(p.numel() for _, p in train),
+        "frozen_reference_tensors": len(reference),
+        "trainable_dtypes_before": original,
+        "trainable_dtypes_after": final,
+        "frozen_reference_dtypes": sorted({str(p.dtype) for _, p in reference}),
+        "paired_ref_initially_identical": requested != "trl_default",
+        "optimizer_must_be_created_after_precision_cast": True,
+    }
+
+
 def run_dpo(
     *,
     config_path: Path,
@@ -341,6 +394,11 @@ def run_dpo(
         processing_class=tokenizer,
     )
 
+    trainable_precision = enforce_trainable_lora_dtype(
+        trainer.model,
+        str(train_cfg.get("trainable_adapter_precision", "trl_default")),
+    )
+
     started = time.perf_counter()
     result = trainer.train(
         resume_from_checkpoint=(
@@ -404,6 +462,7 @@ def run_dpo(
         "beta": args.beta,
         "loss_type": args.loss_type,
         "adapter_dropout_override": dropout_override_summary,
+        "trainable_adapter_precision": trainable_precision,
         "global_step": trainer.state.global_step,
         "trainer_max_steps": trainer.state.max_steps,
         "final_epoch": trainer.state.epoch,
