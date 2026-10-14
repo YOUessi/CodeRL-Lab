@@ -14,7 +14,7 @@ from pathlib import Path
 
 from coderl_lab.datasets.exp7c_humanevalplus import SOURCE_SHA256, sha256_file
 from coderl_lab.analysis.exp7c_matched_generate import (
-    ARMS, ADAPTER_SHA, CONFIG, load_public, read_checkpoint,
+    ARMS, ADAPTER_SHA, CONFIG, read_public, read_checkpoint,
 )
 
 IMAGE = "semaremask-evalplus:latest"
@@ -149,7 +149,7 @@ def main() -> None:
     p.add_argument("--source-jsonl",type=Path,required=True)
     p.add_argument("--output-dir",type=Path,required=True)
     a=p.parse_args()
-    public,manifest=load_public(a.public_tasks,a.manifest)
+    public,manifest=read_public(a.public_tasks,a.manifest)
     generation=json.loads((a.generation_dir/"summary.json").read_text())
     checkpoint=a.generation_dir/"checkpoint.jsonl"
     checkpoint_sha=sha256_file(checkpoint)
