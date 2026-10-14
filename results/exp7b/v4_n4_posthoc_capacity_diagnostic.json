@@ -1,0 +1,77 @@
+{
+  "experiment": "EXP-7B-V4-POSTHOC-DESCRIPTIVE-CAPACITY-AUDIT",
+  "status": "completed",
+  "tasks": 101,
+  "candidates": 404,
+  "comparability_warning": "Historical v4 results already known. 7B Instruct n=4 with posthoc Markdown normalization compared to different 1.7B Base SFT greedy and gate-low prompts. Neither pairwise difference nor bootstrap interval identifies parameter-scale causality, nor constitutes fresh benchmark replication.",
+  "counts": {
+    "old_sft512_single_correct": 3,
+    "old_gated_low_single_correct": 5,
+    "7b_public_solved4": 35,
+    "7b_hidden_solved4": 20,
+    "7b_correct_hidden_completions": 50,
+    "7b_public_solved4_but_hidden_unsolved": 15,
+    "7b_new_solved_vs_old_sft_single": 18,
+    "old_sft_single_solved_but_7b_no_solved4": 1
+  },
+  "sample_level_public_vs_private": {
+    "public_pass/hidden_pass": 50,
+    "public_pass/hidden_fail": 37,
+    "public_fail/hidden_pass": 0,
+    "public_fail/hidden_fail": 317
+  },
+  "strata": {
+    "difficulty": {
+      "easy": {
+        "tasks": 22,
+        "old_1p7b_sft_single_correct": 3,
+        "old_1p7b_gated_low_correct": 5,
+        "7b_hidden_solved4": 13,
+        "7b_public_solved4": 14
+      },
+      "hard": {
+        "tasks": 45,
+        "old_1p7b_sft_single_correct": 0,
+        "old_1p7b_gated_low_correct": 0,
+        "7b_hidden_solved4": 0,
+        "7b_public_solved4": 8
+      },
+      "medium": {
+        "tasks": 34,
+        "old_1p7b_sft_single_correct": 0,
+        "old_1p7b_gated_low_correct": 0,
+        "7b_hidden_solved4": 7,
+        "7b_public_solved4": 13
+      }
+    },
+    "platform": {
+      "atcoder": {
+        "tasks": 65,
+        "old_1p7b_sft_single_correct": 0,
+        "old_1p7b_gated_low_correct": 1,
+        "7b_hidden_solved4": 11,
+        "7b_public_solved4": 21
+      },
+      "leetcode": {
+        "tasks": 36,
+        "old_1p7b_sft_single_correct": 3,
+        "old_1p7b_gated_low_correct": 4,
+        "7b_hidden_solved4": 9,
+        "7b_public_solved4": 14
+      }
+    }
+  },
+  "unmatched_model_conditions_paired_descriptive_ci": {
+    "difference_fraction": 0.16831683168316833,
+    "ci95_low": 0.0891089108910891,
+    "ci95_high": 0.24752475247524752,
+    "iterations": 20000,
+    "seed": 42
+  },
+  "private_test_payload_exported": false,
+  "source_checkpoints_sha256": {
+    "7b_public": "fc693214aca2f45eb58656b25d1e1f52723062258bebb2ea2d84a12376bbcd4d",
+    "7b_private": "cf7d9f2d738a305aa2ba962c08510c375f387c9c7a40e5990202de9c49ff7805",
+    "exp004p_details": "cdb161aae1ad3088cd8e71e25cd87d4b805c130e10522d7ed39fd67647ac8fac"
+  }
+}
