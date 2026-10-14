@@ -43,7 +43,7 @@ def preflight(cfg:dict, root:Path, config_path:Path)->dict:
         or manifest["model_revision"]!=REVISION
         or manifest["train_tasks"]!=48
         or manifest["heldout_tasks"]!=24
-        or manifest["train_heldout_spec_overlap"]!=0
+        or manifest["train_holdout_parameter_overlap"]!=0
         or manifest["heldout_oracle_never_seen_by_training"] is not True
         or cfg["reward"]["docker_sha256"]!=IMAGE_ID
         or cfg["grpo"].get("adapter_sha256")!=FROZEN_SFT_SHA
