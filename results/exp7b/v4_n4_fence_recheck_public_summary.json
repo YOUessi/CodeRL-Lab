@@ -1,0 +1,50 @@
+{
+  "experiment": "EXP-7B-N4-FENCE-RECHECK",
+  "status": "completed",
+  "qualification": "POSTHOC format repair, deterministic candidate-crash classification; NOT preregistered benchmark",
+  "classifier_version": "v2_candidate_python_segfault_only",
+  "normalization": {
+    "first_closed_python_fence": 397,
+    "original_python_ast_valid": 0,
+    "normalized_python_ast_valid": 394,
+    "output_changed": 397,
+    "reached_512_token_cap": 7,
+    "unclosed_fence_unchanged": 7
+  },
+  "frozen": {
+    "experiment": "EXP-7B-N4-FENCE-RECHECK",
+    "protocol_type": "posthoc_evaluation_format_repair_not_prospective",
+    "source_checkpoint_sha256": "6ac29a8fc1044526a9760b5e264ee7d8d8bf3fc46f773d46011f7228f11cda81",
+    "source_identity_sha256": "8c6feca0fdb3ebe00085147dbe81d700ed84e67678b541e07aa7c3df77bffe4e",
+    "normalizer_module_sha256": "f61e31486a7ab16aa5fbe7265979c9387c0076fd345463a93763451d2feec1ac",
+    "cohort_public_sha256": "62239669ec50b2ebee8cad1a0561e072e293a76a9a130d0b214bdbcedf980853",
+    "official_evaluator_sha256": "28fef95ea8c9f7a547c8329f2cd3d32b92c1fa24",
+    "candidate_count": 404,
+    "transform": "select exactly the first complete leading python fenced block; otherwise preserve raw code",
+    "model_generation_repeated": false,
+    "selection_based_on_hidden_labels": false,
+    "normalized_predictions_sha256": "ff6277e7e2d2d7db33da2094e3ed104369b89c71dee321d30f9db495a1ab8a7e"
+  },
+  "result": {
+    "phase": "public",
+    "completed": true,
+    "samples": 404,
+    "tasks": 101,
+    "correct_samples": 87,
+    "solved_at4": 35,
+    "correct_fraction": 0.21534653465346534,
+    "solved_at4_fraction": 0.3465346534653465,
+    "resource_limit_count": 0,
+    "timeout_count": 0,
+    "candidate_python_segfault_count": 1,
+    "bootstrap_task_ci95": {
+      "observed": 0.3465346534653465,
+      "ci95_low": 0.25742574257425743,
+      "ci95_high": 0.43564356435643564,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "scored_checkpoint_sha256": "fc693214aca2f45eb58656b25d1e1f52723062258bebb2ea2d84a12376bbcd4d"
+  },
+  "warning": "Markdown normalization performed after original raw-score audit; historical v4 previously seen, not a fresh independent replication."
+}
