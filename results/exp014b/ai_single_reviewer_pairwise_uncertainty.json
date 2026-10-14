@@ -1,0 +1,47 @@
+{
+  "experiment": "EXP-014B-AI-RATER-PAIRWISE-DESCRIPTIVE",
+  "status": "completed",
+  "reviewers": "ONE AI; human reviewers zero",
+  "grade_pairs": 63,
+  "comparison": {
+    "sft_minus_bf16_dpo": {
+      "paired_graded_questions": 63,
+      "first_higher": 25,
+      "second_higher": 10,
+      "equal": 28,
+      "mean_ordinal_grade_difference": 0.30158730158730157,
+      "task_bootstrap_ci95": [
+        0.047619047619047616,
+        0.5555555555555556
+      ],
+      "unadjusted_exact_sign_test_p": 0.01667384780012071
+    },
+    "sft_minus_fp32_dpo": {
+      "paired_graded_questions": 63,
+      "first_higher": 22,
+      "second_higher": 21,
+      "equal": 20,
+      "mean_ordinal_grade_difference": 0.07936507936507936,
+      "task_bootstrap_ci95": [
+        -0.20634920634920634,
+        0.36507936507936506
+      ],
+      "unadjusted_exact_sign_test_p": 1
+    },
+    "fp32_dpo_minus_bf16_dpo": {
+      "paired_graded_questions": 63,
+      "first_higher": 22,
+      "second_higher": 15,
+      "equal": 26,
+      "mean_ordinal_grade_difference": 0.2222222222222222,
+      "task_bootstrap_ci95": [
+        -0.047619047619047616,
+        0.49206349206349204
+      ],
+      "unadjusted_exact_sign_test_p": 0.3240086000878364
+    }
+  },
+  "blind_rating_sha256": "b8faab1d58134dcaf51769661ab0ff0cd54924f62e3ea44c602a2af54f62df88",
+  "identity_sha256": "122ec55371324e4ce380efd791ef41898b1b161270a5ddfb7370950a7a65fe96",
+  "limitations": "Single AI subjective 0-4 ordinal grades. Intervals and sign tests are posthoc descriptive, unadjusted for 3 comparisons. Not human validation."
+}
