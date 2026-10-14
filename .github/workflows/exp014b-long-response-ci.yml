@@ -1,0 +1,22 @@
+name: EXP-014B Long Review CPU Gate
+on:
+  push:
+    branches: [exp/exp014b-long-response-review]
+  pull_request:
+    branches: [exp/exp014-hh-heldout-blind]
+  workflow_dispatch:
+jobs:
+  frozen-public-label-free-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Ensure unchanged model seeds, labels isolated and long-budget-specific change
+        env:
+          PYTHONPATH: src
+        run: python -m pytest -q tests/test_exp014_hh_data.py tests/test_exp014_blind.py tests/test_exp014b_long_generation.py tests/test_exp014_blind_human_review.py
