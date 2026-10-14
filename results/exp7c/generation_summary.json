@@ -1,0 +1,41 @@
+{
+  "experiment": "EXP-7C",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "adapter_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+  "public_sha256": "1f036dcb138267a9f4f091e6e089b886f7307ecf151a5b54f5638a902396e937",
+  "generation_code_sha256": "7db3811648829641c5ae838e0219b1b3e7bd3e4d56e14cfd5804682848d27e7c",
+  "settings": {
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "max_new_tokens": 384,
+    "seed": 42,
+    "precision": "nf4_double_quant_bf16",
+    "prompt": "same_native_instruct_complete_python_function_v1",
+    "extractor": "first_complete_leading_python_fence_else_preserve_v1"
+  },
+  "samples_per_task": 4,
+  "tasks": 164,
+  "selection": "full164",
+  "oracle_test_accessed_during_generation": false,
+  "status": "completed",
+  "sample_count": 1312,
+  "checkpoint_sha256": "91306aa04f61325692666a7e4ccd11c7fc462a2f7ec71751aafad5a29776a8c6",
+  "by_arm": {
+    "base": {
+      "samples": 656,
+      "python_ast_valid": 641,
+      "entrypoint_present": 641,
+      "output_cap_hits": 15
+    },
+    "sft": {
+      "samples": 656,
+      "python_ast_valid": 637,
+      "entrypoint_present": 637,
+      "output_cap_hits": 12
+    }
+  },
+  "gpu_peak_allocated_mib": 5533.1,
+  "elapsed_seconds_current_invocation": 3236.61,
+  "evaluation_oracle_accessed": false
+}

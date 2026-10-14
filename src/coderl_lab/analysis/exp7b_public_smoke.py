@@ -7,8 +7,6 @@ import argparse
 import json
 import time
 from pathlib import Path
-import torch
-from transformers import AutoTokenizer,AutoModelForCausalLM,BitsAndBytesConfig
 from coderl_lab.analysis.livecodebench_official_eval import load_public_tasks,OfficialLiveCodeBenchExecutor,evaluate_code
 from coderl_lab.datasets.livecodebench import sha256_file
 
@@ -22,6 +20,10 @@ def make_prompt(row):
         {"role":"user","content":str(row["question_content"])+("\nStarter code:\n"+str(row["starter_code"]) if row.get("starter_code") else "")}]
 
 def main():
+    # GPU-only dependencies are deliberately imported only for real inference.
+    # CPU-only retrospective evaluator audits can import MODEL/REVISION without torch.
+    import torch
+    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
     p=argparse.ArgumentParser()
     p.add_argument("--public-tasks",type=Path,required=True)
     p.add_argument("--lcb-repo",type=Path,required=True)
