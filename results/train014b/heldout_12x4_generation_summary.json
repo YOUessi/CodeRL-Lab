@@ -1,0 +1,28 @@
+{
+  "experiment": "TRAIN-014B-HOLDOUT",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+  "heldout_public_sha256": "009dc276e718d4ec600faa3b885f0f934c225d0dd0637d6d8d3b468caaa6d834",
+  "heldout_oracle_sha256": "cfcd2467b8c43fa084a63f7fcf380fe58bd6d483b2530dbbab358b10cd6a822e",
+  "train_summary_sha256": "7b8bed2c1648a3fd55af8e26d336b44ee57165eec2c4ac37516a0bfb9a4506d5",
+  "GRPO_adapter_sha256": "80d7183de78a41441a04ad358f3b7700a29a96b11c6804a7bb03f05b1697910f",
+  "reward_variation_training_tasks": 13,
+  "num_tasks": 12,
+  "samples_per_task": 4,
+  "model_arms": [
+    "base",
+    "grpo"
+  ],
+  "seed": 42,
+  "max_new_tokens": 192,
+  "temperature": 0.8,
+  "top_p": 0.95,
+  "baseline_and_grpo_same_prompt_sampler_and_backbone": true,
+  "scores_not_seen_during_generation": true,
+  "generator_source_sha256": "9ff6270559a5f3344f8073658bb2b7c7599f1e3e7ef83dc3ecf5bf42f1a19c95",
+  "status": "generated_frozen_96",
+  "model_generation_count": 96,
+  "generation_checkpoint_sha256": "08ef33f382f5fa90596c54fbfd5e57dfc7cfef1fc9e2b3b7b2a5985e2c21c3df",
+  "GPU_peak_allocated_mib": 2972.87,
+  "elapsed_seconds": 132.21
+}
