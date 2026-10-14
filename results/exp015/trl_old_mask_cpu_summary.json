@@ -1,0 +1,33 @@
+{
+  "experiment": "EXP-015-TRL-DPO-PREPROCESSING-AUDIT",
+  "status": "completed_cpu_full_256",
+  "dataset_sha256": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "trainer_tokenization": "TRL _tokenize; nonconversational chosen/rejected + eos; DataCollatorForPreference(max_length=512, keep_start)",
+  "old_tokenization": "concat(prompt, answer), offset-overlap, no appended EOS, tokenizer truncation max512",
+  "rows_total": 256,
+  "observed": {
+    "chosen_trl_last_token_eos": 177,
+    "chosen_new_eos_added_only_if_survives": 177,
+    "chosen_total_old_scored_tokens": 58922,
+    "chosen_total_trl_scored_tokens": 59099,
+    "rejected_trl_last_token_eos": 189,
+    "rejected_new_eos_added_only_if_survives": 189,
+    "rejected_total_old_scored_tokens": 52691,
+    "rejected_total_trl_scored_tokens": 52880,
+    "both_trl_scored": 245,
+    "both_old_scored": 245,
+    "chosen_same_scored_token_sequence": 79,
+    "rejected_same_scored_token_sequence": 67,
+    "trainer_excludes_long_prompt": 11,
+    "both_exactly_same_scored_tokens": 45
+  },
+  "same_masked_target_tokens_both_answers_fraction": 0.17578125,
+  "note": "This compares exact token IDs/masks, not model quality. EOS and tokenizer prefix-boundary drift must be assessed before interpreting historical raw logP accuracy.",
+  "source_private_text_exported": false,
+  "trl_version": "1.14.1",
+  "transformers_version": "5.18.0",
+  "source_script_sha256": "b0cfb93c4a0f127b5e0b9054880a7aafec981dc8b1515863e15e57b4d72ffe71",
+  "details_sha256": "f01a523c0946cf4a6391db25e7f90a04bab110fb6f18f8c06965bd328e5a6e0c"
+}
