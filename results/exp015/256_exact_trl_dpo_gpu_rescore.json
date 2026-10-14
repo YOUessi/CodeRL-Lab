@@ -1,0 +1,104 @@
+{
+  "experiment": "EXP-015-EXACT-TRL-DPO-GPU-SCORING",
+  "heldout_sha256": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450",
+  "source_cpu_audit_sha256": "c5ea9f0369779281f854b8bbdb64c83cdbb788608667e8f2a652cb9cfb843c2b",
+  "old_scoring_checkpoint_sha256": "2e1420a0a9aab33a1313130b9ca90f2c33b734846b468ab678eaf143bd784b20",
+  "adapters_sha256": {
+    "sft": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+    "bf16": "d586d9ef32377189aa7d79b70ea5e37b5d5f26b930a4f60266ca024213f1a185",
+    "fp32": "471703e1cec7fd322219133c10e09fa62aab2f6950b896688c7c073de1543281"
+  },
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "max_length": 512,
+  "append_eos": true,
+  "truncation": "keep_start",
+  "dataset_preprocessor": "actual TRL1.14.1 DPOTrainer _tokenize/DataCollatorForPreference",
+  "requested_pairs": 256,
+  "code_sha256": "1bca71f0d4b17cfb4b01942895810799579bfe6b02d6d54c5a59d6191cec2a61",
+  "never_retrained_models": true,
+  "status": "completed",
+  "full256": true,
+  "metrics": {
+    "total": 256,
+    "scoreable": 245,
+    "unscorable": 11,
+    "sft_train_exact_chosen_preferred": 121,
+    "sft_old_offset_chosen_preferred": 122,
+    "sft_old_vs_exact_judgment_flip": 1,
+    "sft_total_logp_margin_delta_exact_minus_old": {
+      "observed": -0.02614099352943654,
+      "ci95_low": -0.36711605854180396,
+      "ci95_high": 0.28679084723093073,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "bf16_train_exact_chosen_preferred": 121,
+    "bf16_old_offset_chosen_preferred": 122,
+    "bf16_old_vs_exact_judgment_flip": 1,
+    "bf16_total_logp_margin_delta_exact_minus_old": {
+      "observed": -0.0423668129711735,
+      "ci95_low": -0.3786113747528621,
+      "ci95_high": 0.2651525453645356,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "fp32_train_exact_chosen_preferred": 121,
+    "fp32_old_offset_chosen_preferred": 122,
+    "fp32_old_vs_exact_judgment_flip": 1,
+    "fp32_total_logp_margin_delta_exact_minus_old": {
+      "observed": -0.01119884684377787,
+      "ci95_low": -0.3621222876164378,
+      "ci95_high": 0.31413246630405894,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "bf16_minus_sft_implicit_reward_margin": {
+      "observed": -0.005418612841440714,
+      "ci95_low": -0.015215030379441316,
+      "ci95_high": 0.004147138613827373,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "bf16_minus_sft_raw_accuracy": {
+      "observed": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "fp32_minus_sft_implicit_reward_margin": {
+      "observed": 0.017804393087114616,
+      "ci95_low": 0.0034040469417766636,
+      "ci95_high": 0.03246296413090762,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "fp32_minus_sft_raw_accuracy": {
+      "observed": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "fp32_minus_bf16_implicit_reward_margin": {
+      "observed": 0.023223005928555324,
+      "ci95_low": 0.00835048900575054,
+      "ci95_high": 0.038010099134883096,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "fp32_minus_bf16_raw_accuracy": {
+      "observed": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "iterations": 20000,
+      "seed": 42
+    },
+    "qualification": "Retrospective exact TRL scoring; dataset previously examined, no new heldout generalization"
+  },
+  "checkpoint_sha256": "171ae4579752b245f25790ee0d476c4dce614c187dd6f97306afa1196d3418ff",
+  "gpu_peak_allocated_mib": 6355.55,
+  "elapsed_seconds": 351.52,
+  "limitations": "This is the historical heldout rescored to match TRL training, not prospective human preference validation."
+}
