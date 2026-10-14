@@ -1,0 +1,50 @@
+{
+  "experiment": "EXP-014B-LONG-REPLY-ENGINEERING-AUDIT",
+  "status": "completed_frozen",
+  "qualification": "posthoc engineering repair, not independent benchmark or human quality test",
+  "task_count": 64,
+  "matched_model_answers": 192,
+  "same_prompt_seed_models_and_sampler_except_cap": true,
+  "old_cap_tokens": 224,
+  "new_cap_tokens": 512,
+  "old_cap_hits_total": 130,
+  "new_cap_hits_total": 13,
+  "cap_hits_reduced": 117,
+  "per_arm": {
+    "sft": {
+      "matched": 64,
+      "old_224_cap_hits": 43,
+      "new_512_cap_hits": 4,
+      "old_mean_tokens": 183.890625,
+      "new_mean_tokens": 277.953125,
+      "new_nonempty_answers": 64,
+      "identical_unchanged_text": 21
+    },
+    "bf16_dpo": {
+      "matched": 64,
+      "old_224_cap_hits": 44,
+      "new_512_cap_hits": 5,
+      "old_mean_tokens": 183.5625,
+      "new_mean_tokens": 276.421875,
+      "new_nonempty_answers": 64,
+      "identical_unchanged_text": 20
+    },
+    "fp32_dpo": {
+      "matched": 64,
+      "old_224_cap_hits": 43,
+      "new_512_cap_hits": 4,
+      "old_mean_tokens": 188.1875,
+      "new_mean_tokens": 279.625,
+      "new_nonempty_answers": 64,
+      "identical_unchanged_text": 21
+    }
+  },
+  "old_checkpoint_sha256": "42c9c8aaa37492bec6b93787446524b18fdac5525f2870447807750d8fdcc952",
+  "new_checkpoint_sha256": "02aaf5659a32bae82d51eb691a7a74362e18de2d09bf429ffdde7dbc72410d26",
+  "new_blind_review_packet_sha256": "29eff706811eee7cdf7f095469242f43a3c58b28c0c13239af1ebe40b08955da",
+  "new_blind_assignment_key_sha256": "122ec55371324e4ce380efd791ef41898b1b161270a5ddfb7370950a7a65fe96",
+  "quality_judgements": 0,
+  "human_review_status": "not_reviewed",
+  "raw_responses_exported_to_github": false,
+  "limitation": "Reaching the cap is a proxy for possible truncation, not certainty that an answer is incomplete. Lower cap-hit frequency does not demonstrate helpfulness."
+}
