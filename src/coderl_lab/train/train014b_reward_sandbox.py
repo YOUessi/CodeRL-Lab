@@ -70,6 +70,8 @@ def check_code(code:str)->tuple[bool,bool]:
     return True,any(isinstance(x,(ast.FunctionDef,ast.AsyncFunctionDef)) and x.name=="solve" for x in parsed.body)
 
 def validate_tests(cases:Any)->list[dict]:
+    if isinstance(cases,str):
+        cases=json.loads(cases)
     if not isinstance(cases,list) or not 10<=len(cases)<=40:
         raise ValueError("algorithmic reward needs 10..40 frozen tests")
     seen=set()
