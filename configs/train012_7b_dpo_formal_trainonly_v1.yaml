@@ -1,0 +1,47 @@
+# TRAIN-012 formal 2048 pairs: train-only DPO with separate memory-safe heldout audit.
+experiment:
+  id: TRAIN-012
+  track: A-posttraining
+  name: qwen2.5-7b-instruct-ultrafeedback-dpo-from-train011-sft
+model:
+  name_or_path: Qwen/Qwen2.5-7B-Instruct
+  revision: a09a35458c702b33eeacc393d103063234e8bc28
+  dtype: bfloat16
+quantization:
+  mode: nf4
+  double_quant: true
+initial_policy:
+  sft_adapter: artifacts/train011/qlora-ultrachat
+  expected_sha256: 25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8
+data:
+  source: HuggingFaceH4/ultrafeedback_binarized
+  revision: daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2
+  manifest: data/generated/posttrain-h4-v1/dpo_manifest.json
+  preferences: data/generated/posttrain-h4-v1/dpo_train.jsonl
+  heldout_validation: null
+  expected_train_pairs: 2048
+  expected_validation_pairs: 256
+  train_sha256: 945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77
+  heldout_sha256: 9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450
+training:
+  output_dir: artifacts/train012/dpo_ultrafeedback_formal_trainonly_v1
+  seed: 42
+  num_train_epochs: 1
+  max_steps: -1
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 0.000001
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  lr_scheduler_type: cosine
+  gradient_checkpointing: true
+  logging_steps: 1
+  save_strategy: steps
+  save_steps: 32
+  save_total_limit: 4
+  beta: 0.1
+  loss_type: sigmoid
+  max_length: 512
+evaluation:
+  eval_strategy: 'no'
+  metrics: [train_loss, eval_loss, eval_rewards_accuracies, eval_rewards_margins, adapter_sha256, peak_gpu_memory]

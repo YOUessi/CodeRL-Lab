@@ -1,0 +1,54 @@
+{
+  "experiment": "TRAIN-012-HELDOUT-PAIRWISE-LOGP",
+  "source_model": "Qwen/Qwen2.5-7B-Instruct",
+  "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "heldout_sha256": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450",
+  "sft_adapter_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+  "dpo_adapter_sha256": "d586d9ef32377189aa7d79b70ea5e37b5d5f26b930a4f60266ca024213f1a185",
+  "max_tokens": 512,
+  "max_examples": 256,
+  "score": "sum log prob of completion-overlapping tokens in concatenated prompt/completion",
+  "compute": "NF4 double quant BF16 both adapters; same backbone",
+  "no_target": "prompt length >=512 means no completion token: report as unscorable",
+  "beta": 0.1,
+  "audit_source_sha256": "137f9cfce9f0949d7c1bba526aa98e96438715b827f28b6d38a5039c5a887289",
+  "uses_train_data": false,
+  "status": "completed",
+  "full_256": true,
+  "metrics": {
+    "heldout_pairs_total": 256,
+    "scorable_pairs": 245,
+    "unscorable_512_context_pairs": 11,
+    "scorable_fraction": 0.95703125,
+    "sft_raw_chosen_preference_accuracy": 0.49795918367346936,
+    "dpo_raw_chosen_preference_accuracy": 0.49795918367346936,
+    "sft_mean_raw_logp_chosen_minus_rejected": -9.582471685141932,
+    "dpo_mean_raw_logp_chosen_minus_rejected": -9.620431994114604,
+    "dpo_relative_to_sft_implicit_reward_margin_mean": -0.0037960308972670113,
+    "dpo_implicit_reward_chosen_preferred_fraction": 0.47346938775510206,
+    "sft_to_dpo_wrong_to_correct": 0,
+    "sft_to_dpo_correct_to_wrong": 0,
+    "paired_bootstrap": {
+      "raw_preference_accuracy_delta": {
+        "observed": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "seed": 42,
+        "nboot": 20000,
+        "unit": "pair"
+      },
+      "implicit_reward_margin": {
+        "observed": -0.0037960308972670113,
+        "ci95_low": -0.014232530210699345,
+        "ci95_high": 0.006423971427946678,
+        "seed": 42,
+        "nboot": 20000,
+        "unit": "pair"
+      }
+    }
+  },
+  "scoring_checkpoint_sha256": "9a1a17cab3a00be2e774176a0c14dce9b19fbc37b38a01637fd468ddf707aca0",
+  "gpu_peak_allocated_mib": 6345.92,
+  "elapsed_seconds_current_invocation": 213.2,
+  "limitations": "This scores likelihood of UltraFeedback chosen vs rejected completions on a frozen 512-token window. It is not judged response quality, and 512-truncated prompts cannot be scored."
+}

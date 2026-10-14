@@ -1,0 +1,24 @@
+name: TRAIN-012 frozen preference CPU checks
+on:
+  push:
+    branches:
+      - feat/train012-7b-dpo
+  pull_request:
+    branches:
+      - feat/train011-7b-qlora
+  workflow_dispatch:
+jobs:
+  frozen-train-data-and-scoring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only tests
+        run: python -m pip install --disable-pip-version-check pytest PyYAML
+      - name: Verify frozen SFT and UltraFeedback contracts with synthetic fixtures
+        env:
+          PYTHONPATH: src
+        run: python -m pytest -q tests/test_train012_7b_dpo_freeze.py tests/test_train012_heldout_preference.py

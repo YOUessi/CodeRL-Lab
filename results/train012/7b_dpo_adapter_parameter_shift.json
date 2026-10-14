@@ -1,0 +1,19 @@
+{
+  "experiment": "TRAIN-012-ADAPTER-SHIFT",
+  "status": "completed",
+  "sft_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+  "dpo_sha256": "d586d9ef32377189aa7d79b70ea5e37b5d5f26b930a4f60266ca024213f1a185",
+  "tensors_compared": 112,
+  "parameters_compared": 2523136,
+  "parameters_changed": 100175,
+  "changed_fraction": 0.03970257647625812,
+  "relative_l2_parameter_shift": 0.0003865519797145852,
+  "max_absolute_parameter_difference": 0.00009441375732421875,
+  "sft_tensor_dtypes": {
+    "torch.bfloat16": 112
+  },
+  "dpo_tensor_dtypes": {
+    "torch.bfloat16": 112
+  },
+  "interpretation": "Small bfloat16-quantized adapter drift after 237-step DPO. Not evidence alone of a numeric optimization bug; requires controlled comparison with FP32 trainable adapters."
+}
