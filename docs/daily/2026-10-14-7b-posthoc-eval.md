@@ -25,3 +25,19 @@
 - Tang 日志 `exp7b_fence_recheck_private.log`，本地 checkpoint `artifacts/exp7b/n4/fence_recheck_v1/private_checkpoint.jsonl`。
 - 此文档创建时官方 private 判分仍未结束；**不能提前写私有正确率或 solved@4 数字**。
 - 该分析始终标注 **posthoc historical v4 engineering recheck**，不能把事后修复当作新前瞻 holdout。
+
+## 12:xx CST 官方 private 404/404 完整结束（事后工程复核）
+- `exp7b_fence_recheck_resume.py` 沿用严格冻结的 404 条生成候选、397/404 条首个完整 Markdown Python代码块的统一剥离规则，不重新进行模型生成、也不改变 Docker 6秒/1GB、公有或私有测试。
+- 在完整 **404/404** 公共测试冻结（87 个候选通过，35/101 题 solved@4）后，私有判分 `404/404` 顺利完成，`pre_private_frozen_inputs.json` 已在私有用例解码前落盘。没有覆盖原 raw 0/404 记录。
+- 官方隐藏测试结果：**50/404 正确候选（12.38%）**，**20/101 题至少一次采样正确（19.80%）**。
+- 按题 Bootstrap 20,000次 seed42 的隐藏 solved@4 95% CI **[12.87%, 27.72%]**，仅用于描述历史 v4 探索性结果，不是前瞻性统计成功。
+- 执行器报告 candidate resource limit=4，global timeout=0，可确定由候选 Python 递归引发的 native segfault=1。没有未分类的官方执行器错误。
+- 同一404个候选：公开通过87、隐藏通过50；其中**37** 个公开通过候选隐藏失败，**0** 个公开失败候选在合并隐藏测试下反而通过。题级公开 solved@4=35、隐藏 solved@4=20：15题至少一公开通过、没有隐藏通过。
+- 难度分层隐藏 solved@4：Easy 13/22；Medium 7/34；Hard 0/45。平台分层：AtCoder 11/65；LeetCode 9/36。
+- 与旧 EXP-004P 的同批101题对照（**仅描述性**）：旧 Qwen3-1.7B Base+SFT 贪心3/101、门控5/101；新 Qwen2.5-7B-Instruct 4次采样20/101。新7B成功20题中**18题是旧SFT贪心未解出**；旧SFT贪心3题中有1题新7B四采样仍未解出。**模型家族、Instruct/微调状态、prompt和采样预算不同，不能把差异归因为单一的参数规模因素。**
+- 结果及源代码均已归档到 Github：
+  - `results/exp7b/v4_n4_fence_recheck_public_summary.json`（commit `ea331c028fb9cdc0f3f82255c1d79bc61d24468e`）；
+  - `results/exp7b/v4_n4_fence_recheck_private_summary.json`（commit `6c32aca9efb694542e43cdd2acb10e20e915b6f5`）；
+  - `results/exp7b/v4_n4_posthoc_capacity_diagnostic.json`（commit `86388e672409c8923d8c587e9281dbdff0f53f8c`）；
+  - 回归测试：`8 passed`；公开/私有结果对应相同候选SHA、101题ID、原样保存于Tang的 private checkpoint 和完整 source 文件不上传GitHub。
+- 结论边界：这证明较强编码模型在旧 v4题集上四次采样**存在部分可达的正确程序**；之前raw零分是评测输入契约错误。仍须在**新独立时间/分布基准**与**同模板/同采样预算**模型对照上验证泛化，不能据此宣称局部低Margin干预在更强模型上有效。
