@@ -52,7 +52,7 @@ def public_rows_from_source(
             raise ValueError(f"duplicated task ID: {task_id}")
         if not prompt.strip() or not entry_point.isidentifier():
             raise ValueError(f"invalid prompt/function name: {task_id}")
-        if not re.search(r"\\bdef\\s+" + re.escape(entry_point) + r"\\s*\\(", prompt):
+        if not re.search(r"\bdef\s+" + re.escape(entry_point) + r"\s*\(", prompt):
             raise ValueError(f"entry point signature not in original prompt: {task_id}")
         entries[task_id] = {
             "task_id": task_id,
