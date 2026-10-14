@@ -1,0 +1,72 @@
+{
+  "experiment": "EXP-7C",
+  "status": "completed",
+  "scope": "Pinned HumanEval+ generated test assertions; not native EvalPlus CLI Base/Extra split",
+  "historical_benchmark_not_forward_temporal": true,
+  "matched_model_base": "Qwen2.5-7B-Instruct",
+  "adapter_sha256": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+  "frozen_inputs": {
+    "experiment": "EXP-7C",
+    "source_sha256": "908377f1daf28dcb36846db73a5662b2e05a9907407c2696c89ad9d3b0b04492",
+    "public_sha256": "1f036dcb138267a9f4f091e6e089b886f7307ecf151a5b54f5638a902396e937",
+    "generation_checkpoint_sha256": "91306aa04f61325692666a7e4ccd11c7fc462a2f7ec71751aafad5a29776a8c6",
+    "evaluator_source_sha256": "77b7495a966c4397f43d3ca9be3922522de877cbd93a240a639e74cd0e1eeed4",
+    "image_id": "sha256:8734cd8b7868a1b0205384477cfdef64753ff979eb45d0249f60dc31a64c74ea",
+    "timeout_seconds": 12,
+    "memory": "1g",
+    "cpu": "1",
+    "total_candidates": 1312,
+    "tasks": 164,
+    "scoring": "Pinned HumanEval+ test field, not native EvalPlus CLI Base/Extra"
+  },
+  "checkpoint_sha256": "a8b4c34985f35f5a442d067f80428b5105797f420043ddd8d5a26f0ace1814e3",
+  "tasks": 164,
+  "samples": 1312,
+  "conditions": {
+    "base": {
+      "sample_correct": 488,
+      "solved_at4": 142,
+      "failure_types": {
+        "AssertionError": 125,
+        "NameError": 1,
+        "AttributeError": 3,
+        "syntax_error": 15,
+        "candidate_or_checker_timeout": 7,
+        "IndexError": 7,
+        "ValueError": 2,
+        "ModuleNotFoundError": 7,
+        "TypeError": 1
+      }
+    },
+    "sft": {
+      "sample_correct": 454,
+      "solved_at4": 139,
+      "failure_types": {
+        "AssertionError": 150,
+        "IndexError": 9,
+        "syntax_error": 19,
+        "NameError": 4,
+        "KeyError": 1,
+        "TypeError": 9,
+        "candidate_or_checker_timeout": 1,
+        "ModuleNotFoundError": 5,
+        "ZeroDivisionError": 1,
+        "candidate_memory_limit": 1,
+        "AttributeError": 2
+      }
+    }
+  },
+  "paired_transitions": {
+    "wrong_to_correct": 5,
+    "correct_to_wrong": 8,
+    "correct_to_correct": 134,
+    "wrong_to_wrong": 17
+  },
+  "sft_minus_base_solved_at4": {
+    "observed_delta": -0.018292682926829267,
+    "ci95_low": -0.06097560975609756,
+    "ci95_high": 0.024390243902439025,
+    "iterations": 20000,
+    "seed": 42
+  }
+}
