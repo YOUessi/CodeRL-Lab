@@ -101,20 +101,36 @@ def get_tokens(tokenizer,prompt:str,answer:str,device):
     return enc["input_ids"].to(device),enc["attention_mask"].to(device),selected,full_length>MAX_TOTAL_TOKENS
 
 
-def load_frozen(public_path:Path,private_path:Path,manifest_path:Path,gen_summary_path:Path)->tuple[list[dict],list[dict],dict]:
+def load_frozen(public_path:Path,private_path:Path,manifest_path:Path,gen_summary_path:Path,gen_checkpoint_path:Path)->tuple[list[dict],list[dict],dict]:
     manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
     generated=json.loads(gen_summary_path.read_text(encoding="utf-8"))
+    # Validate the existence, count, content hashes and exact public task IDs
+    # of all 192 GENERATIONS BEFORE OPENING EVEN THE PRIVATE LABEL FILE.
+    if (generated.get("status")!="generated_blinded_needs_human_review"
+        or generated.get("answers_generated")!=192
+        or generated.get("reference_labels_never_accessed") is not True
+        or generated.get("num_prompts")!=64
+        or generated.get("num_outputs")!=192):
+        raise ValueError("must freeze 192 model generations before reading new preference labels")
+    if hash_file(gen_checkpoint_path)!=generated["generation_checkpoint_sha256"]:
+        raise ValueError("generation checkpoint SHA drift before label access")
     if (manifest.get("experiment")!="EXP-014"
-        or hash_file(public_path)!=PUBLIC256_SHA
-        or hash_file(private_path)!=PRIVATE256_SHA
         or manifest["sha256"]["public_prompts"]!=PUBLIC256_SHA
         or manifest["sha256"]["private_pairs"]!=PRIVATE256_SHA
         or manifest["sha256"]["generation_prompts"]!=PUBLIC64_SHA
-        or generated.get("status")!="generated_blinded_needs_human_review"
-        or generated.get("answers_generated")!=192
-        or generated.get("reference_labels_never_accessed") is not True):
-        raise ValueError("must freeze 192 model generations before reading new preference labels")
+        or hash_file(public_path)!=PUBLIC256_SHA):
+        raise ValueError("public prompt/manifest identity changed")
     pub=[json.loads(s) for s in public_path.read_text().splitlines() if s.strip()]
+    generated_rows=[json.loads(s) for s in gen_checkpoint_path.read_text().splitlines() if s.strip()]
+    expected={(x["task_id"],arm) for x in pub[:64] for arm in ARMS}
+    keys=[(x["task_id"],x["arm"]) for x in generated_rows]
+    if len(generated_rows)!=192 or len(set(keys))!=192 or set(keys)!=expected:
+        raise ValueError("generation missing or duplicated a model/task before private labels")
+    if any(hashlib.sha256(x["answer"].encode()).hexdigest()!=x["answer_sha256"] for x in generated_rows):
+        raise ValueError("generation answer SHA mutated before opening private labels")
+    # This is the FIRST access to preference label bytes in the evaluation process.
+    if hash_file(private_path)!=PRIVATE256_SHA:
+        raise ValueError("frozen private HH preference file changed")
     private=[json.loads(s) for s in private_path.read_text().splitlines() if s.strip()]
     if len(pub)!=256 or len(private)!=256:
         raise ValueError("need exact 256 frozen independent HH preference pairs")
@@ -133,13 +149,14 @@ def main():
     p.add_argument("--private-pairs",type=Path,required=True)
     p.add_argument("--manifest",type=Path,required=True)
     p.add_argument("--generation-summary",type=Path,required=True)
+    p.add_argument("--generation-checkpoint",type=Path,required=True)
     p.add_argument("--sft",type=Path,required=True)
     p.add_argument("--bf16-dpo",type=Path,required=True)
     p.add_argument("--fp32-dpo",type=Path,required=True)
     p.add_argument("--output-dir",type=Path,required=True)
     p.add_argument("--smoke-pairs",type=int)
     a=p.parse_args()
-    public,ref,gen=load_frozen(a.public_prompts,a.private_pairs,a.manifest,a.generation_summary)
+    public,ref,gen=load_frozen(a.public_prompts,a.private_pairs,a.manifest,a.generation_summary,a.generation_checkpoint)
     if a.smoke_pairs is not None and not 1<=a.smoke_pairs<=8:
         raise ValueError("smoke only first1..8 frozen pairs")
     pairs=public[:a.smoke_pairs] if a.smoke_pairs else public
