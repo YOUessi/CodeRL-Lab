@@ -26,7 +26,7 @@
 - 此文档创建时官方 private 判分仍未结束；**不能提前写私有正确率或 solved@4 数字**。
 - 该分析始终标注 **posthoc historical v4 engineering recheck**，不能把事后修复当作新前瞻 holdout。
 
-## 12:xx CST 官方 private 404/404 完整结束（事后工程复核）
+## 12:52 CST 官方 private 404/404 完整结束（事后工程复核）
 - `exp7b_fence_recheck_resume.py` 沿用严格冻结的 404 条生成候选、397/404 条首个完整 Markdown Python代码块的统一剥离规则，不重新进行模型生成、也不改变 Docker 6秒/1GB、公有或私有测试。
 - 在完整 **404/404** 公共测试冻结（87 个候选通过，35/101 题 solved@4）后，私有判分 `404/404` 顺利完成，`pre_private_frozen_inputs.json` 已在私有用例解码前落盘。没有覆盖原 raw 0/404 记录。
 - 官方隐藏测试结果：**50/404 正确候选（12.38%）**，**20/101 题至少一次采样正确（19.80%）**。
