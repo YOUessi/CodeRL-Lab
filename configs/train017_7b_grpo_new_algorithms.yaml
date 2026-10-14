@@ -1,0 +1,53 @@
+# TRAIN-017 7B QLoRA-GRPO fresh six-family train48 heldout24: 2-generation single RTX4090 16GB feasibility experiment.
+experiment:
+  id: TRAIN-017
+  name: qwen25-7b-sft-to-grpo-six-fresh-algorithm-families
+  seed: 42
+model:
+  name_or_path: Qwen/Qwen2.5-7B-Instruct
+  revision: a09a35458c702b33eeacc393d103063234e8bc28
+  dtype: bfloat16
+adapter:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.0
+  target_modules: [q_proj, v_proj]
+dataset:
+  train_tasks: artifacts/train017/frozen24/train.jsonl
+  train_sha256: 21a63fcef2e74d7e902480db9aabceb6b61d5f3bd4aff551e1959f7b8e38e4bb
+  heldout_public_sha256: 3f8768827ba8cba10d3555a58a3de5e69ec197a0192f1adb40ea05ae13c0e7a8
+  heldout_oracle_sha256: 2cea9653952f7357a5f0ea549a32a94d36e3a0b46a9332d5b7d46ee84978a027
+  full_train_tasks: 48
+  holdout_tasks: 24
+grpo:
+  init_from_sft_adapter: true
+  adapter_trainable_dtype_after_trainer: float32
+  adapter_sha256: 25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8
+  qlora_base_quantization: nf4_double_quant_bf16
+  learning_rate: 0.00001
+  num_generations: 4
+  max_completion_length: 256
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 1
+  temperature: 0.8
+  top_p: 0.95
+  beta: 0.0
+  loss_type: grpo
+  num_iterations: 1
+  gradient_checkpointing: true
+  use_vllm: false
+  warmup_steps: 0
+  max_grad_norm: 1.0
+  logging_steps: 1
+reward:
+  correct: 1.0
+  valid_but_incorrect: 0.1
+  invalid_code: 0.0
+  timeout_seconds: 8
+  docker_image: python:3.11-slim
+  docker_sha256: sha256:d3846bce6e97d0ef5c32fc023300d5e39251ad791e6fdfaee41d2ba75246766e
+runs:
+  smoke_steps: 2
+  formal_steps: 32
+  smoke_output: artifacts/train017/grpo7b_smoke_v1
+  formal_output: artifacts/train017/grpo7b_formal_v1
