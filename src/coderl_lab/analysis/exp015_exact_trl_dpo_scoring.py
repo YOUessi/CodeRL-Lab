@@ -160,7 +160,7 @@ def main():
     def logp(ids,mask,mask_completion):
         selected=[
             i for i in range(1,len(mask_completion))
-            if mask_completion[i].item()==1 and mask[i].item()==1
+            if mask_completion[i].item()==1 and mask[0,i].item()==1
         ]
         if not selected:return None
         with torch.inference_mode():
