@@ -19,6 +19,7 @@ if [ -s "$ROOT/preference256/summary.json" ];then echo "Already scored 256 HH pa
    --private-pairs "$ROOT/frozen256/private_pairs.jsonl" \
    --manifest "$ROOT/frozen256/manifest.json" \
    --generation-summary "$ROOT/blind64/summary.json" \
+   --generation-checkpoint "$ROOT/blind64/generation_checkpoint.jsonl" \
    --sft "$SFT" --bf16-dpo "$BF16" --fp32-dpo "$FP32" \
    --output-dir "$ROOT/preference256"
 ) 9>/tmp/coderl_lab_gpu_experiment_lock
