@@ -59,4 +59,4 @@ def test_preference_evaluation_refuses_generation_without_frozen_summary(tmp_pat
     for p in (pub,priv,man):p.write_text("{}\n")
     gen.write_text(json.dumps({"status":"generation_started","answers_generated":8}))
     with pytest.raises(ValueError,match="freeze"):
-        load_frozen(pub,priv,man,gen)
+        load_frozen(pub,priv,man,gen,tmp_path/'no_generations.jsonl')
