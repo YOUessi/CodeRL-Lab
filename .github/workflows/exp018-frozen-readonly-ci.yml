@@ -1,0 +1,19 @@
+name: EXP-018 Frozen 7B Reliability Audit
+on:
+  push:
+    branches: [exp/exp018-7b-coverage-failure-audit]
+  workflow_dispatch:
+jobs:
+  frozen-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pytest
+      - name: Check 576 cell pairing, mutation guards and 24-task CIs
+        env:
+          PYTHONPATH: src
+        run: python -m pytest -q tests/test_exp018_frozen_failure_audit.py
