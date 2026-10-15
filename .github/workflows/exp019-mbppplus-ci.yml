@@ -1,0 +1,22 @@
+name: EXP-019 MBPP+ 7B External CPU Contracts
+on:
+  push:
+    branches: [exp/exp019-7b-mbppplus-external]
+  pull_request:
+    branches: [exp/train017-7b-algorithm-study]
+  workflow_dispatch:
+jobs:
+  mbpp-leakage-and-aggregator-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test runner
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Validate hash selection, leakage barrier and task cluster scoring
+        env:
+          PYTHONPATH: src
+        run: python -m pytest -q tests/test_exp019_mbppplus.py
