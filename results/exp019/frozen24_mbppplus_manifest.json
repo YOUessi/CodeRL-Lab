@@ -1,0 +1,99 @@
+{
+  "experiment": "EXP-019-MBPPPLUS-THREE-7B",
+  "dataset": "evalplus/mbppplus",
+  "dataset_revision": "8a14ef6256e2d9ba80a03e9ce57ee349a69e6399",
+  "source_file": "data/test-00000-of-00001-d5781c9c51e02795.parquet",
+  "original_parquet_sha256": "dc20030b3788fccf617444edcb34138ef13d7e4fafd17bfcb8c1279dbb12399b",
+  "script_source_sha256": "43024972946e8971e010e199262a035bc068dc1c0242b14e165766c8825536fd",
+  "source_rows": 378,
+  "selected_tasks": 24,
+  "sampling_seed": 20261015,
+  "selected_source_task_ids": [
+    223,
+    577,
+    65,
+    726,
+    623,
+    19,
+    11,
+    142,
+    748,
+    260,
+    630,
+    430,
+    568,
+    603,
+    226,
+    224,
+    599,
+    2,
+    286,
+    426,
+    238,
+    576,
+    478,
+    95
+  ],
+  "source_filter_stats": {
+    "original_rows": 378,
+    "eligibility_counts": {
+      "nonempty_imports": 10,
+      "bad_original_problem_or_tests": 0,
+      "long_prompt": 1
+    },
+    "eligible_before_SHA24": 367,
+    "chosen24_task_ids": [
+      223,
+      577,
+      65,
+      726,
+      623,
+      19,
+      11,
+      142,
+      748,
+      260,
+      630,
+      430,
+      568,
+      603,
+      226,
+      224,
+      599,
+      2,
+      286,
+      426,
+      238,
+      576,
+      478,
+      95
+    ],
+    "selection_method": "sha256(EXP019|seed=20261015|task_id) ascending after format/import compatibility filter"
+  },
+  "generation_prompts_have_base_test_examples": true,
+  "private_augmented_oracles_not_in_generation_prompts": true,
+  "private_reference_codes_not_in_generation_prompts": true,
+  "only_metadata_eligibility_checks": true,
+  "comparison_model_arms": [
+    "sft",
+    "previous_grpo",
+    "new_grpo"
+  ],
+  "evaluation_seeds": [
+    42,
+    314159
+  ],
+  "samples_per_task_per_seed_per_arm": 2,
+  "total_generations": 288,
+  "files": {
+    "public_prompts": "public_mbpp24.jsonl",
+    "private_augmented_oracle": "private_augmented_oracle.jsonl",
+    "private_reference_code": "private_reference_code.jsonl"
+  },
+  "sha256": {
+    "public_prompts": "f6a8cb6082bfa624b471c6292416ed5de5dcaa1981001fa46558726162b1240b",
+    "private_augmented_oracle": "c36580dc3a99b962b98b261d521d023cea3fb3467031f51023e6a46dacac89f5",
+    "private_reference_code": "17ad8f406ee2612a4f21b27df8c87e3f7a5715e30dcefe7de2e43cf399e20e6e"
+  },
+  "limitations": "MBPP+ is public historical benchmark, not a new time-split test. Deterministic selection does not exclude pretrained familiarity."
+}

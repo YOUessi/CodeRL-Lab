@@ -1,0 +1,198 @@
+{
+  "experiment": "EXP-019-THREE-7B-MBPPPLUS-EXTERNAL",
+  "status": "completed_all288_heldout_Docker_scores",
+  "benchmark_dataset_revision": "8a14ef6256e2d9ba80a03e9ce57ee349a69e6399",
+  "source_cohort_manifest_sha256": "27f6d3d49dc33b0c1c957c4a5e66c1796ec14cc3179ef1b7a48ffaf726977dcf",
+  "public_task_sha256": "f6a8cb6082bfa624b471c6292416ed5de5dcaa1981001fa46558726162b1240b",
+  "private_augmented_oracle_sha256": "c36580dc3a99b962b98b261d521d023cea3fb3467031f51023e6a46dacac89f5",
+  "generation_checkpoint_sha256": "18344ffc824c46c07be0fce5f31350492e40f39baa87a7bee3a79ee607d48f58",
+  "Docker_score_checkpoint_sha256": "b563cb50236ee5076a1d2a744779c2965696820ef72d968af489b51fb37bf99a",
+  "model_arms_sha256": {
+    "sft": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+    "previous_grpo": "3d84428201f8802cdcde33cb64dd2c46ee4f2538de850cb2240b017ff2a237c8",
+    "new_grpo": "47e0d8d6687efe1965c2ba7ff88f064b56fe3d10907c742824b116abe1ffc8b4"
+  },
+  "Docker_image_sha256": "sha256:8734cd8b7868a1b0205384477cfdef64753ff979eb45d0249f60dc31a64c74ea",
+  "generation_hidden_test_accessed": false,
+  "all_generated_codes_executed_only_in_Docker": true,
+  "metric_scope": "MBPP+ hidden augmented assertions in a pinned Docker image, not native EvalPlus CLI original leaderboard",
+  "num_tasks": 24,
+  "num_task_seed_pairs": 48,
+  "total_candidates": 288,
+  "arms": {
+    "sft": {
+      "candidate_pass": 55,
+      "candidate_count": 96,
+      "solved_at1": 27,
+      "solved_at2": 29,
+      "syntax_valid": 93,
+      "errors": {
+        "AssertionError": 24,
+        "IndexError": 5,
+        "NameError": 3,
+        "TypeError": 2,
+        "ValueError": 3,
+        "candidate_or_checker_timeout": 1,
+        "python_syntax_invalid": 3
+      },
+      "by_seed": {
+        "42": {
+          "correct_candidates": 28,
+          "solved_at1": 14,
+          "solved_at2": 15
+        },
+        "314159": {
+          "correct_candidates": 27,
+          "solved_at1": 13,
+          "solved_at2": 14
+        }
+      },
+      "candidate_accuracy": 0.5729166666666666,
+      "at1_rate": 0.5625,
+      "observed_solved_at2_rate": 0.6041666666666666
+    },
+    "previous_grpo": {
+      "candidate_pass": 55,
+      "candidate_count": 96,
+      "solved_at1": 27,
+      "solved_at2": 29,
+      "syntax_valid": 94,
+      "errors": {
+        "AssertionError": 26,
+        "IndexError": 5,
+        "NameError": 2,
+        "TypeError": 3,
+        "ValueError": 3,
+        "python_syntax_invalid": 2
+      },
+      "by_seed": {
+        "42": {
+          "correct_candidates": 28,
+          "solved_at1": 14,
+          "solved_at2": 15
+        },
+        "314159": {
+          "correct_candidates": 27,
+          "solved_at1": 13,
+          "solved_at2": 14
+        }
+      },
+      "candidate_accuracy": 0.5729166666666666,
+      "at1_rate": 0.5625,
+      "observed_solved_at2_rate": 0.6041666666666666
+    },
+    "new_grpo": {
+      "candidate_pass": 55,
+      "candidate_count": 96,
+      "solved_at1": 27,
+      "solved_at2": 29,
+      "syntax_valid": 95,
+      "errors": {
+        "AssertionError": 27,
+        "IndexError": 5,
+        "NameError": 3,
+        "OverflowError": 1,
+        "TypeError": 1,
+        "ValueError": 3,
+        "python_syntax_invalid": 1
+      },
+      "by_seed": {
+        "42": {
+          "correct_candidates": 28,
+          "solved_at1": 14,
+          "solved_at2": 15
+        },
+        "314159": {
+          "correct_candidates": 27,
+          "solved_at1": 13,
+          "solved_at2": 14
+        }
+      },
+      "candidate_accuracy": 0.5729166666666666,
+      "at1_rate": 0.5625,
+      "observed_solved_at2_rate": 0.6041666666666666
+    }
+  },
+  "paired_task_bootstrap": {
+    "new_grpo_minus_sft": {
+      "correct_fraction": {
+        "observed": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "iterations": 20000,
+        "seed": 42,
+        "resampling_unit": "24_tasks_clusters_of_two_related_seeds"
+      },
+      "at1": {
+        "observed": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "iterations": 20000,
+        "seed": 42,
+        "resampling_unit": "24_tasks_clusters_of_two_related_seeds"
+      },
+      "at2": {
+        "observed": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "iterations": 20000,
+        "seed": 42,
+        "resampling_unit": "24_tasks_clusters_of_two_related_seeds"
+      }
+    },
+    "previous_grpo_minus_sft": {
+      "correct_fraction": {
+        "observed": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "iterations": 20000,
+        "seed": 42,
+        "resampling_unit": "24_tasks_clusters_of_two_related_seeds"
+      },
+      "at1": {
+        "observed": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "iterations": 20000,
+        "seed": 42,
+        "resampling_unit": "24_tasks_clusters_of_two_related_seeds"
+      },
+      "at2": {
+        "observed": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "iterations": 20000,
+        "seed": 42,
+        "resampling_unit": "24_tasks_clusters_of_two_related_seeds"
+      }
+    },
+    "new_grpo_minus_previous_grpo": {
+      "correct_fraction": {
+        "observed": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "iterations": 20000,
+        "seed": 42,
+        "resampling_unit": "24_tasks_clusters_of_two_related_seeds"
+      },
+      "at1": {
+        "observed": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "iterations": 20000,
+        "seed": 42,
+        "resampling_unit": "24_tasks_clusters_of_two_related_seeds"
+      },
+      "at2": {
+        "observed": 0,
+        "ci95_low": 0,
+        "ci95_high": 0,
+        "iterations": 20000,
+        "seed": 42,
+        "resampling_unit": "24_tasks_clusters_of_two_related_seeds"
+      }
+    }
+  },
+  "interpretation": "Observed solved@2 is at least one correct among two sampled programs, NOT an unbiased pass@2 estimator.",
+  "limitations": "Historical public MBPP+ with fixed 30sec Docker judging and public base test examples, not official original leaderboard nor time-forward blind test. Task count24, seeds repeated within a task."
+}

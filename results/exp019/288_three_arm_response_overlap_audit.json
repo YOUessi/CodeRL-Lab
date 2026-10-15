@@ -1,0 +1,139 @@
+{
+  "experiment": "EXP-019-MBPPPLUS-AFTER-FROZEN-SCORING-TRANSFER-DIAGNOSTIC",
+  "status": "completed_no_rescore",
+  "task_count": 24,
+  "samples_per_model": 96,
+  "paired_matrix_rows": 288,
+  "model_arms": [
+    "sft",
+    "previous_grpo",
+    "new_grpo"
+  ],
+  "by_model": {
+    "sft": {
+      "mean_tokens": 59.03125,
+      "median_tokens": 40,
+      "hit256_token_limit": 3,
+      "correct": 55,
+      "syntax_valid": 93,
+      "errors": {
+        "AssertionError": 24,
+        "IndexError": 5,
+        "NameError": 3,
+        "TypeError": 2,
+        "ValueError": 3,
+        "candidate_or_checker_timeout": 1,
+        "python_syntax_invalid": 3
+      }
+    },
+    "previous_grpo": {
+      "mean_tokens": 58.010416666666664,
+      "median_tokens": 43,
+      "hit256_token_limit": 2,
+      "correct": 55,
+      "syntax_valid": 94,
+      "errors": {
+        "AssertionError": 26,
+        "IndexError": 5,
+        "NameError": 2,
+        "TypeError": 3,
+        "ValueError": 3,
+        "python_syntax_invalid": 2
+      }
+    },
+    "new_grpo": {
+      "mean_tokens": 57.447916666666664,
+      "median_tokens": 43,
+      "hit256_token_limit": 1,
+      "correct": 55,
+      "syntax_valid": 95,
+      "errors": {
+        "AssertionError": 27,
+        "IndexError": 5,
+        "NameError": 3,
+        "OverflowError": 1,
+        "TypeError": 1,
+        "ValueError": 3,
+        "python_syntax_invalid": 1
+      }
+    }
+  },
+  "pairwise": {
+    "new_grpo_minus_sft": {
+      "paired_candidate_count": 96,
+      "raw_generation_exact_match": 75,
+      "normalized_code_exact_match": 78,
+      "different_raw_answers_with_same_result": 21,
+      "status_flips": {
+        "old0_new0": 41,
+        "old1_new1": 55
+      },
+      "success_gains": 0,
+      "success_losses": 0,
+      "per_seed": {
+        "42": {
+          "raw_match": 36,
+          "success_flip": 0
+        },
+        "314159": {
+          "raw_match": 39,
+          "success_flip": 0
+        }
+      }
+    },
+    "previous_grpo_minus_sft": {
+      "paired_candidate_count": 96,
+      "raw_generation_exact_match": 76,
+      "normalized_code_exact_match": 76,
+      "different_raw_answers_with_same_result": 20,
+      "status_flips": {
+        "old0_new0": 41,
+        "old1_new1": 55
+      },
+      "success_gains": 0,
+      "success_losses": 0,
+      "per_seed": {
+        "42": {
+          "raw_match": 38,
+          "success_flip": 0
+        },
+        "314159": {
+          "raw_match": 38,
+          "success_flip": 0
+        }
+      }
+    },
+    "new_grpo_minus_previous_grpo": {
+      "paired_candidate_count": 96,
+      "raw_generation_exact_match": 75,
+      "normalized_code_exact_match": 77,
+      "different_raw_answers_with_same_result": 21,
+      "status_flips": {
+        "old0_new0": 41,
+        "old1_new1": 55
+      },
+      "success_gains": 0,
+      "success_losses": 0,
+      "per_seed": {
+        "42": {
+          "raw_match": 38,
+          "success_flip": 0
+        },
+        "314159": {
+          "raw_match": 37,
+          "success_flip": 0
+        }
+      }
+    }
+  },
+  "raw_generated_programs_exported": false,
+  "has_new_GPU_generation": false,
+  "has_new_Docker_execution": false,
+  "interpretive_boundary": "An unchanged success/failure status in 96 matching MBPP+ completions does not mean the 7B policies are exactly identical. Historical public benchmark and limited 24 tasks.",
+  "sha256": {
+    "generation_checkpoint": "18344ffc824c46c07be0fce5f31350492e40f39baa87a7bee3a79ee607d48f58",
+    "scoring_checkpoint": "b563cb50236ee5076a1d2a744779c2965696820ef72d968af489b51fb37bf99a",
+    "base_summary": "4e19781a0de74db9d76d8a2bd9277859f159258e4ce1db06c2a48956bfed66ee",
+    "audit_source": "dd642d91607aca0551925c5c0a4c08aaf6f7c91f34e94c09671e379b87bd992b"
+  }
+}

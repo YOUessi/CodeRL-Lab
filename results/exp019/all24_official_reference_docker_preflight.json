@@ -1,0 +1,14 @@
+{
+  "experiment": "EXP019-REFERENCES-IN-PINNED-DOCKER",
+  "oracle_sha256": "c36580dc3a99b962b98b261d521d023cea3fb3467031f51023e6a46dacac89f5",
+  "reference_sha256": "17ad8f406ee2612a4f21b27df8c87e3f7a5715e30dcefe7de2e43cf399e20e6e",
+  "docker_image_sha256": "sha256:8734cd8b7868a1b0205384477cfdef64753ff979eb45d0249f60dc31a64c74ea",
+  "checker_script_sha256": "dde8f179db40aa4a3d672f299b3a7e50750f3a1e2a82d3ca522074285972dd70",
+  "status": "completed",
+  "tasks_tested": 24,
+  "reference_pass": 24,
+  "failure_by_type": {},
+  "checkpoint_sha256": "d92014afd42d666e8eb7c55d7f232f76c85ac38fbc334e1f497c7d3bce9f1218",
+  "benchmark_reference_oracle_checked_before_any_model_generation": true,
+  "no_candidate_model_outputs_scored": true
+}
