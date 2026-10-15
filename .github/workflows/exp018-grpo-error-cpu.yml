@@ -1,0 +1,20 @@
+name: EXP-018 7B GRPO Failure Audit
+on:
+  push:
+    branches: [exp/exp018-7b-grpo-failure-analysis]
+  workflow_dispatch:
+jobs:
+  frozen-report-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install minimal CPU test runner
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Reject mutable or incomplete 576-score checkpoints
+        env:
+          PYTHONPATH: src
+        run: python -m pytest -q tests/test_exp018_error_audit.py
