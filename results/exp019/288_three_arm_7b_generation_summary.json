@@ -1,0 +1,52 @@
+{
+  "experiment": "EXP-019-MBPPPLUS-GENERATION",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "arms_sha256": {
+    "sft": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+    "previous_grpo": "3d84428201f8802cdcde33cb64dd2c46ee4f2538de850cb2240b017ff2a237c8",
+    "new_grpo": "47e0d8d6687efe1965c2ba7ff88f064b56fe3d10907c742824b116abe1ffc8b4"
+  },
+  "public_prompt_sha256": "f6a8cb6082bfa624b471c6292416ed5de5dcaa1981001fa46558726162b1240b",
+  "private_oracle_sha256_only": "c36580dc3a99b962b98b261d521d023cea3fb3467031f51023e6a46dacac89f5",
+  "oracle_reference_preflight_sha256": "a04879913e765734316125b17bd4e49a4c9f676be827abce58fb6b97793c7dc1",
+  "dataset_manifest_sha256": "27f6d3d49dc33b0c1c957c4a5e66c1796ec14cc3179ef1b7a48ffaf726977dcf",
+  "external_dataset_revision": "8a14ef6256e2d9ba80a03e9ce57ee349a69e6399",
+  "new_training_summary_sha256": "145d63c17daa20ccf801a64a4e1bfc8550ea636d9a30021c986b90665d6ffbd8",
+  "source_script_sha256": "38eedfc0ad27d2cfa1cae82cb4caac3cff930acfe1c2d8b920720725d18f4623",
+  "seeds": [
+    42,
+    314159
+  ],
+  "samples_per_task": 2,
+  "task_count": 24,
+  "expected_outputs": 288,
+  "generation_config": {
+    "max_new_tokens": 256,
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "do_sample": true,
+    "base_quantization": "NF4_double_quant_BF16",
+    "sampler": "same task, global seed and draw index for all three 7B adapters"
+  },
+  "heldout_oracle_never_opened": true,
+  "private_test_reference_code_never_opened": true,
+  "historical_model_results_never_used_to_choose_parameters": true,
+  "status": "MBPPPLUS_GENERATION_FROZEN",
+  "answers_generated": 288,
+  "generation_checkpoint_sha256": "18344ffc824c46c07be0fce5f31350492e40f39baa87a7bee3a79ee607d48f58",
+  "adapter_dtype": {
+    "sft": [
+      "torch.float32"
+    ],
+    "previous_grpo": [
+      "torch.float32"
+    ],
+    "new_grpo": [
+      "torch.float32"
+    ]
+  },
+  "generation_time_seconds": 410.03,
+  "gpu_peak_allocated_mib": 5522.08,
+  "oracle_labels_opened": false
+}
