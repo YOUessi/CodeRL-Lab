@@ -10,7 +10,7 @@ from coderl_lab.datasets.exp019_mbppplus_freeze import (
     select_public_data,SELECTED,
 )
 from coderl_lab.analysis.exp019_mbpp_docker import (
-    IMAGE,IMAGE_ID,image_sha,test_program,
+    IMAGE,IMAGE_ID,image_sha,test_program as sandbox_test_program,
 )
 from coderl_lab.analysis.exp019_mbpp_score import (
     ARMS,SEEDS,N_DRAWS,ci,produce_metrics,
@@ -62,7 +62,7 @@ def test_task_seed_pairing_and_solved_at2_rates():
     assert out["arms"]["sft"]["solved_at2"]==16
     assert out["arms"]["new_grpo"]["solved_at2"]==18
     assert out["paired_task_bootstrap"]["new_grpo_minus_sft"]["at2"]["observed"]==pytest.approx(1/24)
-    assert ci([0]*24,reps=100)["observed"]==0.
+    assert ci([0]*24,n=100)["observed"]==0.
 
 
 def installed_image():
@@ -87,7 +87,7 @@ def test_real_isolated_positive_negative_mbpp_plus():
         "test_imports":[],
         "test_sha256":hashlib.sha256(test.encode()).hexdigest(),
     }
-    good=test_program("def f(x): return x + 1",data)
-    bad=test_program("def f(x): return x",data)
+    good=sandbox_test_program("def f(x): return x + 1",data)
+    bad=sandbox_test_program("def f(x): return x",data)
     assert good=={"passed":True,"error":"none"}
     assert bad["passed"] is False
