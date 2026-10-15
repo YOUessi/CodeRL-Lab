@@ -50,7 +50,6 @@ def verify_frozen(public:Path,private:Path,manifest:Path,gen_dir:Path)->tuple[li
         or m["sha256"]["public_prompts"]!=PROMPT_SHA
         or m["sha256"]["private_augmented_oracle"]!=ORACLE_SHA
         or digest(public)!=PROMPT_SHA
-        or digest(private)!=ORACLE_SHA
         or frozen.get("status")!="MBPPPLUS_GENERATION_FROZEN"
         or frozen.get("answers_generated")!=TOTAL
         or frozen.get("source_script_sha256") is None
@@ -61,6 +60,10 @@ def verify_frozen(public:Path,private:Path,manifest:Path,gen_dir:Path)->tuple[li
         or identity.get("expected_outputs")!=TOTAL
         or frozen.get("task_count")!=N_TASKS):
         raise ValueError("cannot read hidden MBPP+ oracle before 288 generations have been frozen")
+    # First access to hidden oracle bytes must come AFTER checking that
+    # all model generations and their SHA were frozen.
+    if digest(private)!=ORACLE_SHA:
+        raise ValueError("hidden augmented MBPP+ oracle source SHA changed")
     prompts=read_jsonl(public)
     if len(prompts)!=N_TASKS or len({r["task_id"] for r in prompts})!=N_TASKS:
         raise ValueError("frozen public benchmark cohort incomplete")
