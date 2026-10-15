@@ -1,0 +1,20 @@
+name: EXP-019B MBPPPlus 7B CPU Contract
+on:
+  push:
+    branches: [exp/exp019b-mbppplus-pinned-7b-eval]
+  workflow_dispatch:
+jobs:
+  frozen-mbppplus-dataset-and-sandbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU test runner
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Run deterministic dataset signature isolation and paired scorer tests
+        env:
+          PYTHONPATH: src
+        run: python -m pytest -q tests/test_exp019b_dataset_isolation.py tests/test_exp019b_mbppplus_contracts.py

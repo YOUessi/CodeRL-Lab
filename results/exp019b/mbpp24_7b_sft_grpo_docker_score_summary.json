@@ -1,0 +1,98 @@
+{
+  "experiment": "EXP-019B-PINNED-DOCKER-ENHANCED-MBPP",
+  "source_public_sha256": "e31929d65d0b945aa73056f04c99d26b5842ce755db07b805e90932127bee15b",
+  "source_private_sha256": "66e8ebabac5e6f2af0a2b1d07b145f92479b48be13afe1408f269832cf47890b",
+  "frozen_generation_checkpoint_sha256": "9db81622b9f39f54287f29ef63d2d088aef9eddce14596cbbecd6419ba70a8c2",
+  "generation_summary_sha256": "15217506632db5db400493161c634747682ddd5b83d8bb14ea8c78c845a0097c",
+  "scorer_source_sha256": "27549b2ceb8a99f0c98691969847b9395f8b2736f53bd41ee61d6125334c67fc",
+  "image_id": "sha256:8734cd8b7868a1b0205384477cfdef64753ff979eb45d0249f60dc31a64c74ea",
+  "timeout_seconds": 15,
+  "docker": "no_net/nonroot/read_only/no_caps/1GB/1CPU",
+  "scope": "24 test-field scripts, not native EvalPlus leaderboard timing or Base/Extra score",
+  "models": {
+    "sft": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+    "grpo": "47e0d8d6687efe1965c2ba7ff88f064b56fe3d10907c742824b116abe1ffc8b4"
+  },
+  "status": "completed_pinned_MBPPPlus_24_tasks",
+  "task_count": 24,
+  "candidate_total": 192,
+  "scores_by_arm": {
+    "sft": {
+      "candidate_correct": 50,
+      "candidate_total": 96,
+      "candidate_correct_fraction": 0.5208333333333334,
+      "pass_at1": 12,
+      "pass_at1_total": 24,
+      "observed_solved_at4": 15,
+      "observed_solved_at4_total": 24,
+      "syntax_valid_count": 96,
+      "top_level_entry_count": 96,
+      "cap256_hit_count": 0,
+      "verdict_types": {
+        "AssertionError": 37,
+        "ValueError": 1,
+        "NameError": 6,
+        "none": 50,
+        "candidate_or_test_timeout": 1,
+        "ModuleNotFoundError": 1
+      }
+    },
+    "grpo": {
+      "candidate_correct": 50,
+      "candidate_total": 96,
+      "candidate_correct_fraction": 0.5208333333333334,
+      "pass_at1": 12,
+      "pass_at1_total": 24,
+      "observed_solved_at4": 15,
+      "observed_solved_at4_total": 24,
+      "syntax_valid_count": 96,
+      "top_level_entry_count": 96,
+      "cap256_hit_count": 0,
+      "verdict_types": {
+        "AssertionError": 36,
+        "ValueError": 1,
+        "NameError": 6,
+        "none": 50,
+        "candidate_or_test_timeout": 1,
+        "OverflowError": 1,
+        "ModuleNotFoundError": 1
+      }
+    }
+  },
+  "reference_solution_test_status": {
+    "passed": 24,
+    "failed": 0,
+    "failure_types": {}
+  },
+  "paired_task_bootstrap": {
+    "candidate_correct_fraction": {
+      "estimate": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "iterations": 20000,
+      "seed": 42,
+      "resample_unit": "MBPPPlus_original_task"
+    },
+    "pass_at1": {
+      "estimate": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "iterations": 20000,
+      "seed": 42,
+      "resample_unit": "MBPPPlus_original_task"
+    },
+    "observed_solved_at4": {
+      "estimate": 0,
+      "ci95_low": 0,
+      "ci95_high": 0,
+      "iterations": 20000,
+      "seed": 42,
+      "resample_unit": "MBPPPlus_original_task"
+    }
+  },
+  "golden_control_checkpoint_sha256": "75cdf52562a897775d271895fe332a95380f27e09fde90aed6f0eeceba807b2b",
+  "candidate_scoring_checkpoint_sha256": "6b53f745f3dbc2366dfc9d6eb474483afd888acfa3accdd1e4b0bc0115ca2e6b",
+  "test_labels_accessed_only_after_generation_frozen": true,
+  "raw_generated_code_and_reference_not_uploaded": true,
+  "limitations": "Historical public MBPP+ test subset; image lacks some optional Python packages; fixed15s timeout not calibrated to golden runtime like native EvalPlus. Golden failures are disclosed and NEVER silently filtered from 24-task denominator."
+}

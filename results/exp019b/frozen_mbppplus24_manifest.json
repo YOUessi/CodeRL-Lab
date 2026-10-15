@@ -1,0 +1,24 @@
+{
+  "experiment": "EXP-019B-MBPPPLUS-EXTERNAL",
+  "original_dataset": "evalplus/mbppplus test parquet",
+  "original_source_sha256": "dc20030b3788fccf617444edcb34138ef13d7e4fafd17bfcb8c1279dbb12399b",
+  "original_total": 378,
+  "selection": "First 24 after sorting eligible tasks by SHA256('EXP019B|seed=42|task_id')",
+  "eligibility_reason_counts": {
+    "eligible": 369,
+    "not_one_regular_top_level_function": 8,
+    "unsupported_signature": 1
+  },
+  "eligible_total": 369,
+  "selected_task_count": 24,
+  "model_prompt_contains_only_original_description_and_canonical_function_signature": true,
+  "canonical_function_body_and_test_assertions_not_in_public_prompts": true,
+  "source_tests_never_used_for_selecting_tasks": true,
+  "revision": "Qwen/Qwen2.5-7B-Instruct@a09a35458c702b33eeacc393d103063234e8bc28",
+  "test_environment": "Pinned semaremask-evalplus Docker with isolated 15-second fixed test-field script; not official leaderboard scoring",
+  "public_prompt_sha256": "e31929d65d0b945aa73056f04c99d26b5842ce755db07b805e90932127bee15b",
+  "private_test_sha256": "66e8ebabac5e6f2af0a2b1d07b145f92479b48be13afe1408f269832cf47890b",
+  "source_script_sha256": "8f59cb62157a44fe385fa56fe0c48d6f1596ff62895c0c8f75259c55c9a77463",
+  "historical_public_benchmark_not_forward_temporal": true,
+  "test_full_reference_code_stays_only_on_Tang": true
+}

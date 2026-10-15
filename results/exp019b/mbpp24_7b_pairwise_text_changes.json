@@ -1,0 +1,53 @@
+{
+  "experiment": "EXP-019B-7B-MBPPPLUS-PAIRED-CODE-AUDIT",
+  "status": "complete_readonly_192",
+  "source_tasks": 24,
+  "matched_sample_pairs": 96,
+  "paired_sample_counts": {
+    "pair_samples": 96,
+    "identical_generated_text": 81,
+    "different_generated_text": 15,
+    "same_correctness": 96,
+    "correctness_flip": 0,
+    "changed_text_both_correct": 6,
+    "changed_text_both_wrong": 9,
+    "changed_text_sft_only_correct": 0,
+    "changed_text_grpo_only_correct": 0
+  },
+  "per_task_aggregate_no_raw_code": {
+    "text_changed_tasks": 12,
+    "all_four_text_identical_tasks": 12,
+    "correctness_flip_tasks": 0,
+    "task_correct_count_increase": 0,
+    "task_correct_count_decrease": 0
+  },
+  "by_arm_verdict_reasons": {
+    "sft": {
+      "NameError": 6,
+      "none": 50,
+      "AssertionError": 37,
+      "candidate_or_test_timeout": 1,
+      "ModuleNotFoundError": 1,
+      "ValueError": 1
+    },
+    "grpo": {
+      "NameError": 6,
+      "none": 50,
+      "AssertionError": 36,
+      "candidate_or_test_timeout": 1,
+      "OverflowError": 1,
+      "ModuleNotFoundError": 1,
+      "ValueError": 1
+    }
+  },
+  "raw_program_source_exported": false,
+  "read_hidden_MBPP_tests": false,
+  "interpretation": "GRPO altered some code text but changed no pass/fail outcomes in fixed24-task subset. This is not proof two models are identical beyond the frozen sampled outputs.",
+  "source_sha256": {
+    "generation": "9db81622b9f39f54287f29ef63d2d088aef9eddce14596cbbecd6419ba70a8c2",
+    "score": "6b53f745f3dbc2366dfc9d6eb474483afd888acfa3accdd1e4b0bc0115ca2e6b",
+    "generation_summary": "15217506632db5db400493161c634747682ddd5b83d8bb14ea8c78c845a0097c",
+    "scoring_summary": "82cfd3d79fe9aa994f8a4f5aac4a6fd2a7fc85dde34e2b309cdf325845425f3a",
+    "source_code": "32115cd2c390fd3700b62988ed2352006edfc525b50785528b677cdc77ab7fda"
+  }
+}

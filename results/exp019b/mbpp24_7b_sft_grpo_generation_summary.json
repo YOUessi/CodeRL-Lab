@@ -1,0 +1,48 @@
+{
+  "experiment": "EXP-019B-7B-SFT-VS-GRPO-MBPPPLUS",
+  "source_dataset_sha256": "dc20030b3788fccf617444edcb34138ef13d7e4fafd17bfcb8c1279dbb12399b",
+  "public_sha256": "e31929d65d0b945aa73056f04c99d26b5842ce755db07b805e90932127bee15b",
+  "private_oracle_sha256_only": "66e8ebabac5e6f2af0a2b1d07b145f92479b48be13afe1408f269832cf47890b",
+  "source_script_sha256": "4a48b80b69420a8d2df88ba2eb2f605ba47e82ba9283be757941b958a19f18d3",
+  "model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "model_adapters_sha256": {
+    "sft": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+    "grpo": "47e0d8d6687efe1965c2ba7ff88f064b56fe3d10907c742824b116abe1ffc8b4"
+  },
+  "configuration": {
+    "max_new_tokens": 256,
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "do_sample": true,
+    "base_quantization": "NF4_double_quant_BF16",
+    "seed": 42,
+    "scope": "24 fixed MBPP+ test problems, original prompt + function signature"
+  },
+  "num_tasks": 24,
+  "expected_output_count": 192,
+  "sample_ids": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "data_selection": "SHA256 EXP019B original task_id, frozen before generation",
+  "private_tests_never_opened": true,
+  "generation_cannot_use_canonical_answers": true,
+  "stage": "full24",
+  "status": "all_samples_generated_frozen",
+  "answers_generated": 192,
+  "checkpoint_sha256": "9db81622b9f39f54287f29ef63d2d088aef9eddce14596cbbecd6419ba70a8c2",
+  "model_inference_adapter_dtype": {
+    "sft": [
+      "torch.float32"
+    ],
+    "grpo": [
+      "torch.float32"
+    ]
+  },
+  "gpu_peak_allocated_mib": 5485.69,
+  "time_seconds": 267.45,
+  "private_mbppplus_test_labels_opened": false,
+  "raw_model_answers_exported_to_GitHub": false
+}
