@@ -1,0 +1,48 @@
+{
+  "experiment": "TRAIN-017-7B-NEW-CODE-GENERATION",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "arms_sha256": {
+    "sft": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8",
+    "previous_grpo": "3d84428201f8802cdcde33cb64dd2c46ee4f2538de850cb2240b017ff2a237c8",
+    "new_grpo": "47e0d8d6687efe1965c2ba7ff88f064b56fe3d10907c742824b116abe1ffc8b4"
+  },
+  "public_prompt_sha256": "3f8768827ba8cba10d3555a58a3de5e69ec197a0192f1adb40ea05ae13c0e7a8",
+  "private_oracle_sha256_only": "2cea9653952f7357a5f0ea549a32a94d36e3a0b46a9332d5b7d46ee84978a027",
+  "new_training_summary_sha256": "145d63c17daa20ccf801a64a4e1bfc8550ea636d9a30021c986b90665d6ffbd8",
+  "source_script_sha256": "9c852c572572d1b6db22f7c5807e2d5b8f69c6d5e88a6d23024d85633a39be7e",
+  "seeds": [
+    42,
+    314159
+  ],
+  "samples_per_task": 4,
+  "task_count": 24,
+  "expected_outputs": 576,
+  "generation_config": {
+    "max_new_tokens": 256,
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "do_sample": true,
+    "base_quantization": "NF4_double_quant_BF16",
+    "sampler": "same task, global seed and draw index for all three 7B adapters"
+  },
+  "heldout_oracle_never_opened": true,
+  "historical_model_results_never_used_to_choose_parameters": true,
+  "status": "all_576_generated_frozen",
+  "answers_generated": 576,
+  "generation_checkpoint_sha256": "8960a134d2cdfcd850f93ce7106624906e337f8a53feff01f35d36dbb79efd92",
+  "adapter_dtype": {
+    "sft": [
+      "torch.float32"
+    ],
+    "previous_grpo": [
+      "torch.float32"
+    ],
+    "new_grpo": [
+      "torch.float32"
+    ]
+  },
+  "generation_time_seconds": 1638.38,
+  "gpu_peak_allocated_mib": 5494.44,
+  "oracle_labels_opened": false
+}

@@ -1,0 +1,32 @@
+{
+  "experiment": "TRAIN-017-7B-NEW-CODE-GRPO",
+  "source_script_sha256": "46739615d52503186b8e09e2188551a278c626cd3e825a5b1f49b13d8b50035b",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "seed": 20261015,
+  "train_tasks": 48,
+  "heldout_tasks": 24,
+  "task_families": [
+    "exact_k_chars",
+    "gcd_target",
+    "hist_shift",
+    "jump_cap",
+    "pal_del_le",
+    "xor_target"
+  ],
+  "samples_per_task_eval": 4,
+  "evaluation_seeds": [
+    42,
+    314159
+  ],
+  "training_oracle_not_in_prompts": true,
+  "heldout_oracle_never_seen_by_training": true,
+  "train_holdout_parameter_overlap": 0,
+  "generated_before_training_or_model_evaluation": true,
+  "sha256": {
+    "train": "21a63fcef2e74d7e902480db9aabceb6b61d5f3bd4aff551e1959f7b8e38e4bb",
+    "holdout_public": "3f8768827ba8cba10d3555a58a3de5e69ec197a0192f1adb40ea05ae13c0e7a8",
+    "holdout_oracle": "2cea9653952f7357a5f0ea549a32a94d36e3a0b46a9332d5b7d46ee84978a027"
+  },
+  "disclaimer": "Fresh within CodeRL-Lab deterministic synthetic algorithmic tasks, not novel mathematical problems nor a guarantee against pretrained model familiarity."
+}
