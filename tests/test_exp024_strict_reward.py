@@ -19,7 +19,7 @@ def test_nameerror_is_not_rewarded_as_executability():
 
 def test_loadtime_undefined_annotation():
     x=score("def solve(x: List[int]): return 1",TESTS)
-    assert x["reward"]==0 and x["load_error"]=="NameError"
+    assert x["reward"]==0 and x["verdict"]=="NameError"
 
 def test_invalid_source():
     assert score("def solve(:pass",TESTS)["reward"]==0
