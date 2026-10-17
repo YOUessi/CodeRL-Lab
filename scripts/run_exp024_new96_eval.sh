@@ -22,7 +22,7 @@ for seed in 43 44;do
  mkdir -p artifacts/exp024
  if ! test -s "$OUT/generation_summary.json";then
   (
-   flock -n 9 || { echo "GPU locked" >&2;exit 9; }
+   flock -x 9  # wait for the 7B training GPU lock to become available
    "$PY" -m coderl_lab.train.gpu_preflight --min-free-mib 12000
    "$PY" -m "coderl_lab.analysis.exp024_seed${seed}_generate" \
     --public "artifacts/exp024/frozen_new96/public96_prompts.jsonl" \
