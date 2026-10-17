@@ -9,7 +9,28 @@ TRAIN=/home/you/projects/CodeRL-Lab-track-train017
 EVAL=/home/you/projects/CodeRL-Lab-track-exp019b
 OUT="$TRAIN/artifacts/exp026"
 mkdir -p "$OUT"
-"$PY" -m coderl_lab.analysis.exp026_runner --train-root "$TRAIN" --eval-root "$EVAL" --out "$OUT"
+if [ -s "$OUT/diagnostics.json" ]; then
+  "$PY" - "$TRAIN" "$EVAL" "$OUT" <<'PY'
+import json,sys
+from pathlib import Path
+from coderl_lab.analysis import exp026_runner as runner
+train,ev,out=map(Path,sys.argv[1:])
+d=json.loads((out/'diagnostics.json').read_text())
+assert d['status']=='diagnostics_and_docker_contracts_complete'
+assert d['code_sha256']==runner.sha(runner.__file__)
+assert len(d['cases'])==16
+for label,expected in d['sources'].items():
+ arm,seed=label.rsplit('_',1)
+ p=ev/(f'artifacts/exp025/old_seed{seed}_new96' if arm=='old' else f'artifacts/exp024/eval_seed{seed}_new96')
+ assert expected['generation_sha256']==runner.sha(p/'checkpoint.jsonl')
+ assert expected['scoring_sha256']==runner.sha(p/'docker_score_checkpoint.jsonl')
+for seed,s in d['signals'].items():
+ assert s['reward_log_sha256']==runner.sha(train/f'artifacts/exp024/strict_seed{seed}/reward_attempts.jsonl')
+print('RESUME_VERIFIED_DIAGNOSTICS')
+PY
+else
+  "$PY" -m coderl_lab.analysis.exp026_runner --train-root "$TRAIN" --eval-root "$EVAL" --out "$OUT"
+fi
 for seed in 43 44; do
   "$PY" - "$TRAIN" "$seed" <<'PY'
 import sys,json,yaml
