@@ -26,8 +26,7 @@ python scripts/stage1_release.py verify
 
 ```bash
 python -m venv .venv
-# Linux/macOS: source .venv/bin/activate
-# Windows PowerShell: .venv\Scripts\Activate.ps1
+source .venv/bin/activate  # Linux/macOS；PowerShell改用 .venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
 python scripts/stage1_release.py verify --bootstrap
 python -m pytest -q
@@ -90,10 +89,10 @@ python -m pytest -q
 scripts/stage1_release.py              默认只读入口
 releases/stage1/manifest.json          来源、版本、固定结果与资产哈希
 results/stage1/coverage_task_counts.csv 96题五模型聚合计数
- docs/reports/STAGE1_REPORT_ZH.md       阶段总报告
- docs/reproduction/STAGE1.md           复现层级、环境、资产与失败处理
- docs/releases/STAGE1.md               展示顺序与发布边界
- docs/experiment-logs/                 按日期保存的原始阶段报告
+docs/reports/STAGE1_REPORT_ZH.md       阶段总报告
+docs/reproduction/STAGE1.md           复现层级、环境、资产与失败处理
+docs/releases/STAGE1.md               展示顺序与发布边界
+docs/experiment-logs/                 按日期保存的原始阶段报告
 src/coderl_lab/                        历史研究实现，不因本轮整理改变
 ```
 
