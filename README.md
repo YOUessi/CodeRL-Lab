@@ -5,7 +5,7 @@
 
 > **阶段结论：** 已验证真实 7B GRPO 更新、部分局部程序修复及完整可追溯评测；尚未确认奖励分类修复或宽覆盖训练稳定提高外部编程能力。本仓库不是官方 EvalPlus 榜单结果，也不把负结果隐藏起来。
 
-[阶段总报告](docs/reports/STAGE1_REPORT_ZH.md) · [复现入口](docs/reproduction/STAGE1.md) · [展示与版本说明](docs/releases/STAGE1.md) · [固定清单](releases/stage1/manifest.json) · [历史小模型 README](README.stage0-history.md)
+[对齐与强化学习成果总览](docs/reports/ALIGNMENT_RL_STATUS_ZH.md) · [阶段总报告](docs/reports/STAGE1_REPORT_ZH.md) · [复现入口](docs/reproduction/STAGE1.md) · [展示与版本说明](docs/releases/STAGE1.md) · [固定清单](releases/stage1/manifest.json) · [历史小模型 README](README.stage0-history.md)
 
 ## 从这里开始
 
