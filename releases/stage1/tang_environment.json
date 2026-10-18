@@ -1,0 +1,22 @@
+{
+  "recorded_at": "2026-10-18T14:36:26.089426+00:00",
+  "kind": "delivery_environment_snapshot_not_a_historical_lockfile",
+  "python": "3.10.12 (main, Aug 31 2026, 10:18:17) [GCC 11.4.0]",
+  "platform": "Linux",
+  "architecture": "x86_64",
+  "packages": {
+    "torch": "2.10.0",
+    "transformers": "5.18.0",
+    "trl": "1.14.1",
+    "peft": "0.21.2",
+    "accelerate": "1.15.0",
+    "datasets": "5.1.0",
+    "safetensors": "0.8.0",
+    "bitsandbytes": "0.50.2",
+    "numpy": "2.2.6",
+    "PyYAML": "6.0.3",
+    "pytest": "9.1.1"
+  },
+  "gpu_training_started": false,
+  "no_secrets_exported": true
+}
