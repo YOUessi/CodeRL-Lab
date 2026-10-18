@@ -1,0 +1,154 @@
+{
+  "schema": 1,
+  "release": "stage1-7b-v1.0.0",
+  "date": "2026-10-18",
+  "base_commit": "a745222bda135910af0f62f20574bc98a45a5ffc",
+  "branch": "release/stage1-7b-20261018",
+  "source_experiment": "EXP029",
+  "fixture": "results/stage1/coverage_task_counts.csv",
+  "fixture_sha256": "b19ef3940366f7fb838ad4d3965f17329e50669d5461190f70ad55e3b1fbe9b9",
+  "task_count": 96,
+  "draws_per_task": 4,
+  "models": [
+    "sft",
+    "narrow_43",
+    "broad_43",
+    "narrow_44",
+    "broad_44"
+  ],
+  "fields": [
+    "correct",
+    "first",
+    "coverage",
+    "name_error",
+    "resource"
+  ],
+  "expected_models": {
+    "sft": {
+      "correct": 202,
+      "first": 49,
+      "coverage": 61,
+      "name_error": 31,
+      "resource": 1
+    },
+    "narrow_43": {
+      "correct": 202,
+      "first": 49,
+      "coverage": 61,
+      "name_error": 30,
+      "resource": 1
+    },
+    "broad_43": {
+      "correct": 201,
+      "first": 50,
+      "coverage": 60,
+      "name_error": 30,
+      "resource": 0
+    },
+    "narrow_44": {
+      "correct": 203,
+      "first": 50,
+      "coverage": 60,
+      "name_error": 28,
+      "resource": 2
+    },
+    "broad_44": {
+      "correct": 207,
+      "first": 51,
+      "coverage": 61,
+      "name_error": 30,
+      "resource": 0
+    }
+  },
+  "comparisons": {
+    "43": {
+      "candidate_delta": -0.0026041666666666665,
+      "ci95": [
+        [
+          -0.013020833333333334,
+          0.0,
+          -0.03125
+        ],
+        [
+          0.0078125,
+          0.03125,
+          0.0
+        ]
+      ],
+      "coverage_delta": -0.010416666666666666,
+      "first_delta": 0.010416666666666666,
+      "regressions": 3,
+      "repairs": 2,
+      "replicates": 20000,
+      "resample_unit": "task",
+      "seed": 20261018,
+      "task_count": 96
+    },
+    "44": {
+      "candidate_delta": 0.010416666666666666,
+      "ci95": [
+        [
+          -0.0026041666666666665,
+          0.0,
+          -0.020833333333333332
+        ],
+        [
+          0.026041666666666668,
+          0.03125,
+          0.041666666666666664
+        ]
+      ],
+      "coverage_delta": 0.010416666666666666,
+      "first_delta": 0.010416666666666666,
+      "regressions": 2,
+      "repairs": 6,
+      "replicates": 20000,
+      "resample_unit": "task",
+      "seed": 20261018,
+      "task_count": 96
+    }
+  },
+  "model_adapters": {
+    "broad_43": "904fae866044fe1bd6810cac441e566860dddbc60209dc9796fccb96c65681dd",
+    "broad_44": "8fc96458f775aec00d470dc1fabf13ac83818fb270e11cb9f15e43afb1a55fb5",
+    "narrow_43": "d17670683ae80cb14a8a9f60fd1cc81fc71c768fa2592a878e3d4ea81079b1b3",
+    "narrow_44": "f3a909a17c548bfeaac468d65d9a3c99d4bc44b39a1b629b2a41a90adca92564",
+    "sft": "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8"
+  },
+  "source_final_sha256": "cffb5075c0b07998762a32e1b83906b2b1a07c704b619e97cb4f9355c8e9ccd4",
+  "source_generation_freeze_sha256": "152055820ed45d0460aa5f1ce2e097002a521533a1fd0278b370e4aaf5688f61",
+  "source_four_trainings_sha256": "d801a788a8c19e4d14f584e018ba137fa3a1cd893c8b9a6e0cf3c2a2820c96a5",
+  "source_score_files_sha256": {
+    "25eaf9d978f513e7235184c41fb0f7517333025675234112a9936edf93ba47b8": "216845da98a340c449ee89d111890ce2494943b2484bb4374fcc607f9f11056c",
+    "8fc96458f775aec00d470dc1fabf13ac83818fb270e11cb9f15e43afb1a55fb5": "c82d010296242db389fdf56a5762b471153c1f442a13443f4937a3290f22bed7",
+    "904fae866044fe1bd6810cac441e566860dddbc60209dc9796fccb96c65681dd": "5d60590e77316bc124abbc67e16e03898aa4dc493886284146765a9debf43f44",
+    "d17670683ae80cb14a8a9f60fd1cc81fc71c768fa2592a878e3d4ea81079b1b3": "884e31bdb2baaaf81ccd0696ad431229eb4ed1f64d36bd203cf24b8017fc0874",
+    "f3a909a17c548bfeaac468d65d9a3c99d4bc44b39a1b629b2a41a90adca92564": "4fd211e36e1fe09156c27589a64eaef37c5974841fe28e00a339e1877ffea017"
+  },
+  "reference_controls": {
+    "passed": 96,
+    "total": 96
+  },
+  "training_steps_per_run": 32,
+  "training_runs": 4,
+  "candidate_positions": 1920,
+  "physical_container_executions": 456,
+  "generation_tokens": 97459,
+  "documents": [
+    "README.md",
+    "docs/reports/STAGE1_REPORT_ZH.md",
+    "docs/reproduction/STAGE1.md",
+    "docs/releases/STAGE1.md"
+  ],
+  "source_reports": [
+    "docs/experiment-logs/2026-10-15-exp020-three-seed-mbppplus-final.md",
+    "docs/experiment-logs/2026-10-17-exp021-96task-final.md",
+    "docs/experiment-logs/2026-10-17-exp023-three-arm-final.md",
+    "docs/experiment-logs/2026-10-18-exp026-timeout-confounding-addendum.md",
+    "docs/experiment-logs/2026-10-18-exp027-matched-execution-final.md",
+    "docs/experiment-logs/2026-10-18-exp029-coverage-evaluation-final.md"
+  ],
+  "private_assets_included": false,
+  "full_gpu_rerun_in_this_release": false,
+  "interpretation": "未确认稳定覆盖收益；公开计数复算不等于重新执行模型或判题。"
+}
