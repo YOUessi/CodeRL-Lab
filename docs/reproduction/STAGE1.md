@@ -101,11 +101,11 @@ python scripts/stage1_release.py audit \
 
 最终覆盖训练入口为 [run_exp028_resource_v3.py](../../scripts/run_exp028_resource_v3.py)，最终修订评分入口为 [exp029_frozen_eval.py](../../src/coderl_lab/analysis/exp029_frozen_eval.py)。这些是保留了 Tang 主机名、原路径和不可覆盖约束的研究脚本，不是跨平台部署 CLI。
 
-可以先只检查参数说明：
+可以先只检查参数说明。显式设置 `PYTHONPATH=src`，避免共享环境中的旧 editable 安装解析到其他工作树：
 
 ```bash
 # 需要已安装的研究依赖；--help 不代表复现已经完成
-python scripts/run_exp028_resource_v3.py --help
+PYTHONPATH=src python scripts/run_exp028_resource_v3.py --help
 PYTHONPATH=src python -m coderl_lab.analysis.exp029_frozen_eval --help
 ```
 
