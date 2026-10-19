@@ -85,5 +85,15 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(task_seed('DS1000/291'),task_seed('DS1000/291'))
         self.assertNotEqual(task_seed('DS1000/291'),task_seed('DS1000/292'))
 
+    def test_numpy_select_coercion_restores_string_nan_compatibility(self):
+        import numpy as np
+        from coderl_lab.analysis.exp030_protocol import NUMPY_SELECT_COMPAT
+        original=np.select
+        try:
+            scope={};exec(NUMPY_SELECT_COMPAT,scope,scope)
+            self.assertEqual(np.select([np.array([False,True])],['XX'],default=np.nan).tolist(),['nan','XX'])
+            self.assertEqual(np.select([np.array([True,False]),np.array([True,True])],[3,4],default=0).tolist(),[3,4])
+        finally:np.select=original
+
 
 if __name__=='__main__':unittest.main()

@@ -19,6 +19,7 @@ def execution_protocol():
     return {'experiment':'EXP030','task_adapter':'native_DS1000_test_execution_and_optional_test_string',
             'container_execution':sandbox.protocol(),'dataset_source_sha256':SOURCE_SHA256,
             'numpy_version':'2.2.6','pandas_version':'2.3.3','score_is_official_DS1000':False,
+            'environment_revision':2,'numpy_select_compatibility':'coerce_choices_and_default_to_arrays_as_NumPy1.26',
             'normalization':generation_protocol()['normalizer'],'adapter_source_sha256':sha(__file__),
             'protocol_module_sha256':sha(Path(__file__).with_name('exp030_protocol.py'))}
 

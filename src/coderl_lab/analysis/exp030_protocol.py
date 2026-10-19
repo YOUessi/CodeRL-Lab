@@ -11,6 +11,16 @@ SEEDS=(51,52,53)
 FINAL_MODELS={'sft'}|{f'seed{s}_step{k}' for s in SEEDS for k in (32,128)}
 DEV_MODELS={'sft'}|{f'seed{s}_step{k}' for s in SEEDS for k in (32,64,128)}
 
+# NumPy1.26 select coerced choices and default to arrays before dtype promotion.
+# NumPy2 scalar promotion rejects the unchanged DS1000/455 reference otherwise.
+# This restricted, uniform compatibility revision is not a NumPy downgrade.
+NUMPY_SELECT_COMPAT='''import numpy as __exp030_np
+__exp030_original_select = __exp030_np.select
+def __exp030_compatible_select(condlist, choicelist, default=0):
+    return __exp030_original_select(condlist, [__exp030_np.asarray(c) for c in choicelist], default=__exp030_np.asarray(default))
+__exp030_np.select = __exp030_compatible_select
+'''
+
 
 def canonical(x):
     return json.dumps(x,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False)
@@ -99,6 +109,6 @@ def snippet_payload(raw,oracle):
     code=postprocess(raw)
     wrapper='def __exp030_solution__():\n    return '+repr(code)+'\n'
     context=oracle['code_context']
-    test=context+'\n__exp030_code = __exp030_solution__()\ntest_execution(__exp030_code)\n'
+    test=NUMPY_SELECT_COMPAT+context+'\n__exp030_code = __exp030_solution__()\ntest_execution(__exp030_code)\n'
     if 'test_string(' in context:test+='test_string(__exp030_code)\n'
     return wrapper,{'entry_point':'__exp030_solution__','test':test}
