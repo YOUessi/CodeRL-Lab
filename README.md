@@ -1,5 +1,23 @@
 # CodeRL-Lab
 
+## 最新成果入口（2026-10-19）
+
+当前主要成果是 **7B 可验证奖励后训练（RLVR）研究阶段**，包含真实 GRPO 更新、奖励消融、执行混杂诊断、多种子冻结评测和公开复算。当前尚未确认稳定的外部编程收益，完整正负结果均保留。
+
+| 阅读目的 | 固定入口 |
+|---|---|
+| 7B阶段问题、实验与结论 | [第一阶段总报告](https://github.com/YOUessi/CodeRL-Lab/blob/dac5bcf04d5d759b5baa616ec89f68e12316440d/docs/reports/STAGE1_REPORT_ZH.md) |
+| SFT / RM / DPO / PPO / GRPO实现与证据等级 | [对齐与强化学习能力总览](https://github.com/YOUessi/CodeRL-Lab/blob/c66686935e1ca70c5eab33dc9d2766ca3c411415/docs/reports/ALIGNMENT_RL_STATUS_ZH.md) |
+| 获取稳定版本、公开复算与原始产物核验 | [复现说明](https://github.com/YOUessi/CodeRL-Lab/blob/dac5bcf04d5d759b5baa616ec89f68e12316440d/docs/reproduction/STAGE1.md) |
+
+在稳定版本 `stage1-7b-v1.0.0` 的仓库根目录运行 `python scripts/stage1_release.py demo`。它重算公开结果，默认不加载模型、不启动容器；完整命令和验证边界见复现说明。
+
+第二阶段已获用户确认，按[实施计划](https://github.com/YOUessi/CodeRL-Lab/blob/487bbdbc00333b99e9ce1d5aee81875dfd064dd4/docs/superpowers/plans/2026-10-19-alignment-stage2.md)开展奖励日志诊断、PPO契约验证和有限预算7B训练研究；新结果以对应阶段报告为准。
+
+## 早期实验记录
+
+以下正文记录0.6B与1.7B阶段的形成过程，其中“当前主线”“当前进度”均指历史阶段；不同规模、数据和实验结论分别保留。
+
 面向代码任务的**可验证奖励大语言模型后训练与能力边界实验平台**。
 
 本项目不是“跑通一次 GRPO”的演示，而是用可执行代码任务系统研究：
