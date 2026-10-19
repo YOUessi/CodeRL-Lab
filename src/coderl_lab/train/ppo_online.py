@@ -28,6 +28,8 @@ from coderl_lab.train.ppo_math import (
     generalized_advantages,
     normalize_advantages,
     terminal_kl_rewards,
+    validate_sampling_contract,
+    episode_response,
 )
 from coderl_lab.train.reward_model import pack_reward_tokens
 
@@ -42,6 +44,10 @@ def load_config(path: Path) -> dict[str, Any]:
     data=yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data,dict) or data.get("experiment",{}).get("id")!="TRAIN-009A":
         raise ValueError("wrong PPO-Clip smoke config")
+    validate_sampling_contract(
+        temperature=data["rollout"]["sampling_temperature"],
+        top_p=data["rollout"]["sampling_top_p"],
+    )
     return data
 
 
@@ -126,6 +132,13 @@ def frozen_provenance(
         "no_heldout_preference_labels_used_for_policy_gradient":True,
         "is_formal_benchmark":False,
         "seed":int(roll["seed"]),
+        "ppo_contract":{
+            "version":"raw-softmax-finite-horizon-v1",
+            "behavior_and_ratio_distribution":"raw_full_vocabulary_softmax",
+            "sampling_temperature":1.0,"sampling_top_p":1.0,"sampling_top_k":0,
+            "terminal_value":0.0,"length_limit_is_task_terminal":True,
+            "token_mask":"response_through_first_eos_inclusive_no_padding",
+        },
     }
     return training,holdout_probe,provenance
 
@@ -165,6 +178,20 @@ def _token_logprobs_and_values(model, critic, full_ids, prompt_length, *, device
     return log_probs,values
 
 
+def _generation_config(rollout, tok):
+    from transformers import GenerationConfig
+    validate_sampling_contract(
+        temperature=rollout["sampling_temperature"], top_p=rollout["sampling_top_p"])
+    # A fresh config prevents model-specific defaults (notably top_k=50,
+    # repetition penalties and forced tokens) from changing the behavior policy.
+    return GenerationConfig(
+        do_sample=True, temperature=1.0, top_p=1.0, top_k=0,
+        max_new_tokens=int(rollout["max_new_tokens"]),
+        eos_token_id=tok.eos_token_id, pad_token_id=tok.pad_token_id,
+        use_cache=True,
+    )
+
+
 def _make_rollout(model, critic, ref_reward_model, tok, *, prompt: dict[str,str],
                   config:dict[str,Any], device) -> dict[str,Any]:
     import torch
@@ -181,18 +208,15 @@ def _make_rollout(model, critic, ref_reward_model, tok, *, prompt: dict[str,str]
     with torch.inference_mode():
         result=model.generate(
             input_ids=torch.tensor([prompt_ids],dtype=torch.long,device=device),
-            do_sample=True,
-            temperature=float(p_cfg["sampling_temperature"]),
-            top_p=float(p_cfg["sampling_top_p"]),
-            max_new_tokens=int(p_cfg["max_new_tokens"]),
-            eos_token_id=tok.eos_token_id,
-            pad_token_id=tok.pad_token_id,
-            use_cache=True,
+            generation_config=_generation_config(p_cfg,tok),
+            use_model_defaults=False,
+            attention_mask=torch.ones((1,len(prompt_ids)),dtype=torch.long,device=device),
         )
         all_ids=result[0].tolist()
-        response_ids=all_ids[len(prompt_ids):]
-        if not response_ids:
-            raise RuntimeError("generation returned no sampled actions")
+        response_ids,end_reason=episode_response(
+            all_ids[len(prompt_ids):],eos_token_id=tok.eos_token_id,
+            max_new_tokens=int(p_cfg["max_new_tokens"]))
+        all_ids=prompt_ids+response_ids
         old_logits, old_v=_token_logprobs_and_values(
             model,critic,all_ids,len(prompt_ids),device=device,hidden=True)
         _activate(model,"reference")
@@ -238,6 +262,8 @@ def _make_rollout(model, critic, ref_reward_model, tok, *, prompt: dict[str,str]
         "returns":returns,
         "reward_score_raw":reward,
         "response_tokens":len(response_ids),
+        "end_reason":end_reason,
+        "terminal_value":0.0,
         "sampled_kl_mean":mean(o-r for o,r in zip(old,ref,strict=True)),
         "empty_response":not bool(completion),
     }
@@ -431,6 +457,8 @@ def train_online_ppo(
             "mean_clipped_fraction":mean(x["clip_fraction"] for x in update_stats),
             "max_grad_norm":max(x["grad_norm"] for x in update_stats),
             "empty_generations":sum(bool(e["empty_response"]) for e in episodes),
+            "eos_terminated_episodes":sum(e["end_reason"]=="eos" for e in episodes),
+            "length_terminated_episodes":sum(e["end_reason"]=="length" for e in episodes),
             "optimizer_minibatch_updates":len(update_stats),
             "selected_prompt_sha256":[p["prompt_sha256"] for p in work],
         }
@@ -501,7 +529,7 @@ def train_online_ppo(
 
 def main() -> None:
     p=argparse.ArgumentParser(description="TRAIN-009A real on-policy PPO-Clip engineering smoke")
-    p.add_argument("--config",type=Path,default=Path("configs/train009a_ppo_clip_rlhf_smoke.yaml"))
+    p.add_argument("--config",type=Path,default=Path("configs/train009a_ppo_raw_policy_contract.yaml"))
     p.add_argument("--data-root",type=Path,required=True)
     p.add_argument("--sft-adapter",type=Path,required=True)
     p.add_argument("--reward-adapter",type=Path,required=True)
@@ -516,3 +544,4 @@ def main() -> None:
 
 if __name__=="__main__":
     main()
+

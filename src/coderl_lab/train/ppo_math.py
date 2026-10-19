@@ -10,6 +10,31 @@ import math
 from typing import Sequence
 
 
+def validate_sampling_contract(*, temperature: float, top_p: float) -> None:
+    """PPO ratios and sampled KL score the unwarped, full-support policy."""
+    if float(temperature) != 1.0 or float(top_p) != 1.0:
+        raise ValueError("raw-softmax PPO requires temperature=1 and top_p=1")
+
+
+def episode_response(
+    response_ids: Sequence[int], *, eos_token_id: int | None, max_new_tokens: int,
+) -> tuple[list[int], str]:
+    """Keep sampled actions through EOS, or the finite-horizon terminal action.
+
+    The caller scores this unpadded slice only: prompt and post-EOS padding
+    never enter rewards, GAE or losses. EOS itself remains a sampled action.
+    Both end reasons have zero terminal bootstrap; no synthetic EOS is added.
+    """
+    if max_new_tokens < 1 or not 1 <= len(response_ids) <= max_new_tokens:
+        raise ValueError("response length outside finite PPO episode horizon")
+    ids = list(response_ids)
+    if eos_token_id is not None and eos_token_id in ids:
+        return ids[:ids.index(eos_token_id) + 1], "eos"
+    if len(ids) != max_new_tokens:
+        raise ValueError("response ended before EOS or finite PPO horizon")
+    return ids, "length"
+
+
 def terminal_kl_rewards(
     *,
     old_logprobs: Sequence[float],
@@ -42,7 +67,12 @@ def generalized_advantages(
     gamma: float = 1.0,
     gae_lambda: float = 0.95,
 ) -> tuple[list[float], list[float]]:
-    """On-policy Monte-Carlo episode; terminal V(next)=0, no value leakage."""
+    """GAE on one unpadded finite episode; terminal V(next)=0.
+
+    EOS and the configured generation horizon are both task terminals.
+    This is not a continuing-task time-limit truncation with bootstrap.
+    Only lambda=1 gives a Monte-Carlo return (with the chosen discount).
+    """
     if not rewards or len(rewards) != len(values):
         raise ValueError("one value prediction per sampled token")
     if not (0 <= gamma <= 1 and 0 <= gae_lambda <= 1):
@@ -89,3 +119,4 @@ def normalize_advantages(adv: Sequence[float], epsilon: float = 1e-8) -> list[fl
     if std < epsilon:
         return [0.0] * len(adv)
     return [(x - mu) / (std + epsilon) for x in adv]
+
