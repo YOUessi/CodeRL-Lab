@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import random
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -21,7 +23,13 @@ def load_sft_rows(path: Path) -> list[dict[str, Any]]:
             if not line:
                 continue
             row = json.loads(line)
-            required = ("task_id", "prompt", "starter_code", "response")
+            fmt = str(row.get("format", "code"))
+            required = (
+                ("task_id", "prompt", "starter_code", "response")
+                if fmt == "code" else ("task_id", "prompt", "response")
+            )
+            if fmt not in {"code", "raw"}:
+                raise ValueError(f"SFT line {line_no} has unsupported format: {fmt}")
             missing = [key for key in required if key not in row]
             if missing:
                 raise ValueError(
@@ -44,16 +52,25 @@ def prepare_prompt_completion_rows(
     if max_samples is not None:
         shuffled = shuffled[:max_samples]
 
-    return [
-        {
-            "prompt": build_prompt(
+    formatted: list[dict[str, str]] = []
+    for row in shuffled:
+        sample_format = str(row.get("format", "code"))
+        if sample_format == "raw":
+            prompt = str(row["prompt"])
+            if not prompt.strip():
+                raise ValueError("raw SFT prompt cannot be empty")
+        elif sample_format == "code":
+            prompt = build_prompt(
                 str(row["prompt"]),
-                str(row["starter_code"]),
-            ),
+                str(row.get("starter_code", "")),
+            )
+        else:
+            raise ValueError(f"unsupported SFT prompt format: {sample_format}")
+        formatted.append({
+            "prompt": prompt,
             "completion": str(row["response"]).rstrip() + "\n",
-        }
-        for row in shuffled
-    ]
+        })
+    return formatted
 
 
 def load_config(path: Path) -> dict[str, Any]:
@@ -100,6 +117,75 @@ def compute_warmup_steps(
     )
 
 
+def build_training_identity(
+    *,
+    config_path: Path,
+    data_path: Path,
+    heldout_path: Path | None,
+    train_rows: int,
+    heldout_rows: int,
+) -> dict[str, Any]:
+    """Freeze exact data and full training config before checkpointed training."""
+    return {
+        "config_sha256": hashlib.sha256(config_path.read_bytes()).hexdigest(),
+        "training_data_sha256": hashlib.sha256(data_path.read_bytes()).hexdigest(),
+        "heldout_data_sha256": (
+            hashlib.sha256(heldout_path.read_bytes()).hexdigest()
+            if heldout_path is not None else None
+        ),
+        "training_rows": train_rows,
+        "heldout_rows": heldout_rows,
+    }
+
+
+def validate_resume_checkpoint(
+    *,
+    checkpoint: Path,
+    output_dir: Path,
+    identity: dict[str, Any],
+) -> Path:
+    """Fail closed if optimizer/RNG states or frozen training inputs differ."""
+    resolved = checkpoint.resolve()
+    if resolved.parent != output_dir.resolve():
+        raise ValueError("resume checkpoint must belong to this training output")
+    if not re.fullmatch(r"checkpoint-[1-9][0-9]*", resolved.name):
+        raise ValueError("not a Hugging Face Trainer step checkpoint")
+    for required in ("trainer_state.json", "optimizer.pt", "scheduler.pt", "rng_state.pth"):
+        if not (resolved / required).is_file():
+            raise FileNotFoundError(f"incomplete resumable checkpoint: {required}")
+    persisted = output_dir / "training_identity.json"
+    if not persisted.is_file():
+        raise FileNotFoundError("training identity is missing; cannot safely resume")
+    frozen = json.loads(persisted.read_text(encoding="utf-8"))
+    if frozen != identity:
+        raise ValueError("training data/config SHA mismatch; refusing non-identical resume")
+    state = json.loads((resolved / "trainer_state.json").read_text(encoding="utf-8"))
+    if state.get("global_step") != int(resolved.name.split("-")[-1]):
+        raise ValueError("trainer step checkpoint naming/state mismatch")
+    return resolved
+
+
+def initialize_training_identity(
+    *,
+    output_dir: Path,
+    identity: dict[str, Any],
+    resume_from_checkpoint: Path | None,
+) -> Path | None:
+    path = output_dir / "training_identity.json"
+    if resume_from_checkpoint is not None:
+        return validate_resume_checkpoint(
+            checkpoint=resume_from_checkpoint, output_dir=output_dir,
+            identity=identity,
+        )
+    if path.exists():
+        raise FileExistsError("frozen training identity already exists; use explicit --resume-from-checkpoint")
+    if any(output_dir.glob("checkpoint-*")) or (output_dir / "adapter_model.safetensors").exists():
+        raise FileExistsError("existing model/checkpoint would be overwritten")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(identity, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return None
+
+
 def run_sft(
     *,
     config_path: Path,
@@ -107,6 +193,8 @@ def run_sft(
     output_dir: Path | None = None,
     max_samples: int | None = None,
     num_train_epochs: float | None = None,
+    max_eval_samples: int | None = None,
+    resume_from_checkpoint: Path | None = None,
 ) -> dict[str, Any]:
     try:
         import peft
@@ -137,10 +225,43 @@ def run_sft(
     )
     dataset = Dataset.from_list(prepared_rows)
 
+    # Held-out validation is optional; never concatenate it into the train set.
+    eval_path_raw = config.get("data", {}).get("heldout_validation")
+    evaluation_dataset = None
+    if eval_path_raw is not None:
+        evaluation_rows = load_sft_rows(Path(str(eval_path_raw)))
+        if max_eval_samples is not None:
+            if max_eval_samples <= 0:
+                raise ValueError("max_eval_samples must be positive")
+            evaluation_rows = evaluation_rows[:max_eval_samples]
+        evaluation_prepared = prepare_prompt_completion_rows(
+            evaluation_rows, seed=seed
+        )
+        train_task_ids = {str(row["task_id"]) for row in rows}
+        evaluation_task_ids = {str(row["task_id"]) for row in evaluation_rows}
+        if train_task_ids & evaluation_task_ids:
+            raise ValueError("SFT train/held-out validation task_id overlap")
+        train_prompts = {str(row["prompt"]) for row in prepared_rows}
+        validation_prompts = {str(row["prompt"]) for row in evaluation_prepared}
+        if train_prompts & validation_prompts:
+            raise ValueError("SFT train/held-out validation prompt overlap")
+        evaluation_dataset = Dataset.from_list(evaluation_prepared)
+
     model_name = str(model_cfg["name_or_path"])
     revision = str(model_cfg["revision"])
     final_output = output_dir or Path(str(train_cfg["output_dir"]))
     final_output.mkdir(parents=True, exist_ok=True)
+    frozen_identity = build_training_identity(
+        config_path=config_path,
+        data_path=data_path,
+        heldout_path=Path(str(eval_path_raw)) if eval_path_raw is not None else None,
+        train_rows=len(prepared_rows),
+        heldout_rows=len(evaluation_dataset) if evaluation_dataset is not None else 0,
+    )
+    checkpoint_to_resume = initialize_training_identity(
+        output_dir=final_output, identity=frozen_identity,
+        resume_from_checkpoint=resume_from_checkpoint,
+    )
 
     random.seed(seed)
     torch.manual_seed(seed)
@@ -163,13 +284,40 @@ def run_sft(
         "float32": torch.float32,
     }[dtype_name]
 
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        revision=revision,
-        dtype=dtype,
-        trust_remote_code=True,
-    )
+    # Track A: optional NF4 QLoRA; default behavior remains ordinary bf16 LoRA
+    # so all established EXP-002/006A baselines remain unchanged.
+    quant_cfg = dict(config.get("quantization", {}))
+    quant_mode = str(quant_cfg.get("mode", "none"))
+    if quant_mode not in {"none", "nf4"}:
+        raise ValueError(f"unsupported quantization mode: {quant_mode}")
+    model_kwargs: dict[str, Any] = {
+        "revision": revision,
+        "dtype": dtype,
+        "trust_remote_code": True,
+    }
+    if quant_mode == "nf4":
+        if not torch.cuda.is_available():
+            raise RuntimeError("NF4 QLoRA requires a CUDA GPU")
+        try:
+            from peft import prepare_model_for_kbit_training
+            from transformers import BitsAndBytesConfig
+            import bitsandbytes
+        except ImportError as exc:
+            raise RuntimeError("NF4 QLoRA requires pip install bitsandbytes") from exc
+        model_kwargs["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=bool(quant_cfg.get("double_quant", True)),
+            bnb_4bit_compute_dtype=dtype,
+        )
+        model_kwargs["device_map"] = {"": torch.cuda.current_device()}
+    model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
     model.config.use_cache = False
+    if quant_mode == "nf4":
+        model = prepare_model_for_kbit_training(
+            model,
+            use_gradient_checkpointing=bool(train_cfg.get("gradient_checkpointing", True)),
+        )
 
     peft_config = LoraConfig(
         r=int(lora_cfg["r"]),
@@ -196,6 +344,15 @@ def run_sft(
         warmup_ratio=warmup_ratio,
     )
 
+    save_strategy = str(train_cfg.get("save_strategy", "no"))
+    if save_strategy not in {"no", "epoch", "steps"}:
+        raise ValueError(f"unsupported save strategy: {save_strategy}")
+    if save_strategy == "steps":
+        if int(train_cfg.get("save_steps", 0)) <= 0:
+            raise ValueError("step checkpointing requires save_steps > 0")
+        if int(train_cfg.get("save_total_limit", 0)) < 2:
+            raise ValueError("at least 2 rotating step checkpoints required")
+
     args = SFTConfig(
         output_dir=str(final_output),
         num_train_epochs=epochs,
@@ -206,7 +363,13 @@ def run_sft(
         weight_decay=float(train_cfg.get("weight_decay", 0.0)),
         lr_scheduler_type=str(train_cfg.get("lr_scheduler_type", "cosine")),
         logging_steps=int(train_cfg.get("logging_steps", 1)),
-        save_strategy=str(train_cfg.get("save_strategy", "no")),
+        save_strategy=save_strategy,
+        save_steps=int(train_cfg.get("save_steps", 500)),
+        save_total_limit=(
+            int(train_cfg["save_total_limit"])
+            if train_cfg.get("save_total_limit") is not None else None
+        ),
+        eval_strategy="epoch" if evaluation_dataset is not None else "no",
         seed=seed,
         data_seed=seed,
         bf16=dtype_name == "bfloat16",
@@ -223,16 +386,33 @@ def run_sft(
         model=model,
         args=args,
         train_dataset=dataset,
+        eval_dataset=evaluation_dataset,
         processing_class=tokenizer,
         peft_config=peft_config,
     )
 
     started = time.perf_counter()
-    train_result = trainer.train()
+    train_result = trainer.train(
+        resume_from_checkpoint=(
+            str(checkpoint_to_resume)
+            if checkpoint_to_resume is not None else None
+        )
+    )
     elapsed = time.perf_counter() - started
 
     trainer.save_model(str(final_output))
     tokenizer.save_pretrained(str(final_output))
+    saved_adapter_path = final_output / "adapter_model.safetensors"
+    if not saved_adapter_path.is_file():
+        raise FileNotFoundError(
+            f"SFT did not save expected LoRA adapter weights: {saved_adapter_path}"
+        )
+    adapter_sha256 = hashlib.sha256(saved_adapter_path.read_bytes()).hexdigest()
+    train_data_sha256 = hashlib.sha256(data_path.read_bytes()).hexdigest()
+    heldout_data_sha256 = (
+        hashlib.sha256(Path(str(eval_path_raw)).read_bytes()).hexdigest()
+        if eval_path_raw is not None else None
+    )
 
     trainable = sum(
         p.numel() for p in trainer.model.parameters() if p.requires_grad
@@ -247,8 +427,27 @@ def run_sft(
         "requested_model_revision": revision,
         "resolved_model_revision": getattr(model.config, "_commit_hash", None),
         "dtype": dtype_name,
+        "quantization": {
+            "mode": quant_mode,
+            "double_quant": bool(quant_cfg.get("double_quant", True))
+            if quant_mode == "nf4" else None,
+            "compute_dtype": dtype_name if quant_mode == "nf4" else None,
+        },
         "num_examples": len(dataset),
+        "saved_adapter_sha256": adapter_sha256,
+        "train_data_sha256": train_data_sha256,
+        "heldout_data_sha256": heldout_data_sha256,
+        "num_heldout_validation_examples": (
+            len(evaluation_dataset) if evaluation_dataset is not None else 0
+        ),
         "num_train_epochs": epochs,
+        "checkpoint_policy": {
+            "save_strategy": save_strategy,
+            "save_steps": int(train_cfg.get("save_steps", 500)) if save_strategy == "steps" else None,
+            "save_total_limit": int(train_cfg.get("save_total_limit", 0)) if save_strategy == "steps" else None,
+            "resumed_from": str(checkpoint_to_resume) if checkpoint_to_resume is not None else None,
+            "identity": frozen_identity,
+        },
         "warmup_ratio_requested": warmup_ratio,
         "warmup_steps": warmup_steps,
         "seed": seed,
@@ -279,6 +478,10 @@ def run_sft(
             "peak_reserved_bytes": torch.cuda.max_memory_reserved(),
         }
 
+    (final_output / "log_history.json").write_text(
+        json.dumps(list(trainer.state.log_history), ensure_ascii=False, indent=2, default=str) + "\n",
+        encoding="utf-8",
+    )
     (final_output / "run_summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
@@ -294,6 +497,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--max-samples", type=int)
     parser.add_argument("--num-train-epochs", type=float)
+    parser.add_argument("--max-eval-samples", type=int)
+    parser.add_argument("--resume-from-checkpoint", type=Path)
     return parser.parse_args()
 
 
@@ -305,6 +510,8 @@ def main() -> None:
         output_dir=args.output_dir,
         max_samples=args.max_samples,
         num_train_epochs=args.num_train_epochs,
+        max_eval_samples=args.max_eval_samples,
+        resume_from_checkpoint=args.resume_from_checkpoint,
     )
 
 

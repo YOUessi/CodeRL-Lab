@@ -1,0 +1,79 @@
+{
+  "experiment": "TRAIN-007A-vs-007B",
+  "comparison_type": "two real matched-seed, matched-data GPU training runs",
+  "formal_data": true,
+  "checkpoint_policies_match": false,
+  "checkpoint_policies": {
+    "nf4": {
+      "save_strategy": "epoch",
+      "save_steps": null,
+      "save_total_limit": null
+    },
+    "bf16": {
+      "save_strategy": "steps",
+      "save_steps": 32,
+      "save_total_limit": 4
+    }
+  },
+  "gpu_contention_during_comparison": "unknown",
+  "wallclock_performance_is_clean_hardware_comparison": false,
+  "data": {
+    "train_rows": 4096,
+    "heldout_rows": 256,
+    "train_sha256": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+    "heldout_sha256": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170"
+  },
+  "nf4_qlora": {
+    "optimizer_steps": 252,
+    "resumed_from_checkpoint": null,
+    "train_loss": 1.1474928844069678,
+    "eval_loss": 1.1399177312850952,
+    "elapsed_seconds_wall": 2834.327505792957,
+    "gpu_peak_reserved_bytes": 3938451456,
+    "adapter_sha256": "d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d",
+    "train_data_sha256": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+    "heldout_data_sha256": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+    "num_train_inputs": 4096,
+    "num_heldout_inputs": 256,
+    "seed": 42,
+    "dtype": "bfloat16",
+    "quant_mode": "nf4"
+  },
+  "bf16_lora": {
+    "optimizer_steps": 252,
+    "resumed_from_checkpoint": null,
+    "train_loss": 1.1081803800567749,
+    "eval_loss": 1.107435941696167,
+    "elapsed_seconds_wall": 1488.2830732459552,
+    "gpu_peak_reserved_bytes": 5303697408,
+    "adapter_sha256": "fa706dbc715a7c4203edd952ec22134a004eb8ff4d40114065bfccb17ed72e59",
+    "train_data_sha256": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+    "heldout_data_sha256": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+    "num_train_inputs": 4096,
+    "num_heldout_inputs": 256,
+    "seed": 42,
+    "dtype": "bfloat16",
+    "quant_mode": "none"
+  },
+  "differences_bf16_minus_nf4": {
+    "train_loss": -0.039312504350192956,
+    "heldout_eval_loss": -0.03248178958892822,
+    "peak_reserved_bytes": 1365245952,
+    "elapsed_seconds_wall": -1346.0444325470016
+  },
+  "training_loss_deltas_comparable": true,
+  "relative_memory_saving_nf4": 0.2574139976275207,
+  "limitations": [
+    "Single seed, not a statistically powered quality result.",
+    "Interruption required a zero-step BF16 restart with step-based checkpoints. Checkpoint cadence differs from the prior NF4 run; optimizer settings and dataset remain matched.",
+    "BF16 training overlapped another GPU workload on Tang if gpu_contention=observed; training speed difference cannot be attributed to quantization.",
+    "Quantized and unquantized models use different numerical compute paths.",
+    "Train input rows can differ from the effective tokenized examples after fully masked samples are dropped.",
+    "Loss comparison does not establish task-level generation accuracy.",
+    "If either Trainer resumed, reported training loss may cover only the resumed segment; report held-out loss instead."
+  ],
+  "recorded_date": "2026-10-08",
+  "validated_on": "Tang RTX 4090 Laptop",
+  "source_code_commit": "64cc4608ddf614be4c78f23366a1fff0798a8d53",
+  "record_note": "Only public experiment summaries/hashes committed; raw model/optimizer and dataset remain on Tang."
+}

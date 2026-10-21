@@ -1,0 +1,47 @@
+{
+  "experiment": "TRAIN-007A-DATA",
+  "date": "2026-10-08",
+  "status": "formal_training_dataset_snapshot_created_and_verified",
+  "github_actions": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/37725387735",
+  "artifact_url": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/37725387735/artifacts/11527757268",
+  "commit": "d84a9d9b3480871bf95444e322336625d52c200a",
+  "selection": "full-stream seeded SHA256 top-N",
+  "seed": 42,
+  "source_pinnings": {
+    "sft": "HuggingFaceH4/ultrachat_200k@b7fe606ecdbf71e8537946a8d9de5ccf0f6da48b",
+    "dpo": "HuggingFaceH4/ultrafeedback_binarized@daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2"
+  },
+  "sft": {
+    "train_split": "train_sft",
+    "train_scanned": 207865,
+    "train_valid": 207560,
+    "train_rows": 4096,
+    "train_sha256": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+    "validation_split": "test_sft",
+    "validation_scanned": 23110,
+    "validation_valid": 23083,
+    "validation_rows": 256,
+    "validation_sha256": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+    "prompt_overlap": 0
+  },
+  "dpo": {
+    "train_split": "train_prefs",
+    "train_scanned": 61135,
+    "train_valid": 57950,
+    "train_rows": 2048,
+    "train_sha256": "945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77",
+    "validation_split": "test_prefs",
+    "validation_scanned": 2000,
+    "validation_valid": 1886,
+    "validation_rows": 256,
+    "validation_sha256": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450",
+    "prompt_overlap": 0
+  },
+  "train_test_contamination": false,
+  "full_scan": true,
+  "caveats": [
+    "SFT is first user->assistant pair only; multi-turn is a future separate experiment",
+    "No new model has yet been trained on this dataset at snapshot creation",
+    "The GitHub Actions artifact is time-limited; SHA values remain permanent in Git"
+  ]
+}

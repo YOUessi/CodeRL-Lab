@@ -1,0 +1,56 @@
+experiment:
+  id: TRAIN-007A-SMOKE
+  track: A-posttraining
+  name: qwen3-1.7b-ultrachat-32-nf4-qlora-validation-smoke
+
+model:
+  name_or_path: Qwen/Qwen3-1.7B-Base
+  revision: ea980cb0a6c2ae4b936e82123acc929f1cec04c1
+  dtype: bfloat16
+
+data:
+  dataset_repo: HuggingFaceH4/ultrachat_200k
+  revision: b7fe606ecdbf71e8537946a8d9de5ccf0f6da48b
+  source_split: train_sft
+  train_sft: data/generated/posttrain-h4-smoke/sft_train.jsonl
+  heldout_validation: data/generated/posttrain-h4-smoke/sft_validation.jsonl
+  manifest: data/generated/posttrain-h4-smoke/sft_manifest.json
+  expected_train_rows: 32
+  expected_validation_rows: 8
+
+quantization:
+  mode: nf4
+  double_quant: true
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+
+training:
+  output_dir: artifacts/posttrain-a/train007a-qlora-hf-smoke
+  seed: 42
+  num_train_epochs: 1
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 0.0001
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  lr_scheduler_type: cosine
+  max_length: 1024
+  packing: false
+  gradient_checkpointing: true
+  logging_steps: 1
+  save_strategy: epoch
+
+evaluation:
+  required_before_formal:
+    - loss_and_gradient_smoke
+    - train_validation_hash_disjoint
+    - frozen_adapter_sha256
+  metrics:
+    - train_loss
+    - evaluation_loss
+    - trainable_parameters
+    - gpu_peak_reserved

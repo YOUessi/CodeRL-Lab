@@ -1,0 +1,34 @@
+{
+  "experiment": "TRAIN-007A-32x8-SMOKE-ON-FROZEN-FULLDATA",
+  "date": "2026-10-08",
+  "status": "real_cuda_smoke_completed",
+  "runner_commit": "a48ebed26f30040fea0ebb9f7c2840f42d5409cd",
+  "dataset": "HuggingFaceH4/ultrachat_200k",
+  "dataset_revision": "b7fe606ecdbf71e8537946a8d9de5ccf0f6da48b",
+  "train_full_source_sha256": "f868096a21eb37249d06d318fb56ab3b0e3e99c4db442e54c43d6f42b565888b",
+  "validation_full_source_sha256": "a7f6e07f8569157fe5c3ae0deb65875c3427f9db3d6a5120379e1d9b10dae170",
+  "train_rows": 32,
+  "validation_rows": 8,
+  "optimizer_steps": 2,
+  "seed": 42,
+  "model": "Qwen3-1.7B-Base",
+  "quantization": {
+    "mode": "nf4",
+    "double_quant": true,
+    "compute_dtype": "bfloat16"
+  },
+  "lora_rank": 16,
+  "train_loss": 1.1635923981666565,
+  "heldout_eval_loss": 1.5000250339508057,
+  "gpu": "RTX 4090 Laptop",
+  "peak_allocated_bytes": 3637288448,
+  "peak_reserved_bytes": 3932160000,
+  "wall_seconds": 18.32896771695232,
+  "adapter_sha256": "773e569a16a727d2961fdebd458821a38943beb2a8dbccbc757d31f0e31b85df",
+  "data_verified_against_actions_sha256": true,
+  "limitations": [
+    "32/8 sample subset and two optimizer steps; not a formal quality comparison",
+    "weights remain on Tang and are not uploaded to repository",
+    "BF16 LoRA baseline on exact fullscan-selected 32/8 subset not run in this invocation"
+  ]
+}

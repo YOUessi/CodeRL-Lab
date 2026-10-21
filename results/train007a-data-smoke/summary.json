@@ -1,0 +1,43 @@
+{
+  "track": "A-posttraining",
+  "date": "2026-10-08",
+  "test_type": "real_huggingface_source_smoke_not_formal",
+  "workflow_run": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/37725279427",
+  "commit": "f3b302293b11f2af9f4f62f0384429e8af48a724",
+  "status": "success",
+  "scan_limit_per_split": 64,
+  "full_scan": false,
+  "datasets": {
+    "sft": {
+      "repo": "HuggingFaceH4/ultrachat_200k",
+      "revision": "b7fe606ecdbf71e8537946a8d9de5ccf0f6da48b",
+      "train_split": "train_sft",
+      "validation_split": "test_sft",
+      "train_rows": 16,
+      "validation_rows": 8,
+      "train_sha256": "e6d92a93344a74f16e568fcdc83df4bff55047e175a988df6dbed3cf8ce5d365",
+      "validation_sha256": "9542c6863834533d7599a48ce8bf1a4e4cbe802595d02ec7d154be3e29e92c38",
+      "prompt_overlap": 0
+    },
+    "dpo": {
+      "repo": "HuggingFaceH4/ultrafeedback_binarized",
+      "revision": "daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2",
+      "train_split": "train_prefs",
+      "validation_split": "test_prefs",
+      "train_rows": 16,
+      "validation_rows": 8,
+      "train_sha256": "fc74893d91664a6c93e0d82fa53e29fd5a364bc52670b24f5862d8900c04a055",
+      "validation_sha256": "835c6ef84216d3343e5c1e3ec221d7f669015ff435ff670f111042a3ba40cc5c",
+      "prompt_overlap": 0
+    }
+  },
+  "privacy": "dataset text not committed; manifests only",
+  "failure_history": [
+    {
+      "workflow_run": "https://github.com/YOUessi/CodeRL-Lab/actions/runs/37725005211",
+      "symptom": "PyGILState_Release fatal Python error at streaming-dataset shutdown after the first SFT manifest was printed",
+      "fix": "Explicitly close the partially-consumed streaming iterator at scan_limit; regression test added",
+      "fix_commit": "f3b302293b11f2af9f4f62f0384429e8af48a724"
+    }
+  ]
+}

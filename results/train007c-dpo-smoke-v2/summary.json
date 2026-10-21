@@ -1,0 +1,39 @@
+{
+  "experiment": "TRAIN-007C",
+  "variant": "NF4-DPO smoke v2",
+  "date": "2026-10-09",
+  "status": "completed_real_CUDA_smoke_not_formal",
+  "source_git_commit_on_Tang": "d4d979d6129696fef815895bc6aea5cd06906937",
+  "source_dataset": "HuggingFaceH4/ultrafeedback_binarized@daee4cffe8bea93b1cd7874b01c5a6a4ae9dcaf2",
+  "input_data_sha256": "945a336244462d43a7c3e70774158a4c40e873b5ee4f6c93d73e0d1e82222b77",
+  "validation_data_sha256": "9d8a62dee49e9841add47a2ed27e485926c41e988ac06185ccd23b0df4e2e450",
+  "model": "Qwen/Qwen3-1.7B-Base",
+  "revision": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
+  "sft_adapter_sha256": "d8846aa5fb5fd6958d30a24611efd9fb99eb91469a60192937646b58557ce12d",
+  "new_adapter_sha256": "581d0ed7a298a68ad20b4e4bdfb86a3043b476779382526e755dfba938186052",
+  "train_pairs": 32,
+  "heldout_pairs": 16,
+  "optimizer_steps": 2,
+  "train_loss": 0.6931471824645996,
+  "heldout_eval_loss": 0.7035786509513855,
+  "heldout_reward_accuracy": 0.375,
+  "heldout_reward_margin": -0.019500577822327614,
+  "peak_reserved_bytes": 12960399360,
+  "peak_allocated_bytes": 6426608128,
+  "eval_policy": {
+    "per_device_eval_batch_size": 1,
+    "eval_accumulation_steps": 1,
+    "prediction_loss_only": true
+  },
+  "quantization": {
+    "mode": "nf4",
+    "double_quant": true,
+    "compute_dtype": "bfloat16"
+  },
+  "notes": [
+    "Old smoke v1 produced optimizer step 2 but evaluation OOM; kept old checkpoint and config untouched.",
+    "v2 uses same model/quantization/data/training settings with independent output and eval batch1.",
+    "16 heldout pairs and 2 optimizer steps cannot establish model-quality improvement.",
+    "No full 2048/256 DPO training result in this smoke."
+  ]
+}
